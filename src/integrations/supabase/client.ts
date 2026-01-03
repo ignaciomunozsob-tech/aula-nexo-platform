@@ -2,21 +2,25 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
-// ✅ Hard fallback (Lovable a veces NO toma .env del repo en preview)
-const FALLBACK_URL = "https://kfyyzecqvjahdealixdp.supabase.co";
-const FALLBACK_KEY = sb_publishable_fOob5bA28HMHZc7jH4KoMA_oTz0S2XJ; // sb_publishable_...
+const SUPABASE_URL =
+  import.meta.env.VITE_SUPABASE_URL || "https://kfyyzecqvjahdealixdp.supabase.co";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || FALLBACK_URL;
-const SUPABASE_PUBLISHABLE_KEY =
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || FALLBACK_KEY;
+// Preferimos ANON_KEY (legacy) porque es el formato más compatible
+const SUPABASE_KEY =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  "";
 
-if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY || SUPABASE_PUBLISHABLE_KEY.includes(sb_publishable_fOob5bA28HMHZc7jH4KoMA_oTz0S2XJ)) {
-  throw new Error(
-    "Supabase env faltante. Define VITE_SUPABASE_URL y VITE_SUPABASE_PUBLISHABLE_KEY (o pega el fallback en client.ts)."
-  );
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  // No tires la app abajo con un ReferenceError raro: deja un error claro
+  console.error("Missing Supabase env vars:", {
+    VITE_SUPABASE_URL: !!import.meta.env.VITE_SUPABASE_URL,
+    VITE_SUPABASE_ANON_KEY: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+    VITE_SUPABASE_PUBLISHABLE_KEY: !!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  });
 }
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_KEY, {
   auth: {
     storage: localStorage,
     persistSession: true,

@@ -323,8 +323,39 @@ export default function CourseEditorPage() {
 
       if (!course?.slug) payload.slug = `${generateSlug(form.title || "curso")}-${Date.now().toString(36)}`;
 
-      const { error: updateError } = await supabase.from("courses").update(payload).eq("id", id);
-      if (updateError) throw updateError;
+      const tryUpdate = async (p: any) => {
+  const { error } = await supabase.from("courses").update(p).eq("id", id);
+  if (!error) return { ok: true as const, removed: [] as string[] };
+
+  const msg = (error as any)?.message || "";
+  const maybeNewCols = ["description_html", "short_description", "learn_bullets", "requirements", "includes"];
+  const removed: string[] = [];
+
+  // si falla por columna no encontrada / schema cache, reintenta sin esas columnas
+  let nextPayload = { ...p };
+  for (const col of maybeNewCols) {
+    if (
+      msg.includes(`'${col}'`) ||
+      msg.includes(`courses.${col}`) ||
+      msg.toLowerCase().includes("schema cache")
+    ) {
+      if (col in nextPayload) {
+        delete nextPayload[col];
+        removed.push(col);
+      }
+    }
+  }
+
+  if (removed.length === 0) throw error;
+
+  const { error: retryErr } = await supabase.from("courses").update(nextPayload).eq("id", id);
+  if (retryErr) throw retryErr;
+
+  return { ok: true as const, removed };
+};
+
+const result = await tryUpdate(payload);
+
 
       // deletes: lessons
       if (deletedLessonIds.length > 0) {

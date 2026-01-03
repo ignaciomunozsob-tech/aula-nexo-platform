@@ -320,42 +320,41 @@ export default function CourseEditorPage() {
       };
 
       if (form.status === "published" && !course?.published_at) payload.published_at = nowIso;
-
       if (!course?.slug) payload.slug = `${generateSlug(form.title || "curso")}-${Date.now().toString(36)}`;
 
+      // Intenta update normal; si falla por schema cache / columna inexistente, reintenta sin esas columnas
       const tryUpdate = async (p: any) => {
-  const { error } = await supabase.from("courses").update(p).eq("id", id);
-  if (!error) return { ok: true as const, removed: [] as string[] };
+        const { error } = await supabase.from("courses").update(p).eq("id", id);
+        if (!error) return { removed: [] as string[] };
 
-  const msg = (error as any)?.message || "";
-  const maybeNewCols = ["description_html", "short_description", "learn_bullets", "requirements", "includes"];
-  const removed: string[] = [];
+        const msg = (error as any)?.message || "";
+        const maybeNewCols = ["description_html", "short_description", "learn_bullets", "requirements", "includes"];
 
-  // si falla por columna no encontrada / schema cache, reintenta sin esas columnas
-  let nextPayload = { ...p };
-  for (const col of maybeNewCols) {
-    if (
-      msg.includes(`'${col}'`) ||
-      msg.includes(`courses.${col}`) ||
-      msg.toLowerCase().includes("schema cache")
-    ) {
-      if (col in nextPayload) {
-        delete nextPayload[col];
-        removed.push(col);
-      }
-    }
-  }
+        let nextPayload = { ...p };
+        const removed: string[] = [];
 
-  if (removed.length === 0) throw error;
+        for (const col of maybeNewCols) {
+          if (
+            msg.includes(`'${col}'`) ||
+            msg.includes(`courses.${col}`) ||
+            msg.toLowerCase().includes("schema cache")
+          ) {
+            if (col in nextPayload) {
+              delete nextPayload[col];
+              removed.push(col);
+            }
+          }
+        }
 
-  const { error: retryErr } = await supabase.from("courses").update(nextPayload).eq("id", id);
-  if (retryErr) throw retryErr;
+        if (removed.length === 0) throw error;
 
-  return { ok: true as const, removed };
-};
+        const { error: retryErr } = await supabase.from("courses").update(nextPayload).eq("id", id);
+        if (retryErr) throw retryErr;
 
-const result = await tryUpdate(payload);
+        return { removed };
+      };
 
+      const { removed } = await tryUpdate(payload);
 
       // deletes: lessons
       if (deletedLessonIds.length > 0) {
@@ -425,13 +424,24 @@ const result = await tryUpdate(payload);
         }
       }
 
-      return id;
+      return { id, removed };
     },
-    onSuccess: (courseId) => {
+    onSuccess: ({ id: courseId, removed }) => {
       queryClient.invalidateQueries({ queryKey: ["creator-courses"] });
       queryClient.invalidateQueries({ queryKey: ["edit-course", courseId] });
       queryClient.invalidateQueries({ queryKey: ["edit-modules", courseId] });
-      toast({ title: "Curso guardado ✅" });
+
+      if (removed?.length) {
+        toast({
+          title: "Guardado, pero ojo 👀",
+          description: `Supabase no reconoce aún: ${removed.join(
+            ", "
+          )}. Esto suele pasar si estás apuntando a otro proyecto o el schema cache está viejo.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Curso guardado ✅" });
+      }
     },
     onError: (e: any) => {
       toast({
@@ -538,13 +548,19 @@ const result = await tryUpdate(payload);
           <div>
             <Label>Descripción (texto enriquecido)</Label>
             <div className="mt-1">
-              <RichTextEditor value={form.description_html} onChange={(html) => setForm((p) => ({ ...p, description_html: html }))} />
+              <RichTextEditor
+                value={form.description_html}
+                onChange={(html) => setForm((p) => ({ ...p, description_html: html }))}
+              />
             </div>
           </div>
 
           <div>
             <Label>Categoría</Label>
-            <Select value={form.category_id || "none"} onValueChange={(v) => setForm({ ...form, category_id: v === "none" ? "" : v })}>
+            <Select
+              value={form.category_id || "none"}
+              onValueChange={(v) => setForm({ ...form, category_id: v === "none" ? "" : v })}
+            >
               <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Selecciona una categoría" />
               </SelectTrigger>
@@ -562,7 +578,12 @@ const result = await tryUpdate(payload);
           <div className="grid grid-cols-3 gap-4">
             <div>
               <Label>Precio CLP</Label>
-              <Input type="number" value={form.price_clp} onChange={(e) => setForm({ ...form, price_clp: Number(e.target.value || 0) })} className="mt-1" />
+              <Input
+                type="number"
+                value={form.price_clp}
+                onChange={(e) => setForm({ ...form, price_clp: Number(e.target.value || 0) })}
+                className="mt-1"
+              />
             </div>
 
             <div>
@@ -821,7 +842,11 @@ const result = await tryUpdate(payload);
         </div>
 
         <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} size="lg">
-          {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+          {saveMutation.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <Save className="h-4 w-4 mr-2" />
+          )}
           Guardar Curso
         </Button>
       </div>

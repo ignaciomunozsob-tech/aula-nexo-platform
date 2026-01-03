@@ -3,7 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { generateSlug } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +26,38 @@ type ModuleForm = {
   lessons: LessonForm[];
 };
 
+type ListKey = "learn_bullets" | "requirements" | "includes";
+
+function cleanArray(arr: string[]) {
+  return (arr || []).map((x) => (x ?? "").trim()).filter(Boolean);
+}
+
+/**
+ * Fallback DB:
+ * Si tu tabla courses NO tiene columnas learn_bullets / requirements / includes / short_description,
+ * guardamos todo dentro de "description" al final, para que igual se vea en la página pública.
+ */
+function buildDescriptionWithExtras(baseDescription: string, extras: { learn: string[]; req: string[]; inc: string[]; short: string }) {
+  const learn = extras.learn;
+  const req = extras.req;
+  const inc = extras.inc;
+  const short = extras.short;
+
+  const sections: string[] = [];
+  if (short) sections.push(`Resumen:\n${short}`);
+  if (learn.length) sections.push(`Lo que aprenderás:\n- ${learn.join("\n- ")}`);
+  if (req.length) sections.push(`Requisitos:\n- ${req.join("\n- ")}`);
+  if (inc.length) sections.push(`Incluye:\n- ${inc.join("\n- ")}`);
+
+  if (!sections.length) return baseDescription;
+
+  // Evita duplicar si ya existe el bloque
+  const marker = "\n\n---\n";
+  const base = (baseDescription || "").split(marker)[0].trim();
+
+  return `${base}${marker}${sections.join("\n\n")}`.trim();
+}
+
 export default function CourseEditorPage() {
   const { id } = useParams();
   const isNew = !id;
@@ -35,7 +66,6 @@ export default function CourseEditorPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Evita doble creación en React Strict Mode (dev)
   const autoCreateRanRef = useRef(false);
   const [autoCreating, setAutoCreating] = useState(false);
 
@@ -56,7 +86,7 @@ export default function CourseEditorPage() {
   const [deletedModuleIds, setDeletedModuleIds] = useState<string[]>([]);
   const [deletedLessonIds, setDeletedLessonIds] = useState<string[]>([]);
 
-  // ✅ Auto-crear curso apenas entras a "Nuevo Curso" para tener ID al tiro (portada inmediata)
+  // ✅ Auto-crear curso para tener ID al tiro (portada inmediata)
   useEffect(() => {
     const autoCreate = async () => {
       if (!isNew) return;
@@ -76,15 +106,12 @@ export default function CourseEditorPage() {
             title: tempTitle,
             slug: tempSlug,
             creator_id: user.id,
-            short_description: "",
+            // ⚠️ NO enviamos columns que no existen en DB (short_description, learn_bullets, requirements, includes)
             description: "",
             price_clp: 0,
             level: "beginner",
             status: "draft",
             category_id: null,
-            learn_bullets: ["", "", "", ""],
-            requirements: [""],
-            includes: ["Acceso de por vida", "Aprende a tu ritmo"],
           })
           .select()
           .single();
@@ -151,18 +178,21 @@ export default function CourseEditorPage() {
   useEffect(() => {
     if (!course) return;
 
+    // ⚠️ Como DB aún no tiene columnas para learn/req/includes/short_description,
+    // las dejamos en UI con defaults (no vienen desde DB).
     setForm((prev) => ({
       ...prev,
       title: course.title ?? "",
-      short_description: course.short_description ?? "",
       description: course.description ?? "",
       price_clp: course.price_clp ?? 0,
       level: course.level ?? "beginner",
       category_id: course.category_id ?? "",
       status: course.status ?? "draft",
-      learn_bullets: Array.isArray(course.learn_bullets) ? course.learn_bullets : ["", "", "", ""],
-      requirements: Array.isArray(course.requirements) ? course.requirements : [""],
-      includes: Array.isArray(course.includes) ? course.includes : ["Acceso de por vida", "Aprende a tu ritmo"],
+      // UI defaults
+      short_description: prev.short_description ?? "",
+      learn_bullets: prev.learn_bullets?.length ? prev.learn_bullets : ["", "", "", ""],
+      requirements: prev.requirements?.length ? prev.requirements : [""],
+      includes: prev.includes?.length ? prev.includes : ["Acceso de por vida", "Aprende a tu ritmo"],
     }));
   }, [course]);
 
@@ -175,8 +205,6 @@ export default function CourseEditorPage() {
   }, [existingModules]);
 
   // Helpers listas (tipo Coursera)
-  type ListKey = "learn_bullets" | "requirements" | "includes";
-
   const updateListItem = (key: ListKey, idx: number, value: string) => {
     setForm((prev) => {
       const arr = [...(prev[key] as string[])];
@@ -204,22 +232,34 @@ export default function CourseEditorPage() {
 
       const nowIso = new Date().toISOString();
 
-      const cleanArray = (arr: string[]) => (arr || []).map((x) => x.trim()).filter(Boolean);
+      const learn = cleanArray(form.learn_bullets);
+      const req = cleanArray(form.requirements);
+      const inc = cleanArray(form.includes);
+      const short = (form.short_description || "").trim();
+
+      // ✅ Guardamos extras dentro de description (fallback DB)
+      const finalDescription = buildDescriptionWithExtras(form.description, { learn, req, inc, short });
 
       const payload: any = {
         title: form.title,
-        short_description: form.short_description,
-        description: form.description,
+        description: finalDescription,
         price_clp: Number(form.price_clp || 0),
         level: form.level,
         category_id: form.category_id || null,
         status: form.status,
-        learn_bullets: cleanArray(form.learn_bullets),
-        requirements: cleanArray(form.requirements),
-        includes: cleanArray(form.includes),
+        // ⚠️ NO enviamos learn_bullets / requirements / includes / short_description porque NO existen en DB
       };
 
-      if (form.status === "published" && !course?.published_at) payload.published_at = nowIso;
+      // ⚠️ Si tu DB tampoco tiene published_at, NO lo mandes.
+      // Lo dejo desactivado para evitar el error que ya viste.
+      // Si luego agregas published_at en Supabase, lo activamos:
+      // if (form.status === "published" && !course?.published_at) payload.published_at = nowIso;
+
+      // Si quieres marcar "fecha" sin published_at, lo puedes meter también dentro de description.
+      if (form.status === "published") {
+        // no-op: MVP
+        void nowIso;
+      }
 
       const { error: updateError } = await supabase.from("courses").update(payload).eq("id", id);
       if (updateError) throw updateError;
@@ -367,6 +407,7 @@ export default function CourseEditorPage() {
       </div>
     );
   }
+
   return (
     <div className="p-8 max-w-4xl">
       <h1 className="text-2xl font-bold mb-6">Editar Curso</h1>
@@ -402,11 +443,19 @@ export default function CourseEditorPage() {
               className="mt-1"
               placeholder="1–2 líneas para la portada"
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              (MVP) Esto se guarda dentro de la descripción hasta que creemos la columna en Supabase.
+            </p>
           </div>
 
           <div>
             <Label>Descripción</Label>
-            <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="mt-1" />
+            <Textarea
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              className="mt-1"
+              placeholder="Descripción principal del curso"
+            />
           </div>
 
           <div>
@@ -465,6 +514,9 @@ export default function CourseEditorPage() {
                   <SelectItem value="published">Publicado</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                (MVP) No guardamos published_at aún porque tu DB no tiene esa columna.
+              </p>
             </div>
           </div>
         </div>
@@ -535,6 +587,10 @@ export default function CourseEditorPage() {
               ))}
             </div>
           </div>
+
+          <p className="text-xs text-muted-foreground">
+            (MVP) Esta info se guarda dentro de la descripción hasta que agreguemos columnas en Supabase.
+          </p>
         </div>
 
         {/* Modules */}

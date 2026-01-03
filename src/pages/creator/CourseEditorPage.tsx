@@ -523,7 +523,7 @@ export default function CourseEditorPage() {
 
         {/* Coursera-like fields */}
         <div className="bg-card border rounded-lg p-6 space-y-6">
-          <h2 className="font-semibold">Página pública (tipo Coursera)</h2>
+          <h2 className="font-semibold">Página pública</h2>
 
           {/* Learn */}
           <div className="space-y-2">

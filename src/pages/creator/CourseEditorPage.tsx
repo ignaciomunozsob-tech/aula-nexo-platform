@@ -196,3 +196,8 @@ export default function CourseEditorPage() {
       return { ...prev, [key]: arr.length ? arr : [""] };
     });
   };
+    return (
+    <div>...</div>
+  );
+}
+

@@ -1,12 +1,30 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { GraduationCap, BookOpen, Users, Trophy, ArrowRight, Star } from 'lucide-react';
-import { PublicLayout } from '@/components/layout/PublicLayout';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CourseCard } from '@/components/courses/CourseCard';
 
 export default function HomePage() {
+  const navigate = useNavigate();
+
+  // Ajusta estas rutas si en tu router se llaman distinto
+  const STUDENT_PORTAL = '/app';
+  const CREATOR_PORTAL = '/creator';
+
+  async function goToPortal(path: string) {
+    const { data } = await supabase.auth.getUser();
+
+    // si no hay sesión → login con next
+    if (!data.user) {
+      navigate(`/login?next=${encodeURIComponent(path)}`);
+      return;
+    }
+
+    // si hay sesión → entra directo al portal elegido
+    navigate(path);
+  }
+
   const { data: featuredCourses } = useQuery({
     queryKey: ['featured-courses'],
     queryFn: async () => {
@@ -21,7 +39,7 @@ export default function HomePage() {
         `)
         .eq('status', 'published')
         .limit(6);
-      
+
       if (error) throw error;
       return data;
     },
@@ -30,11 +48,8 @@ export default function HomePage() {
   const { data: categories } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .limit(8);
-      
+      const { data, error } = await supabase.from('categories').select('*').limit(8);
+
       if (error) throw error;
       return data;
     },
@@ -48,12 +63,13 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="animate-fade-in">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
-                Aprende de los mejores{' '}
-                <span className="text-primary">expertos</span>
+                Aprende de los mejores <span className="text-primary">expertos</span>
               </h1>
+
               <p className="mt-6 text-lg text-muted-foreground max-w-lg">
                 La plataforma de cursos online líder en Chile. Desarrolla nuevas habilidades con contenido de alta calidad creado por profesionales.
               </p>
+
               <div className="mt-8 flex flex-col sm:flex-row gap-4">
                 <Button size="lg" asChild>
                   <Link to="/courses">
@@ -61,11 +77,23 @@ export default function HomePage() {
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" asChild>
-                  <Link to="/signup?role=creator">
-                    Ser Creador
-                  </Link>
+
+                {/* NUEVO: iniciar como estudiante */}
+                <Button size="lg" variant="outline" onClick={() => goToPortal(STUDENT_PORTAL)}>
+                  Iniciar como estudiante
                 </Button>
+
+                {/* NUEVO: iniciar como creador */}
+                <Button size="lg" variant="outline" onClick={() => goToPortal(CREATOR_PORTAL)}>
+                  Iniciar como creador
+                </Button>
+              </div>
+
+              {/* Si también quieres mantener el “ser creador” para gente sin cuenta, usa esto: */}
+              <div className="mt-4">
+                <Link className="text-sm text-primary underline" to={`/signup?role=creator&next=${encodeURIComponent(CREATOR_PORTAL)}`}>
+                  ¿No tienes cuenta? Crear cuenta como creador
+                </Link>
               </div>
 
               {/* Stats */}
@@ -119,6 +147,7 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </section>
@@ -189,14 +218,14 @@ export default function HomePage() {
             ¿Tienes conocimiento para compartir?
           </h2>
           <p className="text-lg opacity-90 mb-8 max-w-2xl mx-auto">
-            Únete como creador y comparte tu experiencia con miles de estudiantes. 
+            Únete como creador y comparte tu experiencia con miles de estudiantes.
             Crea cursos, genera ingresos y haz crecer tu marca personal.
           </p>
-          <Button size="lg" variant="secondary" asChild>
-            <Link to="/signup?role=creator">
-              Comenzar a crear
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
+
+          {/* Mejor que mande a login con next, para que funcione con cuentas existentes */}
+          <Button size="lg" variant="secondary" onClick={() => goToPortal(CREATOR_PORTAL)}>
+            Iniciar como creador
+            <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </div>
       </section>

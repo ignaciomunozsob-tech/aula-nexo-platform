@@ -3,24 +3,70 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import { AuthProvider } from "@/lib/auth";
+import { PublicLayout } from "@/components/layout/PublicLayout";
+import { StudentLayout } from "@/components/layout/StudentLayout";
+import { CreatorLayout } from "@/components/layout/CreatorLayout";
+import HomePage from "@/pages/HomePage";
+import CoursesPage from "@/pages/CoursesPage";
+import CourseDetailPage from "@/pages/CourseDetailPage";
+import CreatorProfilePage from "@/pages/CreatorProfilePage";
+import LoginPage from "@/pages/auth/LoginPage";
+import SignupPage from "@/pages/auth/SignupPage";
+import StudentDashboard from "@/pages/app/StudentDashboard";
+import MyCoursesPage from "@/pages/app/MyCoursesPage";
+import CoursePlayerPage from "@/pages/app/CoursePlayerPage";
+import StudentSettings from "@/pages/app/StudentSettings";
+import CreatorDashboard from "@/pages/creator/CreatorDashboard";
+import CreatorCoursesPage from "@/pages/creator/CreatorCoursesPage";
+import CourseEditorPage from "@/pages/creator/CourseEditorPage";
+import CreatorProfileEdit from "@/pages/creator/CreatorProfileEdit";
+import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Public routes */}
+            <Route element={<PublicLayout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/courses" element={<CoursesPage />} />
+              <Route path="/course/:slug" element={<CourseDetailPage />} />
+              <Route path="/creator/:slug" element={<CreatorProfilePage />} />
+            </Route>
+            
+            {/* Auth routes */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+
+            {/* Student routes */}
+            <Route path="/app" element={<StudentLayout />}>
+              <Route index element={<StudentDashboard />} />
+              <Route path="my-courses" element={<MyCoursesPage />} />
+              <Route path="course/:id" element={<CoursePlayerPage />} />
+              <Route path="settings" element={<StudentSettings />} />
+            </Route>
+
+            {/* Creator routes */}
+            <Route path="/creator-app" element={<CreatorLayout />}>
+              <Route index element={<CreatorDashboard />} />
+              <Route path="courses" element={<CreatorCoursesPage />} />
+              <Route path="courses/new" element={<CourseEditorPage />} />
+              <Route path="courses/:id/edit" element={<CourseEditorPage />} />
+              <Route path="profile" element={<CreatorProfileEdit />} />
+            </Route>
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

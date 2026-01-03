@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,6 +35,10 @@ export default function CourseEditorPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Evita doble creación en React Strict Mode (dev)
+  const autoCreateRanRef = useRef(false);
+  const [autoCreating, setAutoCreating] = useState(false);
+
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -48,6 +52,56 @@ export default function CourseEditorPage() {
   const [deletedModuleIds, setDeletedModuleIds] = useState<string[]>([]);
   const [deletedLessonIds, setDeletedLessonIds] = useState<string[]>([]);
 
+  // ✅ Auto-crear curso apenas entras a "Nuevo Curso" para tener ID al tiro
+  useEffect(() => {
+    const autoCreate = async () => {
+      if (!isNew) return;
+      if (!user?.id) return;
+      if (autoCreateRanRef.current) return;
+
+      autoCreateRanRef.current = true;
+      setAutoCreating(true);
+
+      try {
+        const tempTitle = 'Curso sin título';
+        const tempSlug = `draft-${user.id}-${Date.now().toString(36)}`;
+
+        const { data, error } = await supabase
+          .from('courses')
+          .insert({
+            title: tempTitle,
+            slug: tempSlug,
+            creator_id: user.id,
+            description: '',
+            price_clp: 0,
+            level: 'beginner',
+            status: 'draft',
+            category_id: null,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Redirige al editor real con ID (y reemplaza historial)
+        navigate(`/creator-app/courses/${data.id}/edit`, { replace: true });
+      } catch (e: any) {
+        toast({
+          title: 'Error creando curso',
+          description: e?.message ?? 'Intenta nuevamente',
+          variant: 'destructive',
+        });
+        // Permite reintentar si fue un error real
+        autoCreateRanRef.current = false;
+      } finally {
+        setAutoCreating(false);
+      }
+    };
+
+    autoCreate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNew, user?.id]);
+
   const { data: categories } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
@@ -57,17 +111,17 @@ export default function CourseEditorPage() {
     },
   });
 
-  const { data: course, isLoading } = useQuery({
+  const { data: course, isLoading: isLoadingCourse } = useQuery({
     queryKey: ['edit-course', id],
     queryFn: async () => {
       const { data, error } = await supabase.from('courses').select('*').eq('id', id).single();
       if (error) throw error;
       return data;
     },
-    enabled: !isNew,
+    enabled: !!id, // ✅ solo cuando hay id
   });
 
-  const { data: existingModules } = useQuery({
+  const { data: existingModules, isLoading: isLoadingModules } = useQuery({
     queryKey: ['edit-modules', id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -81,11 +135,13 @@ export default function CourseEditorPage() {
       return (
         data?.map((m: any) => ({
           ...m,
-          lessons: ((m.lessons as any[]) || []).sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)),
+          lessons: ((m.lessons as any[]) || []).sort(
+            (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)
+          ),
         })) || []
       );
     },
-    enabled: !isNew,
+    enabled: !!id, // ✅ solo cuando hay id
   });
 
   useEffect(() => {
@@ -99,12 +155,15 @@ export default function CourseEditorPage() {
         status: course.status || 'draft',
       });
     }
+  }, [course]);
+
+  useEffect(() => {
     if (existingModules) {
       setModules(existingModules as any);
       setDeletedModuleIds([]);
       setDeletedLessonIds([]);
     }
-  }, [course, existingModules]);
+  }, [existingModules]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -112,12 +171,12 @@ export default function CourseEditorPage() {
 
       const nowIso = new Date().toISOString();
 
-      // slug solo para curso nuevo (y único)
-      const slug = `${generateSlug(form.title)}-${Date.now().toString(36)}`;
-
+      // En el flujo normal, ya existe id por auto-create
       let courseId = id as string | undefined;
 
-      if (isNew) {
+      // Fallback: si por alguna razón sigue siendo "new", lo creamos igual
+      if (!courseId) {
+        const slug = `${generateSlug(form.title || 'curso')}-${Date.now().toString(36)}`;
         const { data, error } = await supabase
           .from('courses')
           .insert({
@@ -138,19 +197,18 @@ export default function CourseEditorPage() {
           category_id: form.category_id || null,
         };
 
-        // si se publica por primera vez, setea published_at (si ya existía, no lo pisa)
+        // Si se publica por primera vez, set published_at
         if (form.status === 'published' && !course?.published_at) payload.published_at = nowIso;
-        // si vuelve a draft, opcional: dejar published_at como estaba (MVP). Si quieres limpiarlo: payload.published_at = null;
 
-        const { error } = await supabase.from('courses').update(payload).eq('id', id);
+        const { error } = await supabase.from('courses').update(payload).eq('id', courseId);
         if (error) throw error;
       }
 
       if (!courseId) throw new Error('No se pudo determinar courseId');
 
-      // 1) aplicar deletes (primero lessons, después modules)
+      // 1) deletes (primero lessons, después modules)
       if (deletedLessonIds.length > 0) {
-        const ids = deletedLessonIds.filter((x) => !x.startsWith('new-'));
+        const ids = deletedLessonIds.filter((x) => x && !x.startsWith('new-'));
         if (ids.length > 0) {
           const { error } = await supabase.from('lessons').delete().in('id', ids);
           if (error) throw error;
@@ -158,14 +216,14 @@ export default function CourseEditorPage() {
       }
 
       if (deletedModuleIds.length > 0) {
-        const ids = deletedModuleIds.filter((x) => !x.startsWith('new-'));
+        const ids = deletedModuleIds.filter((x) => x && !x.startsWith('new-'));
         if (ids.length > 0) {
           const { error } = await supabase.from('course_modules').delete().in('id', ids);
           if (error) throw error;
         }
       }
 
-      // 2) upsert modules + lessons (con order_index)
+      // 2) upsert modules + lessons
       for (let mi = 0; mi < modules.length; mi++) {
         const mod = modules[mi];
         let moduleId = mod.id;
@@ -224,23 +282,21 @@ export default function CourseEditorPage() {
       queryClient.invalidateQueries({ queryKey: ['edit-modules', courseId] });
 
       toast({ title: 'Curso guardado ✅' });
-
-      if (isNew) navigate(`/creator-app/courses/${courseId}/edit`);
     },
 
     onError: (e: any) => {
-      toast({ title: 'Error', description: e?.message ?? 'Error guardando', variant: 'destructive' });
+      toast({
+        title: 'Error',
+        description: e?.message ?? 'Error guardando',
+        variant: 'destructive',
+      });
     },
   });
 
   const addModule = () =>
     setModules([
       ...modules,
-      {
-        id: `new-${Date.now()}`,
-        title: 'Nuevo módulo',
-        lessons: [],
-      },
+      { id: `new-${Date.now()}`, title: 'Nuevo módulo', lessons: [] },
     ]);
 
   const deleteModule = (mi: number) => {
@@ -251,7 +307,11 @@ export default function CourseEditorPage() {
 
     if (mod?.id && !mod.id.startsWith('new-')) {
       setDeletedModuleIds((prev) => [...prev, mod.id]);
-      const lessonIds = (mod.lessons || []).map((l) => l.id).filter((x) => x && !x.startsWith('new-'));
+
+      const lessonIds = (mod.lessons || [])
+        .map((l) => l.id)
+        .filter((x) => x && !x.startsWith('new-'));
+
       if (lessonIds.length) setDeletedLessonIds((prev) => [...prev, ...lessonIds]);
     }
   };
@@ -271,10 +331,23 @@ export default function CourseEditorPage() {
     updated[mi].lessons.splice(li, 1);
     setModules(updated);
 
-    if (les?.id && !les.id.startsWith('new-')) setDeletedLessonIds((prev) => [...prev, les.id]);
+    if (les?.id && !les.id.startsWith('new-')) {
+      setDeletedLessonIds((prev) => [...prev, les.id]);
+    }
   };
 
-  if (!isNew && isLoading) {
+  const loading = autoCreating || isLoadingCourse || isLoadingModules;
+
+  if (loading && !id) {
+    return (
+      <div className="p-8 flex justify-center items-center gap-3">
+        <Loader2 className="h-6 w-6 animate-spin" />
+        <span className="text-sm text-muted-foreground">Creando curso…</span>
+      </div>
+    );
+  }
+
+  if (loading && id) {
     return (
       <div className="p-8 flex justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -288,16 +361,14 @@ export default function CourseEditorPage() {
 
       <div className="space-y-6">
         <div className="bg-card border rounded-lg p-6 space-y-4">
-          {/* ✅ Portada */}
+          {/* ✅ Portada inmediata (porque ya existe ID por auto-create) */}
           <div className="space-y-2">
             <Label>Portada del curso</Label>
-            {isNew ? (
-              <div className="text-sm text-muted-foreground">
-                Guarda el curso primero para poder subir la portada.
-              </div>
+            {!id ? (
+              <div className="text-sm text-muted-foreground">Creando curso…</div>
             ) : (
               <CourseCoverUploader
-                courseId={id!}
+                courseId={id}
                 currentUrl={course?.cover_image_url}
                 onUploaded={() => {
                   queryClient.invalidateQueries({ queryKey: ['edit-course', id] });
@@ -309,15 +380,22 @@ export default function CourseEditorPage() {
 
           <div>
             <Label>Título</Label>
-            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="mt-1" />
+            <Input
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              className="mt-1"
+            />
           </div>
 
           <div>
             <Label>Descripción</Label>
-            <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="mt-1" />
+            <Textarea
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              className="mt-1"
+            />
           </div>
 
-          {/* ✅ Categoría */}
           <div>
             <Label>Categoría</Label>
             <Select
@@ -501,7 +579,10 @@ export default function CourseEditorPage() {
                           disabled={li === 0}
                           onClick={() => {
                             const u = [...modules];
-                            [u[mi].lessons[li], u[mi].lessons[li - 1]] = [u[mi].lessons[li - 1], u[mi].lessons[li]];
+                            [u[mi].lessons[li], u[mi].lessons[li - 1]] = [
+                              u[mi].lessons[li - 1],
+                              u[mi].lessons[li],
+                            ];
                             setModules(u);
                           }}
                         >
@@ -514,7 +595,10 @@ export default function CourseEditorPage() {
                           disabled={li === (mod.lessons?.length || 0) - 1}
                           onClick={() => {
                             const u = [...modules];
-                            [u[mi].lessons[li], u[mi].lessons[li + 1]] = [u[mi].lessons[li + 1], u[mi].lessons[li]];
+                            [u[mi].lessons[li], u[mi].lessons[li + 1]] = [
+                              u[mi].lessons[li + 1],
+                              u[mi].lessons[li],
+                            ];
                             setModules(u);
                           }}
                         >
@@ -539,7 +623,11 @@ export default function CourseEditorPage() {
         </div>
 
         <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} size="lg">
-          {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+          {saveMutation.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <Save className="h-4 w-4 mr-2" />
+          )}
           Guardar Curso
         </Button>
       </div>

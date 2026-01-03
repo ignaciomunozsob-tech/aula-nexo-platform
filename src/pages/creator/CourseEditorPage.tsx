@@ -175,12 +175,24 @@ export default function CourseEditorPage() {
   }, [existingModules]);
 
   // Helpers listas
-  const updateListItem = (key: "learn_bullets" | "requirements" | "includes", idx: number, value: string) => {
-    setForm((prev) => {
-      const arr = [...(prev[key] as string[])];
-      arr[idx] = value;
-      return { ...prev, [key]: arr };
-    });
-  };
+ type ListKey = "learn_bullets" | "requirements" | "includes";
 
-  const addListItem = (key: "lear
+const updateListItem = (key: ListKey, idx: number, value: string) => {
+  setForm((prev) => {
+    const arr = [...(prev[key] as string[])];
+    arr[idx] = value;
+    return { ...prev, [key]: arr };
+  });
+};
+
+const addListItem = (key: ListKey) => {
+  setForm((prev) => ({ ...prev, [key]: [...(prev[key] as string[]), ""] }));
+};
+
+const removeListItem = (key: ListKey, idx: number) => {
+  setForm((prev) => {
+    const arr = [...(prev[key] as string[])];
+    arr.splice(idx, 1);
+    return { ...prev, [key]: arr.length ? arr : [""] };
+  });
+};

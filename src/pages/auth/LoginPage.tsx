@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,26 +19,45 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   const { signIn, user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Redirect if already logged in
+  const [searchParams] = useSearchParams();
+  const next = searchParams.get('next'); // e.g. /app o /creator-app
+
+  // Redirect if already logged in (respeta next)
   useEffect(() => {
     if (user && profile) {
+      if (next) {
+        // Si pidió ir a creador pero no es creador, lo mandamos al portal alumno
+        if (next.startsWith('/creator-app') && !(profile.role === 'creator' || profile.role === 'admin')) {
+          toast({
+            title: 'Acceso restringido',
+            description: 'Tu cuenta aún no tiene acceso al panel de creador.',
+            variant: 'destructive',
+          });
+          navigate('/app');
+          return;
+        }
+
+        navigate(next);
+        return;
+      }
+
       if (profile.role === 'creator' || profile.role === 'admin') {
         navigate('/creator-app');
       } else {
         navigate('/app');
       }
     }
-  }, [user, profile, navigate]);
+  }, [user, profile, navigate, next, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
-    
+
     const result = loginSchema.safeParse({ email, password });
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
@@ -70,6 +89,18 @@ export default function LoginPage() {
     });
   };
 
+  // Mantener next al ir a signup
+  const signupLink = (() => {
+    if (!next) return '/signup';
+
+    // si el destino era creador, llevamos a signup como creador
+    if (next.startsWith('/creator-app')) {
+      return `/signup?role=creator&next=${encodeURIComponent(next)}`;
+    }
+
+    return `/signup?next=${encodeURIComponent(next)}`;
+  })();
+
   return (
     <div className="min-h-screen flex">
       {/* Left side - Form */}
@@ -81,9 +112,7 @@ export default function LoginPage() {
           </Link>
 
           <h1 className="text-2xl font-bold mb-2">Iniciar sesión</h1>
-          <p className="text-muted-foreground mb-8">
-            Ingresa a tu cuenta de AulaNexo
-          </p>
+          <p className="text-muted-foreground mb-8">Ingresa a tu cuenta de AulaNexo</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -136,7 +165,7 @@ export default function LoginPage() {
 
           <p className="text-center mt-6 text-muted-foreground">
             ¿No tienes cuenta?{' '}
-            <Link to="/signup" className="text-primary hover:underline">
+            <Link to={signupLink} className="text-primary hover:underline">
               Regístrate
             </Link>
           </p>
@@ -148,9 +177,7 @@ export default function LoginPage() {
         <div className="text-center text-white max-w-md">
           <GraduationCap className="h-20 w-20 mx-auto mb-6" />
           <h2 className="text-3xl font-bold mb-4">Bienvenido de vuelta</h2>
-          <p className="text-white/80">
-            Continúa aprendiendo donde lo dejaste. Tus cursos te esperan.
-          </p>
+          <p className="text-white/80">Continúa aprendiendo donde lo dejaste. Tus cursos te esperan.</p>
         </div>
       </div>
     </div>

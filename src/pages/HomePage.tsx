@@ -8,20 +8,20 @@ import { CourseCard } from '@/components/courses/CourseCard';
 export default function HomePage() {
   const navigate = useNavigate();
 
-  // Ajusta estas rutas si en tu router se llaman distinto
+  // Rutas reales según tu App.tsx
   const STUDENT_PORTAL = '/app';
-  const CREATOR_PORTAL = '/creator';
+  const CREATOR_PORTAL = '/creator-app';
 
   async function goToPortal(path: string) {
     const { data } = await supabase.auth.getUser();
 
-    // si no hay sesión → login con next
+    // Si no hay sesión → login con next
     if (!data.user) {
       navigate(`/login?next=${encodeURIComponent(path)}`);
       return;
     }
 
-    // si hay sesión → entra directo al portal elegido
+    // Si hay sesión → entra directo al portal elegido
     navigate(path);
   }
 
@@ -30,13 +30,15 @@ export default function HomePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('courses')
-        .select(`
+        .select(
+          `
           *,
           profiles:creator_id (
             name,
             creator_slug
           )
-        `)
+        `
+        )
         .eq('status', 'published')
         .limit(6);
 
@@ -67,7 +69,8 @@ export default function HomePage() {
               </h1>
 
               <p className="mt-6 text-lg text-muted-foreground max-w-lg">
-                La plataforma de cursos online líder en Chile. Desarrolla nuevas habilidades con contenido de alta calidad creado por profesionales.
+                La plataforma de cursos online líder en Chile. Desarrolla nuevas habilidades con contenido de alta
+                calidad creado por profesionales.
               </p>
 
               <div className="mt-8 flex flex-col sm:flex-row gap-4">
@@ -78,20 +81,21 @@ export default function HomePage() {
                   </Link>
                 </Button>
 
-                {/* NUEVO: iniciar como estudiante */}
                 <Button size="lg" variant="outline" onClick={() => goToPortal(STUDENT_PORTAL)}>
                   Iniciar como estudiante
                 </Button>
 
-                {/* NUEVO: iniciar como creador */}
                 <Button size="lg" variant="outline" onClick={() => goToPortal(CREATOR_PORTAL)}>
                   Iniciar como creador
                 </Button>
               </div>
 
-              {/* Si también quieres mantener el “ser creador” para gente sin cuenta, usa esto: */}
+              {/* Link extra para quien aún no tiene cuenta creador */}
               <div className="mt-4">
-                <Link className="text-sm text-primary underline" to={`/signup?role=creator&next=${encodeURIComponent(CREATOR_PORTAL)}`}>
+                <Link
+                  className="text-sm text-primary underline"
+                  to={`/signup?role=creator&next=${encodeURIComponent(CREATOR_PORTAL)}`}
+                >
                   ¿No tienes cuenta? Crear cuenta como creador
                 </Link>
               </div>
@@ -125,6 +129,7 @@ export default function HomePage() {
                     <p className="text-sm text-muted-foreground">Al completar cada curso</p>
                   </div>
                 </div>
+
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center">
@@ -132,12 +137,14 @@ export default function HomePage() {
                     </div>
                     <span className="text-sm">Contenido actualizado constantemente</span>
                   </div>
+
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center">
                       <Star className="h-5 w-5 text-warning" />
                     </div>
                     <span className="text-sm">Acceso de por vida a los cursos</span>
                   </div>
+
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                       <Users className="h-5 w-5 text-primary" />
@@ -156,11 +163,10 @@ export default function HomePage() {
       {categories && categories.length > 0 && (
         <section className="py-16 bg-muted/30">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-2xl md:text-3xl font-bold text-center mb-8">
-              Explora por categoría
-            </h2>
+            <h2 className="text-2xl md:text-3xl font-bold text-center mb-8">Explora por categoría</h2>
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {categories.map((category) => (
+              {categories.map((category: any) => (
                 <Link
                   key={category.id}
                   to={`/courses?category=${category.slug}`}
@@ -180,9 +186,8 @@ export default function HomePage() {
         <section className="py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl md:text-3xl font-bold">
-                Cursos destacados
-              </h2>
+              <h2 className="text-2xl md:text-3xl font-bold">Cursos destacados</h2>
+
               <Button variant="ghost" asChild>
                 <Link to="/courses">
                   Ver todos
@@ -190,8 +195,9 @@ export default function HomePage() {
                 </Link>
               </Button>
             </div>
+
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredCourses.map((course) => (
+              {featuredCourses.map((course: any) => (
                 <CourseCard
                   key={course.id}
                   id={course.id}
@@ -214,15 +220,13 @@ export default function HomePage() {
       {/* CTA Section */}
       <section className="py-20 bg-primary text-primary-foreground">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            ¿Tienes conocimiento para compartir?
-          </h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-6">¿Tienes conocimiento para compartir?</h2>
+
           <p className="text-lg opacity-90 mb-8 max-w-2xl mx-auto">
-            Únete como creador y comparte tu experiencia con miles de estudiantes.
-            Crea cursos, genera ingresos y haz crecer tu marca personal.
+            Únete como creador y comparte tu experiencia con miles de estudiantes. Crea cursos, genera ingresos y haz
+            crecer tu marca personal.
           </p>
 
-          {/* Mejor que mande a login con next, para que funcione con cuentas existentes */}
           <Button size="lg" variant="secondary" onClick={() => goToPortal(CREATOR_PORTAL)}>
             Iniciar como creador
             <ArrowRight className="ml-2 h-5 w-5" />

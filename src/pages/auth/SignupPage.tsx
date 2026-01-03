@@ -17,7 +17,8 @@ const signupSchema = z.object({
 export default function SignupPage() {
   const [searchParams] = useSearchParams();
   const defaultRole = searchParams.get('role') === 'creator' ? 'creator' : 'student';
-  
+  const next = searchParams.get('next'); // e.g. /app o /creator-app
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,7 +26,7 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   const { signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -33,7 +34,7 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
-    
+
     // Validate
     const result = signupSchema.safeParse({ name, email, password });
     if (!result.success) {
@@ -52,7 +53,7 @@ export default function SignupPage() {
     setLoading(false);
 
     if (error) {
-      if (error.message.includes('already registered')) {
+      if ((error as any).message?.includes('already registered')) {
         toast({
           title: 'Usuario ya registrado',
           description: 'Este email ya tiene una cuenta. Intenta iniciar sesión.',
@@ -61,7 +62,7 @@ export default function SignupPage() {
       } else {
         toast({
           title: 'Error al registrarse',
-          description: error.message,
+          description: (error as any).message ?? 'Ocurrió un error',
           variant: 'destructive',
         });
       }
@@ -72,9 +73,18 @@ export default function SignupPage() {
       title: '¡Cuenta creada!',
       description: 'Bienvenido a AulaNexo',
     });
-    
+
+    // Si venía un next, lo respetamos (pero evitamos mandar student al panel de creador)
+    if (next) {
+      const safeNext = next.startsWith('/creator-app') && role === 'student' ? '/app' : next;
+      navigate(safeNext);
+      return;
+    }
+
     navigate(role === 'creator' ? '/creator-app' : '/app');
   };
+
+  const loginLink = next ? `/login?next=${encodeURIComponent(next)}` : '/login';
 
   return (
     <div className="min-h-screen flex">
@@ -87,9 +97,7 @@ export default function SignupPage() {
           </Link>
 
           <h1 className="text-2xl font-bold mb-2">Crear cuenta</h1>
-          <p className="text-muted-foreground mb-8">
-            Comienza tu viaje de aprendizaje hoy
-          </p>
+          <p className="text-muted-foreground mb-8">Comienza tu viaje de aprendizaje hoy</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -149,21 +157,18 @@ export default function SignupPage() {
                   type="button"
                   onClick={() => setRole('student')}
                   className={`p-4 rounded-lg border-2 text-left transition-all ${
-                    role === 'student'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50'
+                    role === 'student' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
                   }`}
                 >
                   <p className="font-semibold">Aprender</p>
                   <p className="text-sm text-muted-foreground">Tomar cursos</p>
                 </button>
+
                 <button
                   type="button"
                   onClick={() => setRole('creator')}
                   className={`p-4 rounded-lg border-2 text-left transition-all ${
-                    role === 'creator'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50'
+                    role === 'creator' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
                   }`}
                 >
                   <p className="font-semibold">Enseñar</p>
@@ -186,7 +191,7 @@ export default function SignupPage() {
 
           <p className="text-center mt-6 text-muted-foreground">
             ¿Ya tienes cuenta?{' '}
-            <Link to="/login" className="text-primary hover:underline">
+            <Link to={loginLink} className="text-primary hover:underline">
               Inicia sesión
             </Link>
           </p>

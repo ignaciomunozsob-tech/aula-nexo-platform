@@ -1,15 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { generateSlug } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, ChevronUp, ChevronDown, Save } from "lucide-react";
+import { Loader2, Plus, Trash2, ChevronUp, ChevronDown, Save, Bold, Italic, Underline, List, ListOrdered, Link2 } from "lucide-react";
 import CourseCoverUploader from "@/components/layout/CourseCoverUploader";
 
 type LessonForm = {
@@ -32,30 +33,92 @@ function cleanArray(arr: string[]) {
   return (arr || []).map((x) => (x ?? "").trim()).filter(Boolean);
 }
 
+function htmlToPlainText(html: string) {
+  if (!html) return "";
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  return (tmp.textContent || tmp.innerText || "").trim();
+}
+
 /**
- * Fallback DB:
- * Si tu tabla courses NO tiene columnas learn_bullets / requirements / includes / short_description,
- * guardamos todo dentro de "description" al final, para que igual se vea en la página pública.
+ * Editor enriquecido liviano (sin dependencias):
+ * - contentEditable + toolbar con execCommand
+ * - Guarda HTML en description_html
  */
-function buildDescriptionWithExtras(baseDescription: string, extras: { learn: string[]; req: string[]; inc: string[]; short: string }) {
-  const learn = extras.learn;
-  const req = extras.req;
-  const inc = extras.inc;
-  const short = extras.short;
+function RichTextEditor({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (html: string) => void;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
 
-  const sections: string[] = [];
-  if (short) sections.push(`Resumen:\n${short}`);
-  if (learn.length) sections.push(`Lo que aprenderás:\n- ${learn.join("\n- ")}`);
-  if (req.length) sections.push(`Requisitos:\n- ${req.join("\n- ")}`);
-  if (inc.length) sections.push(`Incluye:\n- ${inc.join("\n- ")}`);
+  // Mantener el DOM sincronizado cuando cambia value desde afuera (ej: carga del curso)
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    // evita re-escribir si ya coincide (no romper el cursor)
+    if ((el.innerHTML || "") !== (value || "")) {
+      el.innerHTML = value || "";
+    }
+  }, [value]);
 
-  if (!sections.length) return baseDescription;
+  const exec = (cmd: string, arg?: string) => {
+    // foco antes de ejecutar
+    ref.current?.focus();
+    document.execCommand(cmd, false, arg);
+    onChange(ref.current?.innerHTML || "");
+  };
 
-  // Evita duplicar si ya existe el bloque
-  const marker = "\n\n---\n";
-  const base = (baseDescription || "").split(marker)[0].trim();
+  const addLink = () => {
+    const url = window.prompt("Pega el link (https://...)");
+    if (!url) return;
+    exec("createLink", url);
+  };
 
-  return `${base}${marker}${sections.join("\n\n")}`.trim();
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" variant="outline" size="sm" onClick={() => exec("bold")}>
+          <Bold className="h-4 w-4 mr-1" />
+          Negrita
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => exec("italic")}>
+          <Italic className="h-4 w-4 mr-1" />
+          Cursiva
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => exec("underline")}>
+          <Underline className="h-4 w-4 mr-1" />
+          Subrayado
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => exec("insertUnorderedList")}>
+          <List className="h-4 w-4 mr-1" />
+          Lista
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => exec("insertOrderedList")}>
+          <ListOrdered className="h-4 w-4 mr-1" />
+          Numerada
+        </Button>
+        <Button type="button" variant="outline" size="sm" onClick={addLink}>
+          <Link2 className="h-4 w-4 mr-1" />
+          Link
+        </Button>
+      </div>
+
+      <div
+        ref={ref}
+        contentEditable
+        className="min-h-[180px] rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        onInput={() => onChange(ref.current?.innerHTML || "")}
+        onBlur={() => onChange(ref.current?.innerHTML || "")}
+        suppressContentEditableWarning
+      />
+      <p className="text-xs text-muted-foreground">
+        Tip: pega texto normal y luego aplica formato con los botones.
+      </p>
+    </div>
+  );
 }
 
 export default function CourseEditorPage() {
@@ -72,7 +135,7 @@ export default function CourseEditorPage() {
   const [form, setForm] = useState({
     title: "",
     short_description: "",
-    description: "",
+    description_html: "",
     price_clp: 0,
     level: "beginner",
     category_id: "",
@@ -106,12 +169,17 @@ export default function CourseEditorPage() {
             title: tempTitle,
             slug: tempSlug,
             creator_id: user.id,
-            // ⚠️ NO enviamos columns que no existen en DB (short_description, learn_bullets, requirements, includes)
+            short_description: "",
             description: "",
+            description_html: "",
             price_clp: 0,
             level: "beginner",
             status: "draft",
             category_id: null,
+            learn_bullets: ["", "", "", ""],
+            requirements: [""],
+            includes: ["Acceso de por vida", "Aprende a tu ritmo"],
+            published_at: null,
           })
           .select()
           .single();
@@ -175,24 +243,22 @@ export default function CourseEditorPage() {
     enabled: !!id,
   });
 
+  // cargar curso a form
   useEffect(() => {
     if (!course) return;
 
-    // ⚠️ Como DB aún no tiene columnas para learn/req/includes/short_description,
-    // las dejamos en UI con defaults (no vienen desde DB).
     setForm((prev) => ({
       ...prev,
       title: course.title ?? "",
-      description: course.description ?? "",
+      short_description: course.short_description ?? "",
+      description_html: course.description_html ?? "",
       price_clp: course.price_clp ?? 0,
       level: course.level ?? "beginner",
       category_id: course.category_id ?? "",
       status: course.status ?? "draft",
-      // UI defaults
-      short_description: prev.short_description ?? "",
-      learn_bullets: prev.learn_bullets?.length ? prev.learn_bullets : ["", "", "", ""],
-      requirements: prev.requirements?.length ? prev.requirements : [""],
-      includes: prev.includes?.length ? prev.includes : ["Acceso de por vida", "Aprende a tu ritmo"],
+      learn_bullets: Array.isArray(course.learn_bullets) ? course.learn_bullets : prev.learn_bullets,
+      requirements: Array.isArray(course.requirements) ? course.requirements : prev.requirements,
+      includes: Array.isArray(course.includes) ? course.includes : prev.includes,
     }));
   }, [course]);
 
@@ -204,7 +270,7 @@ export default function CourseEditorPage() {
     }
   }, [existingModules]);
 
-  // Helpers listas (tipo Coursera)
+  // Helpers listas
   const updateListItem = (key: ListKey, idx: number, value: string) => {
     setForm((prev) => {
       const arr = [...(prev[key] as string[])];
@@ -235,30 +301,34 @@ export default function CourseEditorPage() {
       const learn = cleanArray(form.learn_bullets);
       const req = cleanArray(form.requirements);
       const inc = cleanArray(form.includes);
-      const short = (form.short_description || "").trim();
 
-      // ✅ Guardamos extras dentro de description (fallback DB)
-      const finalDescription = buildDescriptionWithExtras(form.description, { learn, req, inc, short });
+      const plain = htmlToPlainText(form.description_html);
 
       const payload: any = {
         title: form.title,
-        description: finalDescription,
+        short_description: (form.short_description || "").trim(),
+        description_html: form.description_html || "",
+        description: plain, // texto plano para previews/búsqueda
         price_clp: Number(form.price_clp || 0),
         level: form.level,
         category_id: form.category_id || null,
         status: form.status,
-        // ⚠️ NO enviamos learn_bullets / requirements / includes / short_description porque NO existen en DB
+        learn_bullets: learn,
+        requirements: req,
+        includes: inc,
       };
 
-      // ⚠️ Si tu DB tampoco tiene published_at, NO lo mandes.
-      // Lo dejo desactivado para evitar el error que ya viste.
-      // Si luego agregas published_at en Supabase, lo activamos:
-      // if (form.status === "published" && !course?.published_at) payload.published_at = nowIso;
-
-      // Si quieres marcar "fecha" sin published_at, lo puedes meter también dentro de description.
+      // published_at (ya existe en DB)
       if (form.status === "published") {
-        // no-op: MVP
-        void nowIso;
+        if (!course?.published_at) payload.published_at = nowIso;
+      } else {
+        // MVP: no lo borramos si vuelve a draft
+        // si quieres limpiarlo: payload.published_at = null;
+      }
+
+      // slug si está vacío (por si tuvieras cursos legacy)
+      if (!course?.slug) {
+        payload.slug = `${generateSlug(form.title || "curso")}-${Date.now().toString(36)}`;
       }
 
       const { error: updateError } = await supabase.from("courses").update(payload).eq("id", id);
@@ -443,19 +513,16 @@ export default function CourseEditorPage() {
               className="mt-1"
               placeholder="1–2 líneas para la portada"
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              (MVP) Esto se guarda dentro de la descripción hasta que creemos la columna en Supabase.
-            </p>
           </div>
 
           <div>
-            <Label>Descripción</Label>
-            <Textarea
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="mt-1"
-              placeholder="Descripción principal del curso"
-            />
+            <Label>Descripción (texto enriquecido)</Label>
+            <div className="mt-1">
+              <RichTextEditor
+                value={form.description_html}
+                onChange={(html) => setForm((prev) => ({ ...prev, description_html: html }))}
+              />
+            </div>
           </div>
 
           <div>
@@ -514,18 +581,14 @@ export default function CourseEditorPage() {
                   <SelectItem value="published">Publicado</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                (MVP) No guardamos published_at aún porque tu DB no tiene esa columna.
-              </p>
             </div>
           </div>
         </div>
 
         {/* Coursera-like fields */}
         <div className="bg-card border rounded-lg p-6 space-y-6">
-          <h2 className="font-semibold">Página pública</h2>
+          <h2 className="font-semibold">Página pública (tipo Coursera)</h2>
 
-          {/* Learn */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Lo que aprenderás</Label>
@@ -546,7 +609,6 @@ export default function CourseEditorPage() {
             </div>
           </div>
 
-          {/* Requirements */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Requisitos</Label>
@@ -567,7 +629,6 @@ export default function CourseEditorPage() {
             </div>
           </div>
 
-          {/* Includes */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Incluye</Label>
@@ -587,10 +648,6 @@ export default function CourseEditorPage() {
               ))}
             </div>
           </div>
-
-          <p className="text-xs text-muted-foreground">
-            (MVP) Esta info se guarda dentro de la descripción hasta que agreguemos columnas en Supabase.
-          </p>
         </div>
 
         {/* Modules */}

@@ -7,11 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Loader2, Clock, BarChart3, GraduationCap, CheckCircle2, Shield, PlayCircle } from "lucide-react";
-import { PublicLayout } from "@/components/layout/PublicLayout";
 
 function formatCLP(value: number | null | undefined) {
   const n = Number(value || 0);
-  return new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(n);
+  return new Intl.NumberFormat("es-CL", {
+    style: "currency",
+    currency: "CLP",
+    maximumFractionDigits: 0,
+  }).format(n);
 }
 
 function levelLabel(level?: string | null) {
@@ -28,10 +31,10 @@ export default function CourseDetailPage() {
     queryFn: async () => {
       if (!slug) throw new Error("Missing slug");
 
-      // 1) curso
       const { data: course, error: courseError } = await supabase
         .from("courses")
-        .select(`
+        .select(
+          `
           id,
           slug,
           title,
@@ -51,13 +54,13 @@ export default function CourseDetailPage() {
             name,
             slug
           )
-        `)
+        `
+        )
         .eq("slug", slug)
         .single();
 
       if (courseError) throw courseError;
 
-      // 2) módulos + lecciones (para el contenido)
       const { data: modules, error: modulesError } = await supabase
         .from("course_modules")
         .select("id,title,order_index, lessons(id,title,type,order_index)")
@@ -68,7 +71,9 @@ export default function CourseDetailPage() {
 
       const normalized = (modules || []).map((m: any) => ({
         ...m,
-        lessons: (m.lessons || []).sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0)),
+        lessons: (m.lessons || []).sort(
+          (a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0)
+        ),
       }));
 
       return { course, modules: normalized };
@@ -84,8 +89,6 @@ export default function CourseDetailPage() {
   }, [modules]);
 
   const whatYouLearn = useMemo(() => {
-    // MVP: si no tienes campo “learning outcomes”, sacamos 4 bullets desde la descripción o dejamos placeholders.
-    // Puedes reemplazarlo por un campo real más adelante.
     const fallback = [
       "Crear una base sólida para mejorar tus resultados.",
       "Aplicar una metodología simple y repetible.",
@@ -95,7 +98,6 @@ export default function CourseDetailPage() {
 
     if (!course?.description) return fallback;
 
-    // toma frases cortas como bullets (simple)
     const lines = course.description
       .split("\n")
       .map((l: string) => l.trim())
@@ -107,29 +109,25 @@ export default function CourseDetailPage() {
 
   if (isLoading) {
     return (
-      <PublicLayout>
-        <div className="max-w-6xl mx-auto px-4 py-16 flex justify-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      </PublicLayout>
+      <div className="max-w-6xl mx-auto px-4 py-16 flex justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
     );
   }
 
   if (error || !course) {
     return (
-      <PublicLayout>
-        <div className="max-w-6xl mx-auto px-4 py-16">
-          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6">
-            <p className="font-semibold">No pudimos cargar el curso</p>
-            <p className="text-sm opacity-80 mt-1">{(error as any)?.message || "Intenta nuevamente."}</p>
-          </div>
+      <div className="max-w-6xl mx-auto px-4 py-16">
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6">
+          <p className="font-semibold">No pudimos cargar el curso</p>
+          <p className="text-sm opacity-80 mt-1">{(error as any)?.message || "Intenta nuevamente."}</p>
         </div>
-      </PublicLayout>
+      </div>
     );
   }
 
   return (
-    <PublicLayout>
+    <>
       {/* HERO */}
       <section className="bg-muted/30 border-b">
         <div className="max-w-6xl mx-auto px-4 py-10">
@@ -139,22 +137,20 @@ export default function CourseDetailPage() {
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 {course.categories?.name && <Badge variant="secondary">{course.categories.name}</Badge>}
                 <Badge variant="outline">{levelLabel(course.level)}</Badge>
+
                 {course.duration_minutes_est ? (
                   <Badge variant="outline" className="gap-1">
                     <Clock className="h-3.5 w-3.5" />
-                    {Math.round(course.duration_minutes_est / 60)}h aprox.
+                    {Math.max(1, Math.round(course.duration_minutes_est / 60))}h aprox.
                   </Badge>
                 ) : (
                   <Badge variant="outline" className="gap-1">
-                    <Clock className="h-3.5 w-3.5" />
-                    A tu ritmo
+                    <Clock className="h-3.5 w-3.5" />A tu ritmo
                   </Badge>
                 )}
               </div>
 
-              <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight">
-                {course.title}
-              </h1>
+              <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight">{course.title}</h1>
 
               <p className="text-muted-foreground mt-3 max-w-2xl">
                 {course.description || "Descripción del curso próximamente."}
@@ -163,7 +159,7 @@ export default function CourseDetailPage() {
               <div className="mt-4 text-sm text-muted-foreground">
                 Creado por{" "}
                 {course.profiles?.creator_slug ? (
-                  <Link className="text-primary hover:underline" to={`/creators/${course.profiles.creator_slug}`}>
+                  <Link className="text-primary hover:underline" to={`/creator/${course.profiles.creator_slug}`}>
                     {course.profiles?.name || "Creador"}
                   </Link>
                 ) : (
@@ -171,7 +167,6 @@ export default function CourseDetailPage() {
                 )}
               </div>
 
-              {/* mini highlights */}
               <div className="mt-6 grid sm:grid-cols-3 gap-3">
                 <div className="bg-background border rounded-lg p-4">
                   <div className="flex items-center gap-2 font-semibold">
@@ -182,6 +177,7 @@ export default function CourseDetailPage() {
                     {modules.length} módulos · {totalLessons} lecciones
                   </p>
                 </div>
+
                 <div className="bg-background border rounded-lg p-4">
                   <div className="flex items-center gap-2 font-semibold">
                     <BarChart3 className="h-4 w-4 text-primary" />
@@ -189,6 +185,7 @@ export default function CourseDetailPage() {
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">{levelLabel(course.level)}</p>
                 </div>
+
                 <div className="bg-background border rounded-lg p-4">
                   <div className="flex items-center gap-2 font-semibold">
                     <GraduationCap className="h-4 w-4 text-primary" />
@@ -199,17 +196,12 @@ export default function CourseDetailPage() {
               </div>
             </div>
 
-            {/* RIGHT: BUY CARD */}
+            {/* RIGHT */}
             <div className="lg:col-span-4">
               <div className="bg-background border rounded-xl p-5 shadow-sm lg:sticky lg:top-6">
                 {course.cover_image_url ? (
                   <div className="w-full aspect-video rounded-lg overflow-hidden border mb-4 bg-muted">
-                    <img
-                      src={course.cover_image_url}
-                      alt={course.title}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
+                    <img src={course.cover_image_url} alt={course.title} className="w-full h-full object-cover" loading="lazy" />
                   </div>
                 ) : (
                   <div className="w-full aspect-video rounded-lg border mb-4 bg-muted flex items-center justify-center text-muted-foreground text-sm">
@@ -240,10 +232,7 @@ export default function CourseDetailPage() {
                 </div>
 
                 <Separator className="my-4" />
-
-                <p className="text-xs text-muted-foreground">
-                  MVP: la compra/inscripción será habilitada en el siguiente paso.
-                </p>
+                <p className="text-xs text-muted-foreground">MVP: el checkout lo conectamos después.</p>
               </div>
             </div>
           </div>
@@ -253,9 +242,7 @@ export default function CourseDetailPage() {
       {/* BODY */}
       <section className="max-w-6xl mx-auto px-4 py-10">
         <div className="grid lg:grid-cols-12 gap-8 items-start">
-          {/* LEFT content */}
           <div className="lg:col-span-8 space-y-10">
-            {/* What you'll learn */}
             <div className="bg-card border rounded-xl p-6">
               <h2 className="text-xl font-bold">Lo que aprenderás</h2>
               <div className="grid sm:grid-cols-2 gap-3 mt-4">
@@ -268,7 +255,6 @@ export default function CourseDetailPage() {
               </div>
             </div>
 
-            {/* Syllabus */}
             <div className="bg-card border rounded-xl p-6">
               <h2 className="text-xl font-bold">Contenido del curso</h2>
               <p className="text-sm text-muted-foreground mt-2">
@@ -287,9 +273,7 @@ export default function CourseDetailPage() {
                         <AccordionTrigger className="text-left">
                           <div className="flex flex-col">
                             <span className="font-semibold">{m.title}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {(m.lessons?.length || 0)} lecciones
-                            </span>
+                            <span className="text-xs text-muted-foreground">{(m.lessons?.length || 0)} lecciones</span>
                           </div>
                         </AccordionTrigger>
                         <AccordionContent>
@@ -317,7 +301,6 @@ export default function CourseDetailPage() {
               </div>
             </div>
 
-            {/* Requirements */}
             <div className="bg-card border rounded-xl p-6">
               <h2 className="text-xl font-bold">Requisitos</h2>
               <ul className="mt-3 space-y-2 text-sm text-muted-foreground list-disc pl-5">
@@ -327,7 +310,6 @@ export default function CourseDetailPage() {
             </div>
           </div>
 
-          {/* RIGHT (simple sidebar) */}
           <div className="lg:col-span-4">
             <div className="bg-card border rounded-xl p-6 lg:sticky lg:top-6">
               <h3 className="font-bold">Resumen</h3>
@@ -347,19 +329,14 @@ export default function CourseDetailPage() {
               </div>
 
               <Separator className="my-4" />
-
               <div className="text-2xl font-bold">{formatCLP(course.price_clp)}</div>
               <Button className="w-full mt-3" size="lg">
                 Comprar / Inscribirme
               </Button>
-
-              <p className="text-xs text-muted-foreground mt-3">
-                Esto es un MVP: el checkout lo conectamos después.
-              </p>
             </div>
           </div>
         </div>
       </section>
-    </PublicLayout>
+    </>
   );
 }

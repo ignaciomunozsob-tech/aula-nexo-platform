@@ -23,6 +23,68 @@ function levelLabel(level?: string | null) {
   return "Principiante";
 }
 
+function cleanArray(arr: any) {
+  if (!Array.isArray(arr)) return [];
+  return arr.map((x) => String(x ?? "").trim()).filter(Boolean);
+}
+
+/**
+ * Sanitizador básico (MVP) para evitar scripts / html peligroso.
+ * Permite solo tags simples típicas del editor.
+ */
+function sanitizeBasicHtml(input: string) {
+  if (!input) return "";
+
+  const allowedTags = new Set(["P", "BR", "STRONG", "B", "EM", "I", "U", "UL", "OL", "LI", "A"]);
+  const allowedAttrs = new Set(["href", "target", "rel"]);
+
+  const doc = new DOMParser().parseFromString(input, "text/html");
+
+  const walk = (node: Element) => {
+    // eliminar tags no permitidas pero mantener su texto/children
+    const children = Array.from(node.children);
+
+    for (const child of children) {
+      if (!allowedTags.has(child.tagName)) {
+        // reemplazar el nodo por sus hijos (flatten)
+        const fragment = doc.createDocumentFragment();
+        while (child.firstChild) fragment.appendChild(child.firstChild);
+        child.replaceWith(fragment);
+      } else {
+        // limpiar atributos
+        Array.from(child.attributes).forEach((attr) => {
+          const name = attr.name.toLowerCase();
+          if (!allowedAttrs.has(name)) child.removeAttribute(attr.name);
+        });
+
+        // reglas especiales para links
+        if (child.tagName === "A") {
+          const href = child.getAttribute("href") || "";
+          const ok =
+            href.startsWith("http://") ||
+            href.startsWith("https://") ||
+            href.startsWith("mailto:") ||
+            href.startsWith("#");
+
+          if (!ok) child.removeAttribute("href");
+
+          child.setAttribute("target", "_blank");
+          child.setAttribute("rel", "noreferrer noopener");
+        }
+
+        walk(child);
+      }
+    }
+  };
+
+  walk(doc.body);
+
+  // eliminar scripts por si acaso
+  doc.querySelectorAll("script, style, iframe").forEach((n) => n.remove());
+
+  return doc.body.innerHTML || "";
+}
+
 export default function CourseDetailPage() {
   const { slug } = useParams();
 
@@ -38,7 +100,9 @@ export default function CourseDetailPage() {
           id,
           slug,
           title,
+          short_description,
           description,
+          description_html,
           cover_image_url,
           price_clp,
           level,
@@ -46,6 +110,9 @@ export default function CourseDetailPage() {
           status,
           category_id,
           creator_id,
+          learn_bullets,
+          requirements,
+          includes,
           profiles:creator_id (
             name,
             creator_slug
@@ -89,23 +156,39 @@ export default function CourseDetailPage() {
   }, [modules]);
 
   const whatYouLearn = useMemo(() => {
-    const fallback = [
+    const bullets = cleanArray(course?.learn_bullets);
+    if (bullets.length) return bullets;
+
+    // fallback mínimo
+    return [
       "Crear una base sólida para mejorar tus resultados.",
       "Aplicar una metodología simple y repetible.",
       "Evitar errores típicos de principiante.",
       "Tener un plan claro para avanzar sin caos.",
     ];
+  }, [course?.learn_bullets]);
 
-    if (!course?.description) return fallback;
+  const requirements = useMemo(() => cleanArray(course?.requirements), [course?.requirements]);
+  const includes = useMemo(() => cleanArray(course?.includes), [course?.includes]);
 
-    const lines = course.description
-      .split("\n")
-      .map((l: string) => l.trim())
-      .filter(Boolean)
-      .slice(0, 4);
+  const descriptionHtml = useMemo(() => {
+    // prioriza HTML enriquecido; fallback al texto plano si no hay
+    const html = (course?.description_html || "").trim();
+    if (html) return sanitizeBasicHtml(html);
 
-    return lines.length >= 2 ? lines : fallback;
-  }, [course?.description]);
+    const plain = (course?.description || "").trim();
+    if (!plain) return "";
+
+    // convertir saltos de línea del plain a <p>
+    return sanitizeBasicHtml(
+      plain
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => `<p>${line}</p>`)
+        .join("")
+    );
+  }, [course?.description_html, course?.description]);
 
   if (isLoading) {
     return (
@@ -120,7 +203,9 @@ export default function CourseDetailPage() {
       <div className="max-w-6xl mx-auto px-4 py-16">
         <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6">
           <p className="font-semibold">No pudimos cargar el curso</p>
-          <p className="text-sm opacity-80 mt-1">{(error as any)?.message || "Intenta nuevamente."}</p>
+          <p className="text-sm opacity-80 mt-1">
+            {(error as any)?.message || "Intenta nuevamente."}
+          </p>
         </div>
       </div>
     );
@@ -150,13 +235,31 @@ export default function CourseDetailPage() {
                 )}
               </div>
 
-              <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight">{course.title}</h1>
+              <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight">
+                {course.title}
+              </h1>
 
-              <p className="text-muted-foreground mt-3 max-w-2xl">
-                {course.description || "Descripción del curso próximamente."}
-              </p>
+              {/* ✅ resumen corto primero */}
+              {(course.short_description || "").trim() ? (
+                <p className="text-muted-foreground mt-3 max-w-2xl">
+                  {course.short_description}
+                </p>
+              ) : null}
 
-              <div className="mt-4 text-sm text-muted-foreground">
+              {/* ✅ descripción rica */}
+              {descriptionHtml ? (
+                <div
+                  className="mt-4 max-w-2xl text-sm text-muted-foreground space-y-3"
+                  // eslint-disable-next-line react/no-danger
+                  dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+                />
+              ) : (
+                <p className="text-muted-foreground mt-4 max-w-2xl">
+                  Descripción del curso próximamente.
+                </p>
+              )}
+
+              <div className="mt-5 text-sm text-muted-foreground">
                 Creado por{" "}
                 {course.profiles?.creator_slug ? (
                   <Link className="text-primary hover:underline" to={`/creator/${course.profiles.creator_slug}`}>
@@ -201,7 +304,12 @@ export default function CourseDetailPage() {
               <div className="bg-background border rounded-xl p-5 shadow-sm lg:sticky lg:top-6">
                 {course.cover_image_url ? (
                   <div className="w-full aspect-video rounded-lg overflow-hidden border mb-4 bg-muted">
-                    <img src={course.cover_image_url} alt={course.title} className="w-full h-full object-cover" loading="lazy" />
+                    <img
+                      src={course.cover_image_url}
+                      alt={course.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
                   </div>
                 ) : (
                   <div className="w-full aspect-video rounded-lg border mb-4 bg-muted flex items-center justify-center text-muted-foreground text-sm">
@@ -216,15 +324,14 @@ export default function CourseDetailPage() {
                   Comprar / Inscribirme
                 </Button>
 
+                {/* ✅ Includes reales desde DB */}
                 <div className="mt-4 space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <CheckCircle2 className="h-4 w-4 text-primary" />
-                    Acceso de por vida
-                  </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <CheckCircle2 className="h-4 w-4 text-primary" />
-                    Aprende a tu ritmo
-                  </div>
+                  {(includes.length ? includes : ["Acceso de por vida", "Aprende a tu ritmo"]).map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-muted-foreground">
+                      <CheckCircle2 className="h-4 w-4 text-primary" />
+                      {item}
+                    </div>
+                  ))}
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Shield className="h-4 w-4 text-primary" />
                     Plataforma segura (Supabase)
@@ -273,7 +380,9 @@ export default function CourseDetailPage() {
                         <AccordionTrigger className="text-left">
                           <div className="flex flex-col">
                             <span className="font-semibold">{m.title}</span>
-                            <span className="text-xs text-muted-foreground">{(m.lessons?.length || 0)} lecciones</span>
+                            <span className="text-xs text-muted-foreground">
+                              {(m.lessons?.length || 0)} lecciones
+                            </span>
                           </div>
                         </AccordionTrigger>
                         <AccordionContent>
@@ -303,10 +412,19 @@ export default function CourseDetailPage() {
 
             <div className="bg-card border rounded-xl p-6">
               <h2 className="text-xl font-bold">Requisitos</h2>
-              <ul className="mt-3 space-y-2 text-sm text-muted-foreground list-disc pl-5">
-                <li>Solo necesitas internet y ganas de aprender.</li>
-                <li>Ideal si estás comenzando o quieres ordenar tu proceso.</li>
-              </ul>
+
+              {requirements.length ? (
+                <ul className="mt-3 space-y-2 text-sm text-muted-foreground list-disc pl-5">
+                  {requirements.map((r, idx) => (
+                    <li key={idx}>{r}</li>
+                  ))}
+                </ul>
+              ) : (
+                <ul className="mt-3 space-y-2 text-sm text-muted-foreground list-disc pl-5">
+                  <li>Solo necesitas internet y ganas de aprender.</li>
+                  <li>Ideal si estás comenzando o quieres ordenar tu proceso.</li>
+                </ul>
+              )}
             </div>
           </div>
 

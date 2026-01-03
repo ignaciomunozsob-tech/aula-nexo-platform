@@ -67,7 +67,7 @@ function RichTextEditor({
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
 
-  // Mantener el DOM sincronizado cuando cambia value desde afuera (ej: carga del curso)
+  // Sync cuando el valor cambia desde afuera (ej: al cargar el curso)
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -125,7 +125,10 @@ function RichTextEditor({
         onBlur={() => onChange(ref.current?.innerHTML || "")}
         suppressContentEditableWarning
       />
-      <p className="text-xs text-muted-foreground">Tip: pega texto normal y luego aplica formato con los botones.</p>
+
+      <p className="text-xs text-muted-foreground">
+        Tip: pega texto normal y luego aplica formato con los botones.
+      </p>
     </div>
   );
 }
@@ -138,6 +141,7 @@ export default function CourseEditorPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Evita doble creación en React Strict Mode (dev)
   const autoCreateRanRef = useRef(false);
   const [autoCreating, setAutoCreating] = useState(false);
 
@@ -158,7 +162,7 @@ export default function CourseEditorPage() {
   const [deletedModuleIds, setDeletedModuleIds] = useState<string[]>([]);
   const [deletedLessonIds, setDeletedLessonIds] = useState<string[]>([]);
 
-  // ✅ Auto-crear curso para tener ID al tiro (portada inmediata)
+  // ✅ Auto-crear curso al entrar a "Nuevo Curso" para tener ID al tiro
   useEffect(() => {
     const autoCreate = async () => {
       if (!isNew) return;
@@ -245,16 +249,13 @@ export default function CourseEditorPage() {
       return (
         data?.map((m: any) => ({
           ...m,
-          lessons: ((m.lessons as any[]) || []).sort(
-            (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)
-          ),
+          lessons: ((m.lessons as any[]) || []).sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)),
         })) || []
       );
     },
     enabled: !!id,
   });
 
-  // cargar curso a form
   useEffect(() => {
     if (!course) return;
 
@@ -309,32 +310,26 @@ export default function CourseEditorPage() {
 
       const nowIso = new Date().toISOString();
 
-      const learn = cleanArray(form.learn_bullets);
-      const req = cleanArray(form.requirements);
-      const inc = cleanArray(form.includes);
-
-      const plain = htmlToPlainText(form.description_html);
-
       const payload: any = {
         title: (form.title || "").trim(),
         short_description: (form.short_description || "").trim(),
         description_html: form.description_html || "",
-        description: plain, // texto plano para previews/búsqueda
+        description: htmlToPlainText(form.description_html || ""), // plano
         price_clp: Number(form.price_clp || 0),
         level: form.level,
         category_id: form.category_id || null,
         status: form.status,
-        learn_bullets: learn,
-        requirements: req,
-        includes: inc,
+        learn_bullets: cleanArray(form.learn_bullets),
+        requirements: cleanArray(form.requirements),
+        includes: cleanArray(form.includes),
       };
 
-      // published_at (ya existe en DB)
-      if (form.status === "published") {
-        if (!course?.published_at) payload.published_at = nowIso;
+      // published_at
+      if (form.status === "published" && !course?.published_at) {
+        payload.published_at = nowIso;
       }
 
-      // slug si está vacío (por si tuvieras cursos legacy)
+      // slug fallback (por si existieran cursos legacy sin slug)
       if (!course?.slug) {
         payload.slug = `${generateSlug(form.title || "curso")}-${Date.now().toString(36)}`;
       }
@@ -412,12 +407,14 @@ export default function CourseEditorPage() {
 
       return id;
     },
+
     onSuccess: (courseId) => {
       queryClient.invalidateQueries({ queryKey: ["creator-courses"] });
       queryClient.invalidateQueries({ queryKey: ["edit-course", courseId] });
       queryClient.invalidateQueries({ queryKey: ["edit-modules", courseId] });
       toast({ title: "Curso guardado ✅" });
     },
+
     onError: (e: any) => {
       toast({
         title: "Error",
@@ -427,7 +424,8 @@ export default function CourseEditorPage() {
     },
   });
 
-  const addModule = () => setModules([...modules, { id: `new-${Date.now()}`, title: "Nuevo módulo", lessons: [] }]);
+  const addModule = () =>
+    setModules([...modules, { id: `new-${Date.now()}`, title: "Nuevo módulo", lessons: [] }]);
 
   const deleteModule = (mi: number) => {
     const mod = modules[mi];
@@ -487,7 +485,7 @@ export default function CourseEditorPage() {
 
   return (
     <div className="p-8 max-w-4xl">
-      <h1 className="text-2xl font-bold mb-6">Editar Curso</h1>
+      <h1 className="text-2xl font-bold mb-6">{isNew ? "Nuevo Curso" : "Editar Curso"}</h1>
 
       <div className="space-y-6">
         <div className="bg-card border rounded-lg p-6 space-y-4">
@@ -509,7 +507,11 @@ export default function CourseEditorPage() {
 
           <div>
             <Label>Título</Label>
-            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="mt-1" />
+            <Input
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              className="mt-1"
+            />
           </div>
 
           <div>
@@ -596,6 +598,7 @@ export default function CourseEditorPage() {
         <div className="bg-card border rounded-lg p-6 space-y-6">
           <h2 className="font-semibold">Página pública (tipo Coursera)</h2>
 
+          {/* Learn */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Lo que aprenderás</Label>
@@ -616,220 +619,5 @@ export default function CourseEditorPage() {
             </div>
           </div>
 
+          {/* Requirements */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Requisitos</Label>
-              <Button type="button" variant="outline" size="sm" onClick={() => addListItem("requirements")}>
-                <Plus className="h-4 w-4 mr-1" />
-                Agregar
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {(form.requirements || []).map((val, idx) => (
-                <div key={idx} className="flex gap-2 items-center">
-                  <Input value={val} onChange={(e) => updateListItem("requirements", idx, e.target.value)} />
-                  <Button type="button" variant="ghost" size="icon" onClick={() => removeListItem("requirements", idx)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Incluye</Label>
-              <Button type="button" variant="outline" size="sm" onClick={() => addListItem("includes")}>
-                <Plus className="h-4 w-4 mr-1" />
-                Agregar
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {(form.includes || []).map((val, idx) => (
-                <div key={idx} className="flex gap-2 items-center">
-                  <Input value={val} onChange={(e) => updateListItem("includes", idx, e.target.value)} />
-                  <Button type="button" variant="ghost" size="icon" onClick={() => removeListItem("includes", idx)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Modules */}
-        <div className="bg-card border rounded-lg p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="font-semibold">Módulos y Lecciones</h2>
-            <Button variant="outline" size="sm" onClick={addModule}>
-              <Plus className="h-4 w-4 mr-1" />
-              Módulo
-            </Button>
-          </div>
-
-          <div className="space-y-4">
-            {modules.map((mod, mi) => (
-              <div key={mod.id} className="border rounded-lg p-4">
-                <div className="flex gap-2 mb-3 items-center">
-                  <Input
-                    value={mod.title}
-                    onChange={(e) => {
-                      const u = [...modules];
-                      u[mi].title = e.target.value;
-                      setModules(u);
-                    }}
-                    className="flex-1"
-                    placeholder="Título del módulo"
-                  />
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={mi === 0}
-                    onClick={() => {
-                      const u = [...modules];
-                      [u[mi], u[mi - 1]] = [u[mi - 1], u[mi]];
-                      setModules(u);
-                    }}
-                  >
-                    <ChevronUp className="h-4 w-4" />
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={mi === modules.length - 1}
-                    onClick={() => {
-                      const u = [...modules];
-                      [u[mi], u[mi + 1]] = [u[mi + 1], u[mi]];
-                      setModules(u);
-                    }}
-                  >
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-
-                  <Button variant="ghost" size="icon" onClick={() => deleteModule(mi)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                <div className="space-y-2 pl-4 border-l-2 border-muted">
-                  {(mod.lessons || []).map((les, li) => (
-                    <div key={les.id} className="flex gap-2 items-start bg-muted/30 p-2 rounded">
-                      <div className="flex-1 space-y-2">
-                        <Input
-                          value={les.title}
-                          onChange={(e) => {
-                            const u = [...modules];
-                            u[mi].lessons[li].title = e.target.value;
-                            setModules(u);
-                          }}
-                          placeholder="Título lección"
-                        />
-
-                        <Select
-                          value={les.type}
-                          onValueChange={(v) => {
-                            const u = [...modules];
-                            u[mi].lessons[li].type = v as any;
-                            if (v === "video") u[mi].lessons[li].content_text = "";
-                            if (v === "text") u[mi].lessons[li].video_url = "";
-                            setModules(u);
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="video">Video</SelectItem>
-                            <SelectItem value="text">Texto</SelectItem>
-                          </SelectContent>
-                        </Select>
-
-                        {les.type === "video" && (
-                          <Input
-                            value={les.video_url || ""}
-                            onChange={(e) => {
-                              const u = [...modules];
-                              u[mi].lessons[li].video_url = e.target.value;
-                              setModules(u);
-                            }}
-                            placeholder="URL del video (YouTube)"
-                          />
-                        )}
-
-                        {les.type === "text" && (
-                          <Textarea
-                            value={les.content_text || ""}
-                            onChange={(e) => {
-                              const u = [...modules];
-                              u[mi].lessons[li].content_text = e.target.value;
-                              setModules(u);
-                            }}
-                            placeholder="Contenido"
-                          />
-                        )}
-                      </div>
-
-                      <div className="flex flex-col gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          disabled={li === 0}
-                          onClick={() => {
-                            const u = [...modules];
-                            [u[mi].lessons[li], u[mi].lessons[li - 1]] = [
-                              u[mi].lessons[li - 1],
-                              u[mi].lessons[li],
-                            ];
-                            setModules(u);
-                          }}
-                        >
-                          <ChevronUp className="h-4 w-4" />
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          disabled={li === (mod.lessons?.length || 0) - 1}
-                          onClick={() => {
-                            const u = [...modules];
-                            [u[mi].lessons[li], u[mi].lessons[li + 1]] = [
-                              u[mi].lessons[li + 1],
-                              u[mi].lessons[li],
-                            ];
-                            setModules(u);
-                          }}
-                        >
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-
-                        <Button variant="ghost" size="icon" onClick={() => deleteLesson(mi, li)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-
-                  <Button variant="ghost" size="sm" onClick={() => addLesson(mi)}>
-                    <Plus className="h-4 w-4 mr-1" />
-                    Lección
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} size="lg">
-          {saveMutation.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <Save className="h-4 w-4 mr-2" />
-          )}
-          Guardar Curso
-        </Button>
-      </div>
-    </div>
-  );
-}

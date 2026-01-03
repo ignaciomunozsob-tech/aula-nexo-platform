@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/lib/auth";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { StudentLayout } from "@/components/layout/StudentLayout";
@@ -31,7 +31,9 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+
+        {/* ✅ HashRouter evita 404 en Lovable al refrescar o entrar directo a rutas */}
+        <HashRouter>
           <Routes>
             {/* Public routes */}
             <Route element={<PublicLayout />}>
@@ -40,7 +42,7 @@ const App = () => (
               <Route path="/course/:slug" element={<CourseDetailPage />} />
               <Route path="/creator/:slug" element={<CreatorProfilePage />} />
             </Route>
-            
+
             {/* Auth routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
@@ -64,7 +66,7 @@ const App = () => (
 
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
+        </HashRouter>
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>

@@ -118,7 +118,7 @@ export default function CourseEditorPage() {
       if (error) throw error;
       return data;
     },
-    enabled: !!id, // ✅ solo cuando hay id
+    enabled: !!id,
   });
 
   const { data: existingModules, isLoading: isLoadingModules } = useQuery({
@@ -141,7 +141,7 @@ export default function CourseEditorPage() {
         })) || []
       );
     },
-    enabled: !!id, // ✅ solo cuando hay id
+    enabled: !!id,
   });
 
   useEffect(() => {
@@ -169,14 +169,13 @@ export default function CourseEditorPage() {
     mutationFn: async () => {
       if (!user?.id) throw new Error('Debes iniciar sesión');
 
-      const nowIso = new Date().toISOString();
-
       // En el flujo normal, ya existe id por auto-create
       let courseId = id as string | undefined;
 
-      // Fallback: si por alguna razón sigue siendo "new", lo creamos igual
+      // Fallback: si por alguna razón sigue sin id, lo creamos igual
       if (!courseId) {
         const slug = `${generateSlug(form.title || 'curso')}-${Date.now().toString(36)}`;
+
         const { data, error } = await supabase
           .from('courses')
           .insert({
@@ -184,7 +183,7 @@ export default function CourseEditorPage() {
             slug,
             creator_id: user.id,
             category_id: form.category_id || null,
-            published_at: form.status === 'published' ? nowIso : null,
+            // ❌ sin published_at para evitar error de schema cache
           })
           .select()
           .single();
@@ -195,10 +194,8 @@ export default function CourseEditorPage() {
         const payload: any = {
           ...form,
           category_id: form.category_id || null,
+          // ❌ sin published_at para evitar error de schema cache
         };
-
-        // Si se publica por primera vez, set published_at
-        if (form.status === 'published' && !course?.published_at) payload.published_at = nowIso;
 
         const { error } = await supabase.from('courses').update(payload).eq('id', courseId);
         if (error) throw error;
@@ -361,7 +358,7 @@ export default function CourseEditorPage() {
 
       <div className="space-y-6">
         <div className="bg-card border rounded-lg p-6 space-y-4">
-          {/* ✅ Portada inmediata (porque ya existe ID por auto-create) */}
+          {/* ✅ Portada inmediata */}
           <div className="space-y-2">
             <Label>Portada del curso</Label>
             {!id ? (
@@ -531,7 +528,6 @@ export default function CourseEditorPage() {
                             const u = [...modules];
                             u[mi].lessons[li].type = v as any;
 
-                            // limpieza automática al cambiar tipo
                             if (v === 'video') u[mi].lessons[li].content_text = '';
                             if (v === 'text') u[mi].lessons[li].video_url = '';
 

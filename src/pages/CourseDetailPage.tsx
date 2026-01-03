@@ -1,318 +1,365 @@
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/lib/auth';
-import { usePageView } from '@/hooks/usePageView';
-import { formatPrice, formatDuration } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Clock, User, BookOpen, CheckCircle, Play, FileText, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useMemo } from "react";
+import { Link, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Loader2, Clock, BarChart3, GraduationCap, CheckCircle2, Shield, PlayCircle } from "lucide-react";
+import { PublicLayout } from "@/components/layout/PublicLayout";
+
+function formatCLP(value: number | null | undefined) {
+  const n = Number(value || 0);
+  return new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(n);
+}
+
+function levelLabel(level?: string | null) {
+  if (level === "advanced") return "Avanzado";
+  if (level === "intermediate") return "Intermedio";
+  return "Principiante";
+}
 
 export default function CourseDetailPage() {
-  const { slug } = useParams<{ slug: string }>();
-  const { user, profile } = useAuth();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const { slug } = useParams();
 
-  const { data: course, isLoading } = useQuery({
-    queryKey: ['course', slug],
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["course-public", slug],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('courses')
+      if (!slug) throw new Error("Missing slug");
+
+      // 1) curso
+      const { data: course, error: courseError } = await supabase
+        .from("courses")
         .select(`
-          *,
+          id,
+          slug,
+          title,
+          description,
+          cover_image_url,
+          price_clp,
+          level,
+          duration_minutes_est,
+          status,
+          category_id,
+          creator_id,
           profiles:creator_id (
-            id,
             name,
-            creator_slug,
-            bio,
-            avatar_url
+            creator_slug
           ),
           categories:category_id (
             name,
             slug
           )
         `)
-        .eq('slug', slug)
-        .eq('status', 'published')
-        .maybeSingle();
-      
-      if (error) throw error;
-      return data;
-    },
-  });
+        .eq("slug", slug)
+        .single();
 
-  // Track page view
-  usePageView('course', course?.id);
+      if (courseError) throw courseError;
 
-  const { data: modules } = useQuery({
-    queryKey: ['course-modules-public', course?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('course_modules')
-        .select(`
-          *,
-          lessons (
-            id,
-            title,
-            type,
-            duration_minutes,
-            order_index
-          )
-        `)
-        .eq('course_id', course!.id)
-        .order('order_index', { ascending: true });
-      
-      if (error) throw error;
-      return data?.map(m => ({
+      // 2) módulos + lecciones (para el contenido)
+      const { data: modules, error: modulesError } = await supabase
+        .from("course_modules")
+        .select("id,title,order_index, lessons(id,title,type,order_index)")
+        .eq("course_id", course.id)
+        .order("order_index");
+
+      if (modulesError) throw modulesError;
+
+      const normalized = (modules || []).map((m: any) => ({
         ...m,
-        lessons: (m.lessons as any[])?.sort((a, b) => a.order_index - b.order_index)
+        lessons: (m.lessons || []).sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0)),
       }));
+
+      return { course, modules: normalized };
     },
-    enabled: !!course?.id,
+    enabled: !!slug,
   });
 
-  const { data: enrollment } = useQuery({
-    queryKey: ['enrollment', course?.id, user?.id],
-    queryFn: async () => {
-      if (!user || !course) return null;
-      const { data, error } = await supabase
-        .from('enrollments')
-        .select('*')
-        .eq('course_id', course.id)
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user && !!course?.id,
-  });
+  const course = data?.course;
+  const modules = data?.modules || [];
 
-  const enrollMutation = useMutation({
-    mutationFn: async () => {
-      if (!user || !course) throw new Error('No user or course');
-      
-      const { error } = await supabase
-        .from('enrollments')
-        .insert({
-          course_id: course.id,
-          user_id: user.id,
-          status: 'active',
-        });
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['enrollment', course?.id] });
-      toast({
-        title: '¡Inscripción exitosa!',
-        description: 'Ya puedes acceder al contenido del curso',
-      });
-      navigate(`/app/course/${course?.id}`);
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Error al inscribirse',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
+  const totalLessons = useMemo(() => {
+    return modules.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0);
+  }, [modules]);
 
-  const handleEnroll = () => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    enrollMutation.mutate();
-  };
+  const whatYouLearn = useMemo(() => {
+    // MVP: si no tienes campo “learning outcomes”, sacamos 4 bullets desde la descripción o dejamos placeholders.
+    // Puedes reemplazarlo por un campo real más adelante.
+    const fallback = [
+      "Crear una base sólida para mejorar tus resultados.",
+      "Aplicar una metodología simple y repetible.",
+      "Evitar errores típicos de principiante.",
+      "Tener un plan claro para avanzar sin caos.",
+    ];
 
-  const totalLessons = modules?.reduce((acc, m) => acc + ((m.lessons as any[])?.length || 0), 0) || 0;
-  const totalDuration = modules?.reduce((acc, m) => 
-    acc + ((m.lessons as any[])?.reduce((a, l) => a + (l.duration_minutes || 0), 0) || 0), 0) || 0;
+    if (!course?.description) return fallback;
+
+    // toma frases cortas como bullets (simple)
+    const lines = course.description
+      .split("\n")
+      .map((l: string) => l.trim())
+      .filter(Boolean)
+      .slice(0, 4);
+
+    return lines.length >= 2 ? lines : fallback;
+  }, [course?.description]);
 
   if (isLoading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <PublicLayout>
+        <div className="max-w-6xl mx-auto px-4 py-16 flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </PublicLayout>
     );
   }
 
-  if (!course) {
+  if (error || !course) {
     return (
-      <div className="page-container text-center py-20">
-        <h1 className="text-2xl font-bold mb-4">Curso no encontrado</h1>
-        <Button asChild>
-          <Link to="/courses">Ver todos los cursos</Link>
-        </Button>
-      </div>
+      <PublicLayout>
+        <div className="max-w-6xl mx-auto px-4 py-16">
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6">
+            <p className="font-semibold">No pudimos cargar el curso</p>
+            <p className="text-sm opacity-80 mt-1">{(error as any)?.message || "Intenta nuevamente."}</p>
+          </div>
+        </div>
+      </PublicLayout>
     );
   }
-
-  const creator = course.profiles as any;
-  const category = course.categories as any;
 
   return (
-    <div>
-      {/* Hero */}
-      <div className="bg-gradient-to-br from-primary/10 via-background to-background py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              {category && (
-                <Link
-                  to={`/courses?category=${category.slug}`}
-                  className="text-primary text-sm font-medium hover:underline"
-                >
-                  {category.name}
-                </Link>
-              )}
-              <h1 className="text-3xl md:text-4xl font-bold mt-2 mb-4">{course.title}</h1>
-              
-              {course.description && (
-                <p className="text-lg text-muted-foreground mb-6">{course.description}</p>
-              )}
+    <PublicLayout>
+      {/* HERO */}
+      <section className="bg-muted/30 border-b">
+        <div className="max-w-6xl mx-auto px-4 py-10">
+          <div className="grid lg:grid-cols-12 gap-8 items-start">
+            {/* LEFT */}
+            <div className="lg:col-span-8">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                {course.categories?.name && <Badge variant="secondary">{course.categories.name}</Badge>}
+                <Badge variant="outline">{levelLabel(course.level)}</Badge>
+                {course.duration_minutes_est ? (
+                  <Badge variant="outline" className="gap-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    {Math.round(course.duration_minutes_est / 60)}h aprox.
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="gap-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    A tu ritmo
+                  </Badge>
+                )}
+              </div>
 
-              {/* Creator */}
-              {creator && (
-                <Link
-                  to={creator.creator_slug ? `/creator/${creator.creator_slug}` : '#'}
-                  className="flex items-center gap-3 mb-6 group"
-                >
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    {creator.avatar_url ? (
-                      <img src={creator.avatar_url} alt={creator.name} className="w-full h-full rounded-full object-cover" />
-                    ) : (
-                      <User className="h-6 w-6 text-primary" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-medium group-hover:text-primary transition-colors">{creator.name}</p>
-                    <p className="text-sm text-muted-foreground">Creador del curso</p>
-                  </div>
-                </Link>
-              )}
+              <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight">
+                {course.title}
+              </h1>
 
-              {/* Stats */}
-              <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
-                {totalLessons > 0 && (
-                  <span className="flex items-center gap-2">
-                    <BookOpen className="h-4 w-4" />
-                    {totalLessons} lecciones
-                  </span>
+              <p className="text-muted-foreground mt-3 max-w-2xl">
+                {course.description || "Descripción del curso próximamente."}
+              </p>
+
+              <div className="mt-4 text-sm text-muted-foreground">
+                Creado por{" "}
+                {course.profiles?.creator_slug ? (
+                  <Link className="text-primary hover:underline" to={`/creators/${course.profiles.creator_slug}`}>
+                    {course.profiles?.name || "Creador"}
+                  </Link>
+                ) : (
+                  <span className="text-foreground">{course.profiles?.name || "Creador"}</span>
                 )}
-                {totalDuration > 0 && (
-                  <span className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    {formatDuration(totalDuration)}
-                  </span>
-                )}
-                {course.level && (
-                  <span className="px-2 py-1 bg-muted rounded-full capitalize">
-                    {course.level === 'beginner' ? 'Principiante' : course.level === 'intermediate' ? 'Intermedio' : 'Avanzado'}
-                  </span>
-                )}
+              </div>
+
+              {/* mini highlights */}
+              <div className="mt-6 grid sm:grid-cols-3 gap-3">
+                <div className="bg-background border rounded-lg p-4">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <PlayCircle className="h-4 w-4 text-primary" />
+                    Contenido
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {modules.length} módulos · {totalLessons} lecciones
+                  </p>
+                </div>
+                <div className="bg-background border rounded-lg p-4">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <BarChart3 className="h-4 w-4 text-primary" />
+                    Nivel
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">{levelLabel(course.level)}</p>
+                </div>
+                <div className="bg-background border rounded-lg p-4">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <GraduationCap className="h-4 w-4 text-primary" />
+                    Acceso
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">Web · A tu ritmo</p>
+                </div>
               </div>
             </div>
 
-            {/* Sidebar */}
-            <div className="lg:col-span-1">
-              <div className="bg-card border border-border rounded-lg overflow-hidden sticky top-24">
-                {course.cover_image_url && (
-                  <img
-                    src={course.cover_image_url}
-                    alt={course.title}
-                    className="w-full aspect-video object-cover"
-                  />
+            {/* RIGHT: BUY CARD */}
+            <div className="lg:col-span-4">
+              <div className="bg-background border rounded-xl p-5 shadow-sm lg:sticky lg:top-6">
+                {course.cover_image_url ? (
+                  <div className="w-full aspect-video rounded-lg overflow-hidden border mb-4 bg-muted">
+                    <img
+                      src={course.cover_image_url}
+                      alt={course.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full aspect-video rounded-lg border mb-4 bg-muted flex items-center justify-center text-muted-foreground text-sm">
+                    Sin portada
+                  </div>
                 )}
-                <div className="p-6">
-                  <p className="text-3xl font-bold mb-4">
-                    {course.price_clp === 0 ? 'Gratis' : formatPrice(course.price_clp)}
-                  </p>
-                  
-                  {enrollment?.status === 'active' ? (
-                    <Button asChild className="w-full" size="lg">
-                      <Link to={`/app/course/${course.id}`}>
-                        <Play className="h-4 w-4 mr-2" />
-                        Continuar curso
-                      </Link>
-                    </Button>
-                  ) : (
-                    <Button
-                      className="w-full"
-                      size="lg"
-                      onClick={handleEnroll}
-                      disabled={enrollMutation.isPending}
-                    >
-                      {enrollMutation.isPending ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          Inscribiendo...
-                        </>
-                      ) : course.price_clp === 0 ? (
-                        'Inscribirme gratis'
-                      ) : (
-                        'Inscribirme (Demo)'
-                      )}
-                    </Button>
-                  )}
-                  
-                  {course.price_clp > 0 && !enrollment && (
-                    <p className="text-xs text-muted-foreground text-center mt-2">
-                      * Inscripción demo sin pago real
-                    </p>
-                  )}
+
+                <div className="text-2xl font-bold">{formatCLP(course.price_clp)}</div>
+                <p className="text-sm text-muted-foreground mt-1">Pago único · acceso para siempre</p>
+
+                <Button className="w-full mt-4" size="lg">
+                  Comprar / Inscribirme
+                </Button>
+
+                <div className="mt-4 space-y-2 text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                    Acceso de por vida
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                    Aprende a tu ritmo
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Shield className="h-4 w-4 text-primary" />
+                    Plataforma segura (Supabase)
+                  </div>
                 </div>
+
+                <Separator className="my-4" />
+
+                <p className="text-xs text-muted-foreground">
+                  MVP: la compra/inscripción será habilitada en el siguiente paso.
+                </p>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="lg:max-w-3xl">
-          <h2 className="text-2xl font-bold mb-6">Contenido del curso</h2>
-          
-          {modules && modules.length > 0 ? (
-            <div className="space-y-4">
-              {modules.map((module, moduleIndex) => (
-                <div key={module.id} className="bg-card border border-border rounded-lg overflow-hidden">
-                  <div className="bg-muted/50 px-4 py-3 font-medium">
-                    Módulo {moduleIndex + 1}: {module.title}
+      {/* BODY */}
+      <section className="max-w-6xl mx-auto px-4 py-10">
+        <div className="grid lg:grid-cols-12 gap-8 items-start">
+          {/* LEFT content */}
+          <div className="lg:col-span-8 space-y-10">
+            {/* What you'll learn */}
+            <div className="bg-card border rounded-xl p-6">
+              <h2 className="text-xl font-bold">Lo que aprenderás</h2>
+              <div className="grid sm:grid-cols-2 gap-3 mt-4">
+                {whatYouLearn.map((item, idx) => (
+                  <div key={idx} className="flex items-start gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-primary mt-0.5" />
+                    <p className="text-sm text-muted-foreground">{item}</p>
                   </div>
-                  <div className="divide-y divide-border">
-                    {(module.lessons as any[])?.map((lesson, lessonIndex) => (
-                      <div key={lesson.id} className="px-4 py-3 flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm text-muted-foreground">
-                          {lesson.type === 'video' ? (
-                            <Play className="h-4 w-4" />
-                          ) : (
-                            <FileText className="h-4 w-4" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm">{lesson.title}</p>
-                        </div>
-                        {lesson.duration_minutes > 0 && (
-                          <span className="text-xs text-muted-foreground">
-                            {lesson.duration_minutes} min
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          ) : (
-            <p className="text-muted-foreground">El contenido del curso se está preparando...</p>
-          )}
+
+            {/* Syllabus */}
+            <div className="bg-card border rounded-xl p-6">
+              <h2 className="text-xl font-bold">Contenido del curso</h2>
+              <p className="text-sm text-muted-foreground mt-2">
+                {modules.length} módulos · {totalLessons} lecciones
+              </p>
+
+              <div className="mt-4">
+                {modules.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">
+                    Aún no hay módulos. El creador está armando el contenido.
+                  </div>
+                ) : (
+                  <Accordion type="single" collapsible className="w-full">
+                    {modules.map((m: any) => (
+                      <AccordionItem key={m.id} value={m.id}>
+                        <AccordionTrigger className="text-left">
+                          <div className="flex flex-col">
+                            <span className="font-semibold">{m.title}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {(m.lessons?.length || 0)} lecciones
+                            </span>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="space-y-2">
+                            {(m.lessons || []).map((l: any) => (
+                              <div
+                                key={l.id}
+                                className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <PlayCircle className="h-4 w-4 text-primary" />
+                                  <span className="text-sm">{l.title}</span>
+                                </div>
+                                <Badge variant="outline" className="text-xs">
+                                  {l.type === "text" ? "Lectura" : "Video"}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                )}
+              </div>
+            </div>
+
+            {/* Requirements */}
+            <div className="bg-card border rounded-xl p-6">
+              <h2 className="text-xl font-bold">Requisitos</h2>
+              <ul className="mt-3 space-y-2 text-sm text-muted-foreground list-disc pl-5">
+                <li>Solo necesitas internet y ganas de aprender.</li>
+                <li>Ideal si estás comenzando o quieres ordenar tu proceso.</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* RIGHT (simple sidebar) */}
+          <div className="lg:col-span-4">
+            <div className="bg-card border rounded-xl p-6 lg:sticky lg:top-6">
+              <h3 className="font-bold">Resumen</h3>
+              <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>Módulos</span>
+                  <span className="text-foreground">{modules.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Lecciones</span>
+                  <span className="text-foreground">{totalLessons}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Nivel</span>
+                  <span className="text-foreground">{levelLabel(course.level)}</span>
+                </div>
+              </div>
+
+              <Separator className="my-4" />
+
+              <div className="text-2xl font-bold">{formatCLP(course.price_clp)}</div>
+              <Button className="w-full mt-3" size="lg">
+                Comprar / Inscribirme
+              </Button>
+
+              <p className="text-xs text-muted-foreground mt-3">
+                Esto es un MVP: el checkout lo conectamos después.
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </PublicLayout>
   );
 }

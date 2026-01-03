@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +10,20 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, ChevronUp, ChevronDown, Save, Bold, Italic, Underline, List, ListOrdered, Link2 } from "lucide-react";
+import {
+  Loader2,
+  Plus,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  Save,
+  Bold,
+  Italic,
+  Underline,
+  List,
+  ListOrdered,
+  Link2,
+} from "lucide-react";
 import CourseCoverUploader from "@/components/layout/CourseCoverUploader";
 
 type LessonForm = {
@@ -58,14 +71,12 @@ function RichTextEditor({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    // evita re-escribir si ya coincide (no romper el cursor)
     if ((el.innerHTML || "") !== (value || "")) {
       el.innerHTML = value || "";
     }
   }, [value]);
 
   const exec = (cmd: string, arg?: string) => {
-    // foco antes de ejecutar
     ref.current?.focus();
     document.execCommand(cmd, false, arg);
     onChange(ref.current?.innerHTML || "");
@@ -114,9 +125,7 @@ function RichTextEditor({
         onBlur={() => onChange(ref.current?.innerHTML || "")}
         suppressContentEditableWarning
       />
-      <p className="text-xs text-muted-foreground">
-        Tip: pega texto normal y luego aplica formato con los botones.
-      </p>
+      <p className="text-xs text-muted-foreground">Tip: pega texto normal y luego aplica formato con los botones.</p>
     </div>
   );
 }
@@ -236,7 +245,9 @@ export default function CourseEditorPage() {
       return (
         data?.map((m: any) => ({
           ...m,
-          lessons: ((m.lessons as any[]) || []).sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)),
+          lessons: ((m.lessons as any[]) || []).sort(
+            (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)
+          ),
         })) || []
       );
     },
@@ -305,7 +316,7 @@ export default function CourseEditorPage() {
       const plain = htmlToPlainText(form.description_html);
 
       const payload: any = {
-        title: form.title,
+        title: (form.title || "").trim(),
         short_description: (form.short_description || "").trim(),
         description_html: form.description_html || "",
         description: plain, // texto plano para previews/búsqueda
@@ -321,9 +332,6 @@ export default function CourseEditorPage() {
       // published_at (ya existe en DB)
       if (form.status === "published") {
         if (!course?.published_at) payload.published_at = nowIso;
-      } else {
-        // MVP: no lo borramos si vuelve a draft
-        // si quieres limpiarlo: payload.published_at = null;
       }
 
       // slug si está vacío (por si tuvieras cursos legacy)
@@ -419,8 +427,7 @@ export default function CourseEditorPage() {
     },
   });
 
-  const addModule = () =>
-    setModules([...modules, { id: `new-${Date.now()}`, title: "Nuevo módulo", lessons: [] }]);
+  const addModule = () => setModules([...modules, { id: `new-${Date.now()}`, title: "Nuevo módulo", lessons: [] }]);
 
   const deleteModule = (mi: number) => {
     const mod = modules[mi];
@@ -771,7 +778,10 @@ export default function CourseEditorPage() {
                           disabled={li === 0}
                           onClick={() => {
                             const u = [...modules];
-                            [u[mi].lessons[li], u[mi].lessons[li - 1]] = [u[mi].lessons[li - 1], u[mi].lessons[li]];
+                            [u[mi].lessons[li], u[mi].lessons[li - 1]] = [
+                              u[mi].lessons[li - 1],
+                              u[mi].lessons[li],
+                            ];
                             setModules(u);
                           }}
                         >
@@ -784,7 +794,10 @@ export default function CourseEditorPage() {
                           disabled={li === (mod.lessons?.length || 0) - 1}
                           onClick={() => {
                             const u = [...modules];
-                            [u[mi].lessons[li], u[mi].lessons[li + 1]] = [u[mi].lessons[li + 1], u[mi].lessons[li]];
+                            [u[mi].lessons[li], u[mi].lessons[li + 1]] = [
+                              u[mi].lessons[li + 1],
+                              u[mi].lessons[li],
+                            ];
                             setModules(u);
                           }}
                         >
@@ -809,7 +822,11 @@ export default function CourseEditorPage() {
         </div>
 
         <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} size="lg">
-          {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+          {saveMutation.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <Save className="h-4 w-4 mr-2" />
+          )}
           Guardar Curso
         </Button>
       </div>

@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
-import { GraduationCap, Menu, X, User, LogOut } from 'lucide-react';
+import { GraduationCap, Menu, X, User, LogOut, ChevronDown, LogIn } from 'lucide-react';
 import { useState } from 'react';
 import {
   DropdownMenu,
@@ -23,11 +23,13 @@ export function PublicNavbar() {
 
   const getDashboardLink = () => {
     if (!profile) return '/app';
-    if (profile.role === 'creator' || profile.role === 'admin') {
-      return '/creator-app';
-    }
+    if (profile.role === 'creator' || profile.role === 'admin') return '/creator-app';
     return '/app';
   };
+
+  // Estos son los destinos reales según tu router
+  const studentLoginUrl = `/login?next=${encodeURIComponent('/app')}`;
+  const creatorLoginUrl = `/login?next=${encodeURIComponent('/creator-app')}`;
 
   return (
     <nav className="border-b border-border bg-background sticky top-0 z-50">
@@ -51,21 +53,27 @@ export function PublicNavbar() {
                   <Button variant="ghost" className="flex items-center gap-2">
                     <User className="h-5 w-5" />
                     <span>{profile?.name || 'Mi Cuenta'}</span>
+                    <ChevronDown className="h-4 w-4 opacity-70" />
                   </Button>
                 </DropdownMenuTrigger>
+
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem onClick={() => navigate(getDashboardLink())}>
                     Mi Panel
                   </DropdownMenuItem>
+
                   <DropdownMenuItem onClick={() => navigate('/app/my-courses')}>
                     Mis Cursos
                   </DropdownMenuItem>
+
                   {(profile?.role === 'creator' || profile?.role === 'admin') && (
                     <DropdownMenuItem onClick={() => navigate('/creator-app')}>
                       Panel Creador
                     </DropdownMenuItem>
                   )}
+
                   <DropdownMenuSeparator />
+
                   <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                     <LogOut className="h-4 w-4 mr-2" />
                     Cerrar Sesión
@@ -74,9 +82,26 @@ export function PublicNavbar() {
               </DropdownMenu>
             ) : (
               <div className="flex items-center gap-3">
-                <Button variant="ghost" onClick={() => navigate('/login')}>
-                  Iniciar Sesión
-                </Button>
+                {/* ✅ Nuevo: dropdown de iniciar sesión */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center gap-2">
+                      <LogIn className="h-4 w-4" />
+                      Iniciar sesión
+                      <ChevronDown className="h-4 w-4 opacity-70" />
+                    </Button>
+                  </DropdownMenuTrigger>
+
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem onClick={() => navigate(studentLoginUrl)}>
+                      Iniciar como estudiante
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate(creatorLoginUrl)}>
+                      Iniciar como creador
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 <Button onClick={() => navigate('/signup')}>
                   Registrarse
                 </Button>
@@ -104,7 +129,7 @@ export function PublicNavbar() {
               >
                 Explorar Cursos
               </Link>
-              
+
               {user ? (
                 <>
                   <Link
@@ -114,6 +139,7 @@ export function PublicNavbar() {
                   >
                     Mi Panel
                   </Link>
+
                   <Link
                     to="/app/my-courses"
                     className="text-muted-foreground hover:text-foreground transition-colors px-2 py-2"
@@ -121,6 +147,17 @@ export function PublicNavbar() {
                   >
                     Mis Cursos
                   </Link>
+
+                  {(profile?.role === 'creator' || profile?.role === 'admin') && (
+                    <Link
+                      to="/creator-app"
+                      className="text-muted-foreground hover:text-foreground transition-colors px-2 py-2"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Panel Creador
+                    </Link>
+                  )}
+
                   <button
                     onClick={() => {
                       handleSignOut();
@@ -133,10 +170,24 @@ export function PublicNavbar() {
                 </>
               ) : (
                 <div className="flex flex-col gap-2 px-2">
-                  <Button variant="ghost" onClick={() => { navigate('/login'); setMobileMenuOpen(false); }}>
-                    Iniciar Sesión
+                  {/* En mobile lo dejo simple (dos acciones directas) */}
+                  <Button
+                    variant="ghost"
+                    onClick={() => { navigate(studentLoginUrl); setMobileMenuOpen(false); }}
+                  >
+                    Iniciar como estudiante
                   </Button>
-                  <Button onClick={() => { navigate('/signup'); setMobileMenuOpen(false); }}>
+
+                  <Button
+                    variant="ghost"
+                    onClick={() => { navigate(creatorLoginUrl); setMobileMenuOpen(false); }}
+                  >
+                    Iniciar como creador
+                  </Button>
+
+                  <Button
+                    onClick={() => { navigate('/signup'); setMobileMenuOpen(false); }}
+                  >
                     Registrarse
                   </Button>
                 </div>

@@ -13,7 +13,7 @@ export function StudentSidebar() {
   };
 
   const navItems = [
-    { to: '/app', icon: LayoutDashboard, label: 'Dashboard', end: true },
+    { to: '/app', icon: LayoutDashboard, label: 'Mi Negocio', end: true },
     { to: '/app/my-courses', icon: BookOpen, label: 'Mis Cursos', end: false },
     { to: '/app/settings', icon: Settings, label: 'Configuración', end: false },
   ];
@@ -64,19 +64,6 @@ export function StudentSidebar() {
             </li>
           ))}
         </ul>
-
-        {/* Creator Link */}
-        {(profile?.role === 'creator' || profile?.role === 'admin') && (
-          <div className="mt-6 pt-6 border-t border-sidebar-border">
-            <NavLink
-              to="/creator-app"
-              className="sidebar-item text-sidebar-primary"
-            >
-              <LayoutDashboard className="h-5 w-5" />
-              <span>Panel Creador</span>
-            </NavLink>
-          </div>
-        )}
       </nav>
 
       {/* Bottom Actions */}

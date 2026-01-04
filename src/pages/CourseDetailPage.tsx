@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   Accordion,
   AccordionContent,
@@ -19,7 +18,6 @@ import {
   CheckCircle2,
   Shield,
   PlayCircle,
-  AlertCircle,
   FileCheck
 } from "lucide-react";
 
@@ -53,12 +51,7 @@ export default function CourseDetailPage() {
           id,
           slug,
           title,
-          short_description,
           description,
-          description_html,
-          learn_bullets,
-          requirements,
-          includes,
           cover_image_url,
           price_clp,
           level,
@@ -129,11 +122,6 @@ export default function CourseDetailPage() {
     );
   }
 
-  // Arrays de strings seguros
-  const learnBullets = Array.isArray(course.learn_bullets) ? course.learn_bullets : [];
-  const reqs = Array.isArray(course.requirements) ? course.requirements : [];
-  const includes = Array.isArray(course.includes) ? course.includes : [];
-
   return (
     <>
       {/* HERO SECTION */}
@@ -164,9 +152,8 @@ export default function CourseDetailPage() {
                 {course.title}
               </h1>
 
-              {/* Usamos short_description para el resumen superior */}
               <p className="text-muted-foreground mt-3 max-w-2xl text-lg">
-                {course.short_description || course.description || "Sin descripción corta."}
+                {course.description || "Sin descripción."}
               </p>
 
               <div className="mt-4 text-sm text-muted-foreground">
@@ -230,28 +217,16 @@ export default function CourseDetailPage() {
 
                 <div className="space-y-3 text-sm">
                   <p className="font-semibold text-foreground">Este curso incluye:</p>
-                  
-                  {includes.length > 0 ? (
-                    <ul className="space-y-2">
-                      {includes.map((inc: string, i: number) => (
-                        inc && <li key={i} className="flex items-start gap-2 text-muted-foreground">
-                          <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                          <span>{inc}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <ul className="space-y-2">
-                       <li className="flex items-center gap-2 text-muted-foreground">
-                          <Shield className="h-4 w-4 text-primary" />
-                          <span>Acceso de por vida</span>
-                       </li>
-                       <li className="flex items-center gap-2 text-muted-foreground">
-                          <CheckCircle2 className="h-4 w-4 text-primary" />
-                          <span>Acceso en móviles</span>
-                       </li>
-                    </ul>
-                  )}
+                  <ul className="space-y-2">
+                     <li className="flex items-center gap-2 text-muted-foreground">
+                        <Shield className="h-4 w-4 text-primary" />
+                        <span>Acceso de por vida</span>
+                     </li>
+                     <li className="flex items-center gap-2 text-muted-foreground">
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
+                        <span>Acceso en móviles</span>
+                     </li>
+                  </ul>
                 </div>
               </div>
             </div>
@@ -263,53 +238,15 @@ export default function CourseDetailPage() {
       <section className="max-w-6xl mx-auto px-4 py-10">
         <div className="grid lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-8 space-y-10">
-            
-            {/* LO QUE APRENDERÁS (Grid de beneficios) */}
-            {learnBullets.length > 0 && learnBullets[0] && (
-              <div className="border rounded-xl p-6 bg-card/50">
-                <h2 className="text-xl font-bold mb-4">Lo que aprenderás</h2>
-                <ul className="grid sm:grid-cols-2 gap-x-4 gap-y-2">
-                  {learnBullets.map((item: string, i: number) => (
-                    item && (
-                      <li key={i} className="flex gap-2 items-start text-sm text-muted-foreground">
-                        <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
-                        <span>{item}</span>
-                      </li>
-                    )
-                  ))}
-                </ul>
-              </div>
-            )}
 
-            {/* DESCRIPCIÓN COMPLETA (Rich Text) */}
-            {(course.description_html || course.description) && (
+            {/* DESCRIPCIÓN COMPLETA */}
+            {course.description && (
               <div>
                 <h2 className="text-xl font-bold mb-4">Descripción del curso</h2>
-                {course.description_html ? (
-                    // Renderizamos el HTML seguro
-                    <div 
-                        className="prose prose-slate max-w-none text-muted-foreground text-sm leading-relaxed dark:prose-invert"
-                        dangerouslySetInnerHTML={{ __html: course.description_html }} 
-                    />
-                ) : (
-                    // Fallback a texto plano si no hay HTML
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                        {course.description}
-                    </p>
-                )}
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {course.description}
+                </p>
               </div>
-            )}
-
-            {/* REQUISITOS */}
-            {reqs.length > 0 && reqs[0] && (
-               <div>
-                  <h2 className="text-xl font-bold mb-4">Requisitos</h2>
-                  <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
-                    {reqs.map((req: string, i: number) => (
-                      req && <li key={i}>{req}</li>
-                    ))}
-                  </ul>
-               </div>
             )}
 
             {/* CONTENIDO (ACORDEÓN) */}

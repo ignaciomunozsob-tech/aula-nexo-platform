@@ -67,18 +67,12 @@ export function PublicNavbar() {
 
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem onClick={() => navigate(getDashboardLink())}>
-                    Mi Panel
+                    Mi Negocio
                   </DropdownMenuItem>
 
                   <DropdownMenuItem onClick={() => navigate('/app/my-courses')}>
                     Mis Cursos
                   </DropdownMenuItem>
-
-                  {(profile?.role === 'creator' || profile?.role === 'admin') && (
-                    <DropdownMenuItem onClick={() => navigate('/creator-app')}>
-                      Panel Creador
-                    </DropdownMenuItem>
-                  )}
 
                   <DropdownMenuSeparator />
 
@@ -145,7 +139,7 @@ export function PublicNavbar() {
                     className="text-muted-foreground hover:text-foreground transition-colors px-2 py-2"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Mi Panel
+                    Mi Negocio
                   </Link>
 
                   <Link
@@ -155,16 +149,6 @@ export function PublicNavbar() {
                   >
                     Mis Cursos
                   </Link>
-
-                  {(profile?.role === 'creator' || profile?.role === 'admin') && (
-                    <Link
-                      to="/creator-app"
-                      className="text-muted-foreground hover:text-foreground transition-colors px-2 py-2"
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      Panel Creador
-                    </Link>
-                  )}
 
                   <button
                     onClick={() => {

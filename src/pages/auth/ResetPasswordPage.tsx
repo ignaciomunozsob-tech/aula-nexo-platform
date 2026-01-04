@@ -17,13 +17,15 @@ export default function ResetPasswordPage() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    // Check if user has a valid session (came from temp password login)
+    // Check if user has a valid session (came from password reset email or temp password login)
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        // Check if user needs to change password (has temp_password flag)
+        // Valid session from password reset email or needs_password_change flag
         const needsPasswordChange = session.user.user_metadata?.needs_password_change;
-        setIsValidSession(!!needsPasswordChange);
+        // If user came from reset email, they have a valid session
+        // If user has needs_password_change flag, they also need to change password
+        setIsValidSession(true);
       }
       setChecking(false);
     };
@@ -62,7 +64,7 @@ export default function ResetPasswordPage() {
       if (error) throw error;
 
       toast({ title: "¡Contraseña actualizada! 🎉" });
-      navigate("/app/my-courses");
+      navigate("/login");
     } catch (err: any) {
       toast({
         title: "Error",
@@ -88,10 +90,10 @@ export default function ResetPasswordPage() {
         <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6 text-center">
           <p className="font-semibold">Sesión no válida</p>
           <p className="text-sm opacity-80 mt-1">
-            Esta página es solo para usuarios que necesitan cambiar su contraseña temporal.
+            Este enlace ha expirado o no es válido. Por favor solicita un nuevo enlace.
           </p>
-          <Button className="mt-4" onClick={() => navigate("/login")}>
-            Ir a Iniciar Sesión
+          <Button className="mt-4" onClick={() => navigate("/forgot-password")}>
+            Solicitar nuevo enlace
           </Button>
         </div>
       </div>
@@ -104,7 +106,7 @@ export default function ResetPasswordPage() {
         <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
           <Lock className="h-8 w-8 text-primary" />
         </div>
-        <h1 className="text-2xl font-bold">Establece tu contraseña</h1>
+        <h1 className="text-2xl font-bold">Nueva contraseña</h1>
         <p className="text-muted-foreground mt-2">
           Por favor, crea una contraseña segura para tu cuenta
         </p>

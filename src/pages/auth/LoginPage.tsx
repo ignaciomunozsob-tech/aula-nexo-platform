@@ -54,14 +54,71 @@ export default function LoginPage() {
         return;
       }
 
-      // Check if user needs to change password
+      // Get user data
       const { data: { user } } = await supabase.auth.getUser();
-      const needsPasswordChange = user?.user_metadata?.needs_password_change;
+      
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "No se pudo obtener información del usuario",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if user needs to change password
+      const needsPasswordChange = user.user_metadata?.needs_password_change;
 
       if (needsPasswordChange) {
         toast({ title: "Por favor, establece tu nueva contraseña" });
         navigate("/reset-password");
+        return;
+      }
+
+      // Check if user is a creator
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role, name")
+        .eq("id", user.id)
+        .single();
+
+      if (profile?.role === "creator") {
+        // Send 2FA code for creators
+        toast({ 
+          title: "Verificación de seguridad",
+          description: "Enviando código de verificación a tu correo..." 
+        });
+
+        const { error: sendError } = await supabase.functions.invoke("send-2fa-code", {
+          body: {
+            userId: user.id,
+            email: user.email,
+            userName: profile.name,
+          },
+        });
+
+        if (sendError) {
+          console.error("[2FA] Error sending code:", sendError);
+          toast({
+            title: "Error al enviar código",
+            description: "No se pudo enviar el código de verificación. Intenta de nuevo.",
+            variant: "destructive",
+          });
+          // Sign out since 2FA failed
+          await supabase.auth.signOut();
+          return;
+        }
+
+        // Navigate to 2FA verification page
+        navigate("/verify-2fa", {
+          state: {
+            userId: user.id,
+            email: user.email,
+            name: profile.name,
+          },
+        });
       } else {
+        // Students can login directly
         toast({ title: "Sesión iniciada ✅" });
         navigate("/app");
       }
@@ -109,7 +166,7 @@ export default function LoginPage() {
       </form>
 
       <p className="text-xs text-muted-foreground mt-6">
-        Si te sigue diciendo “incorrectos”, abre consola y mira <code>[LOGIN_ERROR]</code> para ver el motivo real.
+        Si te sigue diciendo "incorrectos", abre consola y mira <code>[LOGIN_ERROR]</code> para ver el motivo real.
       </p>
     </div>
   );

@@ -47,7 +47,7 @@ export function PublicNavbar() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
             <Link to="/courses" className="text-muted-foreground hover:text-foreground transition-colors">
-              Explorar Cursos
+              Marketplace
             </Link>
 
             {user ? (
@@ -129,7 +129,7 @@ export function PublicNavbar() {
                 className="text-muted-foreground hover:text-foreground transition-colors px-2 py-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                Explorar Cursos
+                Marketplace
               </Link>
 
               {user ? (

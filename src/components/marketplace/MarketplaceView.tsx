@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { BookOpen, Video, Calendar, FileText, Clock, Users, Search, Filter, X } from 'lucide-react';
+import { BookOpen, Video, Calendar, FileText, Clock, Users, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +17,11 @@ import {
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-export function MarketplaceView() {
+interface MarketplaceViewProps {
+  showHeader?: boolean;
+}
+
+export function MarketplaceView({ showHeader = true }: MarketplaceViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedFormat, setSelectedFormat] = useState<string>('all');
@@ -35,7 +39,7 @@ export function MarketplaceView() {
     },
   });
 
-  // Fetch published courses
+  // Fetch published courses with creator info
   const { data: courses, isLoading: loadingCourses } = useQuery({
     queryKey: ['marketplace-courses'],
     queryFn: async () => {
@@ -98,29 +102,36 @@ export function MarketplaceView() {
     }).format(price);
   };
 
+  // Enhanced search - includes creator name
+  const matchesSearch = (item: any, query: string) => {
+    if (!query) return true;
+    const lowerQuery = query.toLowerCase();
+    const matchesTitle = item.title?.toLowerCase().includes(lowerQuery);
+    const matchesDescription = item.description?.toLowerCase().includes(lowerQuery);
+    const matchesCreator = item.profiles?.name?.toLowerCase().includes(lowerQuery);
+    return matchesTitle || matchesDescription || matchesCreator;
+  };
+
   // Filter courses
   const filteredCourses = courses?.filter((course) => {
-    const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearchQuery = matchesSearch(course, searchQuery);
     const matchesCategory = selectedCategory === 'all' || course.category_id === selectedCategory;
     const matchesFormat = selectedFormat === 'all' || course.format === selectedFormat;
-    return matchesSearch && matchesCategory && matchesFormat;
+    return matchesSearchQuery && matchesCategory && matchesFormat;
   });
 
   // Filter ebooks
   const filteredEbooks = ebooks?.filter((ebook) => {
-    const matchesSearch = ebook.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ebook.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearchQuery = matchesSearch(ebook, searchQuery);
     const matchesCategory = selectedCategory === 'all' || ebook.category_id === selectedCategory;
-    return matchesSearch && matchesCategory;
+    return matchesSearchQuery && matchesCategory;
   });
 
   // Filter events
   const filteredEvents = events?.filter((event) => {
-    const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearchQuery = matchesSearch(event, searchQuery);
     const matchesCategory = selectedCategory === 'all' || event.category_id === selectedCategory;
-    return matchesSearch && matchesCategory;
+    return matchesSearchQuery && matchesCategory;
   });
 
   const clearFilters = () => {
@@ -136,55 +147,81 @@ export function MarketplaceView() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl p-6 md:p-8">
-        <h2 className="text-2xl font-bold mb-2">🎓 Marketplace de AulaNexo</h2>
-        <p className="text-muted-foreground">
-          Descubre cursos, ebooks y eventos para potenciar tus habilidades
-        </p>
+      {showHeader && (
+        <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl p-6 md:p-8">
+          <h2 className="text-2xl font-bold mb-2">🎓 Marketplace de AulaNexo</h2>
+          <p className="text-muted-foreground">
+            Descubre cursos, ebooks y eventos para potenciar tus habilidades
+          </p>
+        </div>
+      )}
+
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <Input
+          placeholder="Buscar por título, descripción o nombre del creador..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-12 h-12 text-base"
+        />
+        {searchQuery && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-1/2 -translate-y-1/2"
+            onClick={() => setSearchQuery('')}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por título o descripción..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <div className="flex gap-2">
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-[180px]">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Categoría" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas las categorías</SelectItem>
-              {categories?.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>
-                  {cat.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={selectedFormat} onValueChange={setSelectedFormat}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Formato" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="recorded">Grabado</SelectItem>
-              <SelectItem value="live">En vivo</SelectItem>
-            </SelectContent>
-          </Select>
-          {hasActiveFilters && (
-            <Button variant="outline" size="icon" onClick={clearFilters}>
-              <X className="h-4 w-4" />
+      {/* Category Buttons */}
+      <div className="space-y-3">
+        <p className="text-sm font-medium text-muted-foreground">Filtrar por categoría:</p>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={selectedCategory === 'all' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedCategory('all')}
+            className="rounded-full"
+          >
+            Todas
+          </Button>
+          {categories?.map((cat) => (
+            <Button
+              key={cat.id}
+              variant={selectedCategory === cat.id ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedCategory(cat.id)}
+              className="rounded-full"
+            >
+              {cat.name}
             </Button>
-          )}
+          ))}
         </div>
+      </div>
+
+      {/* Format Filter */}
+      <div className="flex items-center gap-4">
+        <Select value={selectedFormat} onValueChange={setSelectedFormat}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Formato" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los formatos</SelectItem>
+            <SelectItem value="recorded">Grabado</SelectItem>
+            <SelectItem value="live">En vivo</SelectItem>
+          </SelectContent>
+        </Select>
+        
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters}>
+            <X className="h-4 w-4 mr-2" />
+            Limpiar filtros
+          </Button>
+        )}
       </div>
 
       {/* Tabs for different product types */}

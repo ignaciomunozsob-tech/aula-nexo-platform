@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
-import { GraduationCap, Sparkles, ArrowRight, Check } from 'lucide-react';
+import { Sparkles, ArrowRight, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -72,12 +72,12 @@ export function StudentOnboarding() {
       <div className="max-w-2xl w-full">
         {/* Header */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">
-            <GraduationCap className="h-8 w-8 text-primary" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-6">
+            <span className="text-primary font-bold text-2xl">N</span>
           </div>
-          <h1 className="text-3xl font-bold mb-3">¡Bienvenido a AulaNexo!</h1>
+          <h1 className="text-3xl font-bold mb-3">¡Bienvenido a NOVU!</h1>
           <p className="text-muted-foreground text-lg">
-            Cuéntanos qué te gustaría aprender para darte las mejores recomendaciones
+            Cuéntanos qué te interesa para darte las mejores recomendaciones
           </p>
         </div>
 

@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
-import { GraduationCap, Menu, X, ChevronDown, LogIn } from 'lucide-react';
+import { Menu, X, ChevronDown, LogIn } from 'lucide-react';
 import { useState } from 'react';
 import {
   DropdownMenu,
@@ -18,7 +18,6 @@ export function PublicNavbar() {
 
   const isCreator = profile?.role === 'creator' || profile?.role === 'admin';
 
-  // Estos son los destinos reales según tu router
   const studentLoginUrl = `/login?next=${encodeURIComponent('/app')}`;
   const creatorLoginUrl = `/login?next=${encodeURIComponent('/creator-app')}`;
 
@@ -26,10 +25,8 @@ export function PublicNavbar() {
 
   const handleProfileClick = () => {
     if (isCreator) {
-      // Creators go to their business dashboard
       navigate('/creator-app');
     } else {
-      // Students go directly to their products
       navigate('/app/my-courses');
     }
   };
@@ -40,8 +37,10 @@ export function PublicNavbar() {
         <div className="flex justify-between h-16 items-center">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <GraduationCap className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold text-foreground">AulaNexo</span>
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">N</span>
+            </div>
+            <span className="text-xl font-bold text-foreground">NOVU</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -49,10 +48,11 @@ export function PublicNavbar() {
             <Link to="/courses" className="text-muted-foreground hover:text-foreground transition-colors">
               Marketplace
             </Link>
+            <Link to="/comisiones" className="text-muted-foreground hover:text-foreground transition-colors">
+              Comisiones
+            </Link>
 
             {user ? (
-              // For students: direct click goes to "Mis Productos"
-              // For creators: direct click goes to "Mi Negocio"
               <Button 
                 variant="ghost" 
                 className="flex items-center gap-2"
@@ -68,7 +68,6 @@ export function PublicNavbar() {
               </Button>
             ) : (
               <div className="flex items-center gap-3">
-                {/* Dropdown de iniciar sesión */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="flex items-center gap-2">
@@ -89,7 +88,7 @@ export function PublicNavbar() {
                 </DropdownMenu>
 
                 <Button onClick={() => navigate('/signup')}>
-                  Registrarse
+                  Crear cuenta
                 </Button>
               </div>
             )}
@@ -114,6 +113,13 @@ export function PublicNavbar() {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 Marketplace
+              </Link>
+              <Link
+                to="/comisiones"
+                className="text-muted-foreground hover:text-foreground transition-colors px-2 py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Comisiones
               </Link>
 
               {user ? (
@@ -155,7 +161,7 @@ export function PublicNavbar() {
                   <Button
                     onClick={() => { navigate('/signup'); setMobileMenuOpen(false); }}
                   >
-                    Registrarse
+                    Crear cuenta
                   </Button>
                 </div>
               )}

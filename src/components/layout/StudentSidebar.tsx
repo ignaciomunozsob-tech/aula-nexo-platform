@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { GraduationCap, BookOpen, Settings, LogOut, Home, Briefcase, Store } from 'lucide-react';
+import { BookOpen, Settings, LogOut, Home, Briefcase, Store } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -26,8 +26,10 @@ export function StudentSidebar() {
       {/* Logo */}
       <div className="p-6 border-b border-sidebar-border">
         <NavLink to="/" className="flex items-center gap-2">
-          <GraduationCap className="h-8 w-8 text-sidebar-primary" />
-          <span className="text-xl font-bold text-sidebar-foreground">AulaNexo</span>
+          <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
+            <span className="text-sidebar-primary-foreground font-bold text-sm">N</span>
+          </div>
+          <span className="text-xl font-bold text-sidebar-foreground">NOVU</span>
         </NavLink>
       </div>
 

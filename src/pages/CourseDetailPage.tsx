@@ -5,8 +5,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Loader2, Clock, BarChart3, GraduationCap, CheckCircle2, Shield, PlayCircle } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Loader2,
+  Clock,
+  BarChart3,
+  GraduationCap,
+  CheckCircle2,
+  Shield,
+  PlayCircle,
+} from "lucide-react";
 
 function formatCLP(value: number | null | undefined) {
   const n = Number(value || 0);
@@ -25,64 +38,53 @@ function levelLabel(level?: string | null) {
 
 function cleanArray(arr: any) {
   if (!Array.isArray(arr)) return [];
-  return arr.map((x) => String(x ?? "").trim()).filter(Boolean);
+  return arr
+    .map((x) => String(x ?? "").trim())
+    .filter(Boolean);
 }
 
 /**
- * Sanitizador básico (MVP) para evitar scripts / html peligroso.
- * Permite solo tags simples típicas del editor.
+ * Sanitizado básico sin dependencias:
+ * - elimina <script>, <style>, <iframe>, etc.
+ * - elimina atributos on* (onclick, onerror...)
+ * - permite href solo en <a> y lo fuerza a https/http/mailto
+ *
+ * Para producción: ideal usar DOMPurify, pero esto te salva el MVP.
  */
-function sanitizeBasicHtml(input: string) {
-  if (!input) return "";
+function sanitizeHtmlBasic(html: string) {
+  if (!html) return "";
 
-  const allowedTags = new Set(["P", "BR", "STRONG", "B", "EM", "I", "U", "UL", "OL", "LI", "A"]);
-  const allowedAttrs = new Set(["href", "target", "rel"]);
+  const doc = new DOMParser().parseFromString(html, "text/html");
 
-  const doc = new DOMParser().parseFromString(input, "text/html");
+  // Eliminar tags peligrosos completos
+  const blocked = ["script", "style", "iframe", "object", "embed", "link", "meta"];
+  blocked.forEach((tag) => {
+    doc.querySelectorAll(tag).forEach((n) => n.remove());
+  });
 
-  const walk = (node: Element) => {
-    // eliminar tags no permitidas pero mantener su texto/children
-    const children = Array.from(node.children);
+  // Limpiar atributos peligrosos
+  doc.querySelectorAll("*").forEach((el) => {
+    // remove on*
+    [...el.attributes].forEach((attr) => {
+      const name = attr.name.toLowerCase();
+      if (name.startsWith("on")) el.removeAttribute(attr.name);
+      if (name === "style") el.removeAttribute(attr.name); // opcional: evita inyecciones por CSS
+    });
 
-    for (const child of children) {
-      if (!allowedTags.has(child.tagName)) {
-        // reemplazar el nodo por sus hijos (flatten)
-        const fragment = doc.createDocumentFragment();
-        while (child.firstChild) fragment.appendChild(child.firstChild);
-        child.replaceWith(fragment);
-      } else {
-        // limpiar atributos
-        Array.from(child.attributes).forEach((attr) => {
-          const name = attr.name.toLowerCase();
-          if (!allowedAttrs.has(name)) child.removeAttribute(attr.name);
-        });
-
-        // reglas especiales para links
-        if (child.tagName === "A") {
-          const href = child.getAttribute("href") || "";
-          const ok =
-            href.startsWith("http://") ||
-            href.startsWith("https://") ||
-            href.startsWith("mailto:") ||
-            href.startsWith("#");
-
-          if (!ok) child.removeAttribute("href");
-
-          child.setAttribute("target", "_blank");
-          child.setAttribute("rel", "noreferrer noopener");
-        }
-
-        walk(child);
-      }
+    // links: solo href seguro
+    if (el.tagName.toLowerCase() === "a") {
+      const href = el.getAttribute("href") || "";
+      const isSafe =
+        href.startsWith("http://") ||
+        href.startsWith("https://") ||
+        href.startsWith("mailto:");
+      if (!isSafe) el.removeAttribute("href");
+      el.setAttribute("rel", "noopener noreferrer");
+      el.setAttribute("target", "_blank");
     }
-  };
+  });
 
-  walk(doc.body);
-
-  // eliminar scripts por si acaso
-  doc.querySelectorAll("script, style, iframe").forEach((n) => n.remove());
-
-  return doc.body.innerHTML || "";
+  return doc.body.innerHTML;
 }
 
 export default function CourseDetailPage() {
@@ -155,40 +157,14 @@ export default function CourseDetailPage() {
     return modules.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0);
   }, [modules]);
 
-  const whatYouLearn = useMemo(() => {
-    const bullets = cleanArray(course?.learn_bullets);
-    if (bullets.length) return bullets;
-
-    // fallback mínimo
-    return [
-      "Crear una base sólida para mejorar tus resultados.",
-      "Aplicar una metodología simple y repetible.",
-      "Evitar errores típicos de principiante.",
-      "Tener un plan claro para avanzar sin caos.",
-    ];
-  }, [course?.learn_bullets]);
-
+  const learnBullets = useMemo(() => cleanArray(course?.learn_bullets), [course?.learn_bullets]);
   const requirements = useMemo(() => cleanArray(course?.requirements), [course?.requirements]);
   const includes = useMemo(() => cleanArray(course?.includes), [course?.includes]);
 
-  const descriptionHtml = useMemo(() => {
-    // prioriza HTML enriquecido; fallback al texto plano si no hay
-    const html = (course?.description_html || "").trim();
-    if (html) return sanitizeBasicHtml(html);
-
-    const plain = (course?.description || "").trim();
-    if (!plain) return "";
-
-    // convertir saltos de línea del plain a <p>
-    return sanitizeBasicHtml(
-      plain
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .map((line) => `<p>${line}</p>`)
-        .join("")
-    );
-  }, [course?.description_html, course?.description]);
+  const safeHtml = useMemo(() => {
+    const html = String(course?.description_html || "");
+    return sanitizeHtmlBasic(html);
+  }, [course?.description_html]);
 
   if (isLoading) {
     return (
@@ -220,7 +196,9 @@ export default function CourseDetailPage() {
             {/* LEFT */}
             <div className="lg:col-span-8">
               <div className="flex flex-wrap items-center gap-2 mb-3">
-                {course.categories?.name && <Badge variant="secondary">{course.categories.name}</Badge>}
+                {course.categories?.name && (
+                  <Badge variant="secondary">{course.categories.name}</Badge>
+                )}
                 <Badge variant="outline">{levelLabel(course.level)}</Badge>
 
                 {course.duration_minutes_est ? (
@@ -239,34 +217,24 @@ export default function CourseDetailPage() {
                 {course.title}
               </h1>
 
-              {/* ✅ resumen corto primero */}
-              {(course.short_description || "").trim() ? (
-                <p className="text-muted-foreground mt-3 max-w-2xl">
-                  {course.short_description}
-                </p>
-              ) : null}
+              {/* ✅ resumen corto */}
+              <p className="text-muted-foreground mt-3 max-w-2xl">
+                {course.short_description || "Descripción del curso próximamente."}
+              </p>
 
-              {/* ✅ descripción rica */}
-              {descriptionHtml ? (
-                <div
-                  className="mt-4 max-w-2xl text-sm text-muted-foreground space-y-3"
-                  // eslint-disable-next-line react/no-danger
-                  dangerouslySetInnerHTML={{ __html: descriptionHtml }}
-                />
-              ) : (
-                <p className="text-muted-foreground mt-4 max-w-2xl">
-                  Descripción del curso próximamente.
-                </p>
-              )}
-
-              <div className="mt-5 text-sm text-muted-foreground">
+              <div className="mt-4 text-sm text-muted-foreground">
                 Creado por{" "}
                 {course.profiles?.creator_slug ? (
-                  <Link className="text-primary hover:underline" to={`/creator/${course.profiles.creator_slug}`}>
+                  <Link
+                    className="text-primary hover:underline"
+                    to={`/creator/${course.profiles.creator_slug}`}
+                  >
                     {course.profiles?.name || "Creador"}
                   </Link>
                 ) : (
-                  <span className="text-foreground">{course.profiles?.name || "Creador"}</span>
+                  <span className="text-foreground">
+                    {course.profiles?.name || "Creador"}
+                  </span>
                 )}
               </div>
 
@@ -286,7 +254,9 @@ export default function CourseDetailPage() {
                     <BarChart3 className="h-4 w-4 text-primary" />
                     Nivel
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">{levelLabel(course.level)}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {levelLabel(course.level)}
+                  </p>
                 </div>
 
                 <div className="bg-background border rounded-lg p-4">
@@ -324,14 +294,16 @@ export default function CourseDetailPage() {
                   Comprar / Inscribirme
                 </Button>
 
-                {/* ✅ Includes reales desde DB */}
                 <div className="mt-4 space-y-2 text-sm">
-                  {(includes.length ? includes : ["Acceso de por vida", "Aprende a tu ritmo"]).map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-muted-foreground">
-                      <CheckCircle2 className="h-4 w-4 text-primary" />
-                      {item}
-                    </div>
-                  ))}
+                  {(includes.length ? includes : ["Acceso de por vida", "Aprende a tu ritmo"]).map(
+                    (it: string, idx: number) => (
+                      <div key={idx} className="flex items-center gap-2 text-muted-foreground">
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
+                        {it}
+                      </div>
+                    )
+                  )}
+
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Shield className="h-4 w-4 text-primary" />
                     Plataforma segura (Supabase)
@@ -350,18 +322,38 @@ export default function CourseDetailPage() {
       <section className="max-w-6xl mx-auto px-4 py-10">
         <div className="grid lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-8 space-y-10">
+            {/* ✅ Descripción larga (HTML) */}
+            {safeHtml ? (
+              <div className="bg-card border rounded-xl p-6">
+                <h2 className="text-xl font-bold">Descripción</h2>
+                <div
+                  className="mt-4 text-sm text-muted-foreground space-y-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-primary [&_a]:underline"
+                  dangerouslySetInnerHTML={{ __html: safeHtml }}
+                />
+              </div>
+            ) : null}
+
+            {/* ✅ Lo que aprenderás */}
             <div className="bg-card border rounded-xl p-6">
               <h2 className="text-xl font-bold">Lo que aprenderás</h2>
-              <div className="grid sm:grid-cols-2 gap-3 mt-4">
-                {whatYouLearn.map((item, idx) => (
-                  <div key={idx} className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-primary mt-0.5" />
-                    <p className="text-sm text-muted-foreground">{item}</p>
-                  </div>
-                ))}
-              </div>
+
+              {learnBullets.length === 0 ? (
+                <p className="text-sm text-muted-foreground mt-3">
+                  El creador aún no agregó esta sección.
+                </p>
+              ) : (
+                <div className="grid sm:grid-cols-2 gap-3 mt-4">
+                  {learnBullets.map((item: string, idx: number) => (
+                    <div key={idx} className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-primary mt-0.5" />
+                      <p className="text-sm text-muted-foreground">{item}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
+            {/* Contenido del curso */}
             <div className="bg-card border rounded-xl p-6">
               <h2 className="text-xl font-bold">Contenido del curso</h2>
               <p className="text-sm text-muted-foreground mt-2">
@@ -410,24 +402,25 @@ export default function CourseDetailPage() {
               </div>
             </div>
 
+            {/* ✅ Requisitos */}
             <div className="bg-card border rounded-xl p-6">
               <h2 className="text-xl font-bold">Requisitos</h2>
 
-              {requirements.length ? (
-                <ul className="mt-3 space-y-2 text-sm text-muted-foreground list-disc pl-5">
-                  {requirements.map((r, idx) => (
-                    <li key={idx}>{r}</li>
-                  ))}
-                </ul>
+              {requirements.length === 0 ? (
+                <p className="text-sm text-muted-foreground mt-3">
+                  No hay requisitos.
+                </p>
               ) : (
                 <ul className="mt-3 space-y-2 text-sm text-muted-foreground list-disc pl-5">
-                  <li>Solo necesitas internet y ganas de aprender.</li>
-                  <li>Ideal si estás comenzando o quieres ordenar tu proceso.</li>
+                  {requirements.map((r: string, idx: number) => (
+                    <li key={idx}>{r}</li>
+                  ))}
                 </ul>
               )}
             </div>
           </div>
 
+          {/* SIDE SUMMARY */}
           <div className="lg:col-span-4">
             <div className="bg-card border rounded-xl p-6 lg:sticky lg:top-6">
               <h3 className="font-bold">Resumen</h3>

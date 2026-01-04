@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -34,6 +34,16 @@ export default function CreatorProfileEdit() {
   const [introVideoUrl, setIntroVideoUrl] = useState(profileData?.intro_video_url || '');
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(profileData?.avatar_url || '');
+
+  // Keep local form state in sync if profile refreshes
+  useEffect(() => {
+    setName(profileData?.name || '');
+    setBio(profileData?.bio || '');
+    setCreatorSlug(profileData?.creator_slug || '');
+    setIntroVideoUrl(profileData?.intro_video_url || '');
+    setAvatarUrl(profileData?.avatar_url || '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileData?.id, profileData?.updated_at]);
 
   // Parse existing links
   const existingLinks = Array.isArray(profileData?.links) ? profileData.links : [];
@@ -72,13 +82,14 @@ export default function CreatorProfileEdit() {
       const newAvatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
       setAvatarUrl(newAvatarUrl);
 
-      // Update profile immediately
-      await supabase
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({ avatar_url: newAvatarUrl })
         .eq('id', profileData.id);
 
-      refreshProfile();
+      if (updateError) throw updateError;
+
+      await refreshProfile();
       toast({ title: 'Foto de perfil actualizada' });
     } catch (error: any) {
       toast({ title: 'Error al subir imagen', description: error.message, variant: 'destructive' });
@@ -90,7 +101,7 @@ export default function CreatorProfileEdit() {
   const updateMutation = useMutation({
     mutationFn: async () => {
       const slug = creatorSlug || generateSlug(name);
-      
+
       // Build links array from social links
       const linksArray = Object.entries(socialLinks)
         .filter(([_, url]) => url && url.trim())
@@ -100,21 +111,40 @@ export default function CreatorProfileEdit() {
           label: type.charAt(0).toUpperCase() + type.slice(1),
         }));
 
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          name,
-          bio,
-          creator_slug: slug,
-          intro_video_url: introVideoUrl || null,
-          links: linksArray,
-        } as any)
-        .eq('id', profileData!.id);
+      // IMPORTANT: Some backends might not have `intro_video_url` yet.
+      // We only send it if there is a value; and we retry without it if the API complains.
+      const basePayload: Record<string, any> = {
+        name,
+        bio,
+        creator_slug: slug,
+        links: linksArray,
+      };
 
-      if (error) throw error;
+      const trimmedIntro = introVideoUrl?.trim();
+      const payloadWithIntro = trimmedIntro ? { ...basePayload, intro_video_url: trimmedIntro } : basePayload;
+
+      const attempt = async (payload: Record<string, any>) => {
+        const { error } = await supabase
+          .from('profiles')
+          .update(payload)
+          .eq('id', profileData!.id);
+        if (error) throw error;
+      };
+
+      try {
+        await attempt(payloadWithIntro);
+      } catch (e: any) {
+        const msg = String(e?.message || '');
+        if (msg.includes("Could not find the 'intro_video_url' column")) {
+          // Retry without intro_video_url so the rest of the profile can still be saved.
+          await attempt(basePayload);
+          return;
+        }
+        throw e;
+      }
     },
-    onSuccess: () => {
-      refreshProfile();
+    onSuccess: async () => {
+      await refreshProfile();
       toast({ title: 'Perfil actualizado' });
     },
     onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
@@ -213,7 +243,7 @@ export default function CreatorProfileEdit() {
                 className="mt-1"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Este video aparecerá en tu perfil público para que los visitantes te conozcan mejor.
+                Si tu backend todavía no tiene esta columna, igual podrás guardar el resto del perfil.
               </p>
             </div>
           </CardContent>

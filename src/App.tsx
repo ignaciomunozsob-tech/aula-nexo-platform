@@ -15,6 +15,7 @@ import LoginPage from "@/pages/auth/LoginPage";
 import SignupPage from "@/pages/auth/SignupPage";
 import StudentDashboard from "@/pages/app/StudentDashboard";
 import MyCoursesPage from "@/pages/app/MyCoursesPage";
+import StudentMarketplacePage from "@/pages/app/StudentMarketplacePage";
 import CoursePlayerPage from "@/pages/app/CoursePlayerPage";
 import StudentSettings from "@/pages/app/StudentSettings";
 import CreatorDashboard from "@/pages/creator/CreatorDashboard";
@@ -62,6 +63,7 @@ const App = () => (
               <Route path="/app" element={<StudentLayout />}>
                 <Route index element={<StudentDashboard />} />
                 <Route path="my-courses" element={<MyCoursesPage />} />
+                <Route path="marketplace" element={<StudentMarketplacePage />} />
                 <Route path="course/:id" element={<CoursePlayerPage />} />
                 <Route path="settings" element={<StudentSettings />} />
               </Route>

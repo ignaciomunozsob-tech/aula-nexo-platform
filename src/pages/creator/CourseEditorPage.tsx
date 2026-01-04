@@ -44,6 +44,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import CourseCoverUploader from "@/components/layout/CourseCoverUploader";
+import LessonVideoUploader from "@/components/layout/LessonVideoUploader";
 
 type LessonForm = {
   id: string;
@@ -783,16 +784,16 @@ export default function CourseEditorPage() {
                         </Select>
 
                         {les.type === "video" && (
-                          <Input
-                            value={les.video_url || ""}
-                            onChange={(e) => {
+                          <LessonVideoUploader
+                            lessonId={les.id}
+                            currentUrl={les.video_url || null}
+                            onUrlChange={(url) => {
                               const u = [...modules];
                               if (u[mi]?.lessons?.[li]) {
-                                u[mi].lessons[li].video_url = e.target.value;
+                                u[mi].lessons[li].video_url = url;
                                 setModules(u);
                               }
                             }}
-                            placeholder="URL del video (YouTube)"
                           />
                         )}
 

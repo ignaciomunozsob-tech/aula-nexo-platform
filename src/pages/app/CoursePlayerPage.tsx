@@ -243,12 +243,23 @@ export default function CoursePlayerPage() {
             {/* Video or Text content */}
             {currentLesson.type === 'video' && currentLesson.video_url ? (
               <div className="aspect-video bg-black rounded-lg overflow-hidden mb-6">
-                <iframe
-                  src={currentLesson.video_url.replace('watch?v=', 'embed/')}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+                {currentLesson.video_url.includes('youtube.com') || currentLesson.video_url.includes('youtu.be') ? (
+                  <iframe
+                    src={currentLesson.video_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : (
+                  <video
+                    src={currentLesson.video_url}
+                    controls
+                    className="w-full h-full"
+                    controlsList="nodownload"
+                  >
+                    Tu navegador no soporta la reproducción de video.
+                  </video>
+                )}
               </div>
             ) : currentLesson.type === 'text' && currentLesson.content_text ? (
               <div className="bg-card border border-border rounded-lg p-8 mb-6 prose prose-sm max-w-none">

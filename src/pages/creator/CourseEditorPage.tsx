@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { generateSlug } from "@/lib/utils";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -90,13 +91,39 @@ function RichTextEditor({ value, onChange }: { value: string; onChange: (html: s
   const exec = (cmd: string, arg?: string) => {
     ref.current?.focus();
     document.execCommand(cmd, false, arg);
-    onChange(ref.current?.innerHTML || "");
+    // Sanitize HTML before passing to onChange to prevent XSS
+    const rawHtml = ref.current?.innerHTML || "";
+    onChange(sanitizeHtml(rawHtml));
+  };
+
+  // Validate URL to only allow safe protocols
+  const isValidUrl = (url: string): boolean => {
+    try {
+      const parsed = new URL(url);
+      // Only allow http and https protocols
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    } catch {
+      return false;
+    }
   };
 
   const addLink = () => {
     const url = window.prompt("Pega el link (https://...)");
     if (!url) return;
+    
+    // Validate URL before creating link
+    if (!isValidUrl(url)) {
+      alert("URL inválida. Solo se permiten enlaces http:// o https://");
+      return;
+    }
+    
     exec("createLink", url);
+  };
+
+  const handleContentChange = () => {
+    const rawHtml = ref.current?.innerHTML || "";
+    // Sanitize HTML before saving
+    onChange(sanitizeHtml(rawHtml));
   };
 
   return (
@@ -132,8 +159,8 @@ function RichTextEditor({ value, onChange }: { value: string; onChange: (html: s
         ref={ref}
         contentEditable
         className="min-h-[180px] rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        onInput={() => onChange(ref.current?.innerHTML || "")}
-        onBlur={() => onChange(ref.current?.innerHTML || "")}
+        onInput={handleContentChange}
+        onBlur={handleContentChange}
         suppressContentEditableWarning
       />
 

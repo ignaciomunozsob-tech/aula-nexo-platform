@@ -80,14 +80,18 @@ export default function SignupPage() {
       description: 'Bienvenido a AulaNexo',
     });
 
-    // Si venía un next, lo respetamos (pero evitamos mandar student al panel de creador)
-    if (next) {
-      const safeNext = next.startsWith('/creator-app') && role === 'student' ? '/app' : next;
+    // Validate next parameter to prevent open redirect attacks
+    // Only allow relative paths that start with / and don't contain protocol schemes
+    const isSafeRedirect = next && next.startsWith('/') && !next.includes('://') && !next.startsWith('//');
+    
+    if (isSafeRedirect) {
+      // Prevent students from accessing creator routes
+      const safeNext = next.startsWith('/creator') && role === 'student' ? '/app' : next;
       navigate(safeNext);
       return;
     }
 
-    navigate(role === 'creator' ? '/creator-app' : '/app');
+    navigate(role === 'creator' ? '/creator' : '/app');
   };
 
   const loginLink = next ? `/login?next=${encodeURIComponent(next)}` : '/login';

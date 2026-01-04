@@ -103,13 +103,8 @@ export default function Verify2FAPage() {
     setResending(true);
 
     try {
-      const { error } = await supabase.functions.invoke("send-2fa-code", {
-        body: {
-          userId,
-          email: userEmail,
-          userName,
-        },
-      });
+      // Call 2FA function - user info is extracted from the auth token on server-side
+      const { error } = await supabase.functions.invoke("send-2fa-code");
 
       if (error) {
         throw error;

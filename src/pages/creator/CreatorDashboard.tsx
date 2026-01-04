@@ -3,27 +3,17 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Plus, BookOpen, Users, TrendingUp, CalendarDays } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+import { Loader2, Plus, BookOpen, Users, TrendingUp, CalendarDays } from "lucide-react";
 
 type RangeKey = "7d" | "30d" | "90d" | "all";
 
@@ -55,8 +45,8 @@ function getRangeStartISO(range: RangeKey) {
 
 function isPaidStatus(status?: string | null) {
   const s = (status || "").toLowerCase();
-  // ajusta estos valores según tus estados reales
-  if (!s) return true; // si no hay status, lo contamos igual (MVP)
+  // MVP: si no hay status lo contamos
+  if (!s) return true;
   if (s.includes("refund") || s.includes("reemb") || s.includes("cancel")) return false;
   return true;
 }
@@ -65,33 +55,31 @@ export default function CreatorDashboard() {
   const { user } = useAuth();
   const [range, setRange] = useState<RangeKey>("30d");
 
-  const { data: courses, isLoading: isLoadingCourses } = useQuery({
+  // 1) Cursos del creador (para obtener courseIds)
+  const { data: courses = [], isLoading: isLoadingCourses } = useQuery({
     queryKey: ["creator-courses", user?.id],
+    enabled: !!user?.id,
     queryFn: async () => {
-      if (!user?.id) return [];
       const { data, error } = await supabase
         .from("courses")
         .select("id,title,status,price_clp,created_at")
-        .eq("creator_id", user.id)
+        .eq("creator_id", user!.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      return data ?? [];
     },
-    enabled: !!user?.id,
   });
 
-  const courseIds = useMemo(() => (courses || []).map((c: any) => c.id), [courses]);
+  const courseIds = useMemo(() => courses.map((c: any) => c.id), [courses]);
 
-  const { data: enrollments, isLoading: isLoadingSales } = useQuery({
+  // 2) Ventas/inscripciones (enrollments) asociadas a esos cursos
+  const { data: enrollments = [], isLoading: isLoadingSales } = useQuery({
     queryKey: ["creator-sales", user?.id, range, courseIds.join("|")],
+    enabled: !!user?.id && courseIds.length > 0,
     queryFn: async () => {
-      if (!user?.id) return [];
-      if (courseIds.length === 0) return [];
-
       const startISO = getRangeStartISO(range);
 
-      // Traemos inscripciones ligadas a cursos del creador
       let q = supabase
         .from("enrollments")
         .select(
@@ -100,13 +88,13 @@ export default function CreatorDashboard() {
           status,
           purchased_at,
           course_id,
-          student_id,
+          user_id,
           courses:course_id (
             id,
             title,
             price_clp
           ),
-          profiles:student_id (
+          profiles:user_id (
             name,
             avatar_url
           )
@@ -121,42 +109,34 @@ export default function CreatorDashboard() {
       const { data, error } = await q;
       if (error) throw error;
 
-      // Normaliza y filtra “pagadas” para el cálculo
-      const rows = (data || []).filter((r: any) => isPaidStatus(r.status));
-      return rows;
+      return (data ?? []).filter((r: any) => isPaidStatus(r.status));
     },
-    enabled: !!user?.id && courseIds.length > 0,
   });
 
+  // 3) Stats
+  const uniqueStudents = useMemo(() => {
+    const uniq = new Set(enrollments.map((e: any) => e.user_id));
+    return uniq.size;
+  }, [enrollments]);
+
   const stats = useMemo(() => {
-    const rows = enrollments || [];
-    const revenue = rows.reduce((acc: number, r: any) => acc + Number(r?.courses?.price_clp || 0), 0);
-    const sales = rows.length;
+    const revenue = enrollments.reduce((acc: number, r: any) => acc + Number(r?.courses?.price_clp || 0), 0);
+    const sales = enrollments.length;
     const avg = sales > 0 ? Math.round(revenue / sales) : 0;
 
-    // Top curso por ingresos (en el rango)
     const byCourse = new Map<string, { title: string; revenue: number; sales: number }>();
-    for (const r of rows) {
+    for (const r of enrollments) {
       const cid = String(r.course_id);
       const title = r?.courses?.title || "Curso";
       const price = Number(r?.courses?.price_clp || 0);
 
       const prev = byCourse.get(cid) || { title, revenue: 0, sales: 0 };
-      byCourse.set(cid, {
-        title,
-        revenue: prev.revenue + price,
-        sales: prev.sales + 1,
-      });
+      byCourse.set(cid, { title, revenue: prev.revenue + price, sales: prev.sales + 1 });
     }
 
     const top = Array.from(byCourse.values()).sort((a, b) => b.revenue - a.revenue)[0] || null;
 
-    return {
-      revenue,
-      sales,
-      avg,
-      top,
-    };
+    return { revenue, sales, avg, top };
   }, [enrollments]);
 
   const loading = isLoadingCourses || isLoadingSales;
@@ -185,9 +165,7 @@ export default function CreatorDashboard() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Dashboard Creador</h1>
-          <p className="text-sm text-muted-foreground">
-            Vista rápida de cursos + ventas (MVP). Después sumamos retiros/payouts.
-          </p>
+          <p className="text-sm text-muted-foreground">Vista rápida de cursos + ventas (MVP).</p>
         </div>
 
         <div className="flex gap-2">
@@ -207,7 +185,7 @@ export default function CreatorDashboard() {
         </div>
       </div>
 
-      {/* Cards: cursos */}
+      {/* Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader>
@@ -216,7 +194,7 @@ export default function CreatorDashboard() {
           <CardContent>
             <div className="flex items-center gap-2">
               <BookOpen className="h-4 w-4 text-muted-foreground" />
-              <span className="text-2xl font-bold">{courses?.length || 0}</span>
+              <span className="text-2xl font-bold">{courses.length}</span>
             </div>
             <p className="text-xs text-muted-foreground mt-2">Total de cursos creados</p>
           </CardContent>
@@ -229,12 +207,7 @@ export default function CreatorDashboard() {
           <CardContent>
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="text-2xl font-bold">
-                {useMemo(() => {
-                  const uniq = new Set((enrollments || []).map((e: any) => e.student_id));
-                  return uniq.size;
-                }, [enrollments])}
-              </span>
+              <span className="text-2xl font-bold">{uniqueStudents}</span>
             </div>
             <p className="text-xs text-muted-foreground mt-2">Únicos en el rango</p>
           </CardContent>
@@ -242,14 +215,14 @@ export default function CreatorDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium">Rendimiento</CardTitle>
+            <CardTitle className="text-sm font-medium">Ventas</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
               <span className="text-2xl font-bold">{stats.sales}</span>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">Ventas (inscripciones) en el rango</p>
+            <p className="text-xs text-muted-foreground mt-2">Inscripciones en el rango</p>
           </CardContent>
         </Card>
       </div>
@@ -259,9 +232,7 @@ export default function CreatorDashboard() {
         <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="space-y-1">
             <CardTitle className="text-base">Finanzas</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Ingresos estimados basados en inscripciones (enrollments) × precio del curso.
-            </p>
+            <p className="text-sm text-muted-foreground">Ingresos estimados: enrollments × precio del curso.</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -348,9 +319,9 @@ export default function CreatorDashboard() {
                 <Badge variant="outline">MVP</Badge>
               </div>
 
-              {(enrollments || []).length === 0 ? (
+              {enrollments.length === 0 ? (
                 <div className="rounded-lg border bg-muted/20 p-6 text-sm text-muted-foreground">
-                  Aún no tienes ventas en este rango. Cuando alguien compre, aquí verás la transacción.
+                  Aún no tienes ventas en este rango.
                 </div>
               ) : (
                 <div className="rounded-lg border overflow-hidden">
@@ -365,7 +336,7 @@ export default function CreatorDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {(enrollments || []).slice(0, 12).map((r: any) => {
+                      {enrollments.slice(0, 12).map((r: any) => {
                         const name = r?.profiles?.name || "Estudiante";
                         const initials = name
                           .split(" ")
@@ -375,6 +346,8 @@ export default function CreatorDashboard() {
                           .join("");
 
                         const status = (r?.status || "paid").toLowerCase();
+                        const badgeVariant =
+                          status.includes("refund") || status.includes("cancel") ? "destructive" : "secondary";
 
                         return (
                           <TableRow key={r.id}>
@@ -395,9 +368,7 @@ export default function CreatorDashboard() {
                               {formatCLP(r?.courses?.price_clp)}
                             </TableCell>
                             <TableCell className="text-right">
-                              <Badge variant={status.includes("refund") || status.includes("cancel") ? "destructive" : "secondary"}>
-                                {r?.status || "paid"}
-                              </Badge>
+                              <Badge variant={badgeVariant as any}>{r?.status || "paid"}</Badge>
                             </TableCell>
                           </TableRow>
                         );
@@ -408,7 +379,7 @@ export default function CreatorDashboard() {
               )}
 
               <p className="text-xs text-muted-foreground">
-                Próximo paso: crear “payouts/retiros” y separar “saldo disponible” vs “en tránsito”.
+                Próximo paso: “payouts/retiros” y separar “saldo disponible” vs “en tránsito”.
               </p>
             </>
           )}

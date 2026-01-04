@@ -1,12 +1,37 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { GraduationCap, LayoutDashboard, BookOpen, User, LogOut, Home, DollarSign, Star } from 'lucide-react';
+import { GraduationCap, LayoutDashboard, BookOpen, User, LogOut, Home, DollarSign, Star, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export function CreatorSidebar() {
-  const { profile, signOut } = useAuth();
+  const { profile, user, signOut } = useAuth();
   const navigate = useNavigate();
+
+  // Check if user has any enrollments (purchased courses)
+  const { data: hasEnrollments } = useQuery({
+    queryKey: ['creator-has-enrollments', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      const { count, error } = await supabase
+        .from('enrollments')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+      
+      if (error) return false;
+      return (count || 0) > 0;
+    },
+    enabled: !!user?.id,
+  });
 
   const handleSignOut = async () => {
     await signOut();
@@ -33,20 +58,41 @@ export function CreatorSidebar() {
         </NavLink>
       </div>
 
-      {/* User Info */}
+      {/* User Info with Dropdown */}
       <div className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={profile?.avatar_url || ''} alt={profile?.name || 'Creador'} />
-            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="font-medium text-sidebar-foreground text-sm">{profile?.name || 'Creador'}</p>
-            <p className="text-xs text-primary font-medium">Creador</p>
-          </div>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="w-full focus:outline-none">
+            <div className="flex items-center gap-3 hover:bg-sidebar-accent/50 rounded-lg p-2 -m-2 transition-colors cursor-pointer">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={profile?.avatar_url || ''} alt={profile?.name || 'Creador'} />
+                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 text-left">
+                <p className="font-medium text-sidebar-foreground text-sm">{profile?.name || 'Creador'}</p>
+                <p className="text-xs text-primary font-medium">Creador</p>
+              </div>
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-56">
+            {hasEnrollments && (
+              <DropdownMenuItem onClick={() => navigate('/app')}>
+                <LayoutDashboard className="h-4 w-4 mr-2" />
+                Área de Alumno
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={() => navigate('/')}>
+              <Home className="h-4 w-4 mr-2" />
+              Ir al Inicio
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+              <LogOut className="h-4 w-4 mr-2" />
+              Cerrar Sesión
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Navigation */}
@@ -73,20 +119,6 @@ export function CreatorSidebar() {
             </li>
           ))}
         </ul>
-
-        {/* Student Area Link */}
-        <div className="mt-6 pt-6 border-t border-sidebar-border">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-            Área Alumno
-          </p>
-          <NavLink
-            to="/app"
-            className="sidebar-item"
-          >
-            <LayoutDashboard className="h-5 w-5" />
-            <span>Mi Aprendizaje</span>
-          </NavLink>
-        </div>
       </nav>
 
       {/* Bottom Actions */}

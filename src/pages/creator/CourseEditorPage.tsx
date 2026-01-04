@@ -549,14 +549,24 @@ export default function CourseEditorPage() {
             </Button>
           )}
           {course?.status === "draft" ? (
-            <Button onClick={() => setShowPublishDialog(true)} disabled={saveMutation.isPending}>
-              {saveMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Save className="h-4 w-4 mr-2" />
-              )}
-              Guardar y Publicar
-            </Button>
+            <>
+              <Button variant="outline" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+                {saveMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                Guardar Borrador
+              </Button>
+              <Button onClick={() => setShowPublishDialog(true)} disabled={saveMutation.isPending}>
+                {saveMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                Guardar y Publicar
+              </Button>
+            </>
           ) : (
             <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
               {saveMutation.isPending ? (

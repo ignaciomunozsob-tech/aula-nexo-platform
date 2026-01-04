@@ -91,6 +91,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, name: string, role: UserRole = 'student') => {
     const redirectUrl = `${window.location.origin}/`;
     
+    // SECURITY: Role is always defaulted server-side in handle_new_user trigger
+    // We only pass name in user metadata - role assignment is handled securely server-side
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -98,7 +100,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: redirectUrl,
         data: {
           name,
-          role,
+          // Note: role is intentionally NOT passed here for security
+          // The handle_new_user trigger defaults to 'student' role
+          // Creator/admin roles must be assigned through proper admin workflows
         },
       },
     });

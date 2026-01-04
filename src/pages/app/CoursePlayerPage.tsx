@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, Navigate, useSearchParams, useLocation } from 'react-router-dom';
+import { sanitizeTextWithBreaks } from '@/lib/sanitize';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
@@ -312,7 +313,7 @@ export default function CoursePlayerPage() {
               </div>
             ) : currentLesson.type === 'text' && currentLesson.content_text ? (
               <div className="bg-card border border-border rounded-lg p-8 mb-6 prose prose-sm max-w-none">
-                <div dangerouslySetInnerHTML={{ __html: currentLesson.content_text.replace(/\n/g, '<br/>') }} />
+                <div dangerouslySetInnerHTML={{ __html: sanitizeTextWithBreaks(currentLesson.content_text) }} />
               </div>
             ) : (
               <div className="bg-muted rounded-lg p-12 text-center mb-6">

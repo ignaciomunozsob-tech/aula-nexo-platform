@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -166,8 +167,11 @@ export default function CourseDetailPage() {
         return { userId: user.id, isNewUser: false };
       }
       
-      // For anonymous users, create account with temp password
-      const tempPassword = generateTempPassword();
+      // For anonymous users, create account and send password reset link
+      // Generate a secure random password (user will set their own via reset link)
+      const randomBytes = new Uint8Array(16);
+      crypto.getRandomValues(randomBytes);
+      const tempPassword = Array.from(randomBytes, b => b.toString(16).padStart(2, '0')).join('') + "Aa1!";
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: enrollEmail,
@@ -175,7 +179,6 @@ export default function CourseDetailPage() {
         options: {
           data: { 
             name: enrollName,
-            needs_password_change: true,
           },
           emailRedirectTo: `${window.location.origin}/`,
         },
@@ -198,13 +201,12 @@ export default function CourseDetailPage() {
         .update({ onboarding_completed: true })
         .eq("id", authData.user.id);
       
-      // Send welcome email with temp password
+      // Send welcome email with link to set password (no plain-text password)
       try {
         await supabase.functions.invoke("send-welcome-email", {
           body: {
             email: enrollEmail,
             name: enrollName,
-            tempPassword,
             courseName: course.title,
           },
         });
@@ -212,10 +214,10 @@ export default function CourseDetailPage() {
         console.error("Error sending welcome email:", emailErr);
       }
       
-      // Sign out so user can login with temp password
+      // Sign out so user can set password via forgot password flow
       await supabase.auth.signOut();
       
-      return { userId: authData.user.id, isNewUser: true, tempPassword };
+      return { userId: authData.user.id, isNewUser: true };
     },
     onSuccess: (data) => {
       setShowFreeEnrollDialog(false);
@@ -223,7 +225,7 @@ export default function CourseDetailPage() {
       if (data.isNewUser) {
         toast({ 
           title: "¡Inscripción exitosa! 🎉", 
-          description: "Te hemos enviado un email con tu contraseña temporal para acceder." 
+          description: "Te hemos enviado un email con instrucciones para acceder a tu curso." 
         });
         navigate("/login");
       } else {
@@ -239,16 +241,6 @@ export default function CourseDetailPage() {
       });
     },
   });
-
-  // Generate a random temporary password
-  function generateTempPassword(): string {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
-    let password = "";
-    for (let i = 0; i < 8; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
-  }
 
   const handleEnrollClick = () => {
     if (existingEnrollment?.status === "active") {
@@ -324,7 +316,7 @@ export default function CourseDetailPage() {
               {course.description ? (
                 <div 
                   className="text-muted-foreground mt-3 max-w-2xl text-lg prose prose-sm dark:prose-invert"
-                  dangerouslySetInnerHTML={{ __html: course.description }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(course.description) }}
                 />
               ) : (
                 <p className="text-muted-foreground mt-3 max-w-2xl text-lg">Sin descripción.</p>

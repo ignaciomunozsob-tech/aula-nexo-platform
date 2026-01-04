@@ -54,9 +54,22 @@ export default function LessonVideoUploader({
     setUploading(true);
 
     try {
-      const fileExt = file.name.split(".").pop();
+      // Get current user for namespace
+      const { data: authData } = await supabase.auth.getUser();
+      if (!authData.user) {
+        throw new Error("No estás autenticado");
+      }
+
+      // Validate file extension
+      const fileExt = file.name.split(".").pop()?.toLowerCase();
+      const allowedExts = ['mp4', 'mov', 'webm', 'avi', 'mkv'];
+      if (!fileExt || !allowedExts.includes(fileExt)) {
+        throw new Error("Formato de video no soportado");
+      }
+
       const fileName = `${lessonId}-${Date.now()}.${fileExt}`;
-      const filePath = `lessons/${fileName}`;
+      // Use user namespace for storage security
+      const filePath = `${authData.user.id}/lessons/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from("course-assets")

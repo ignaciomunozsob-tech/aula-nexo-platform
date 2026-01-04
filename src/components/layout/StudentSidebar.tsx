@@ -1,7 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { GraduationCap, LayoutDashboard, BookOpen, Settings, LogOut, Home } from 'lucide-react';
+import { GraduationCap, BookOpen, Settings, LogOut, Home, Briefcase } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 export function StudentSidebar() {
   const { profile, signOut } = useAuth();
@@ -12,8 +13,9 @@ export function StudentSidebar() {
     navigate('/');
   };
 
+  const isCreator = profile?.role === 'creator' || profile?.role === 'admin';
+
   const navItems = [
-    { to: '/app', icon: LayoutDashboard, label: 'Mi Negocio', end: true },
     { to: '/app/my-courses', icon: BookOpen, label: 'Mis Cursos', end: false },
     { to: '/app/settings', icon: Settings, label: 'Configuración', end: false },
   ];
@@ -64,6 +66,20 @@ export function StudentSidebar() {
             </li>
           ))}
         </ul>
+
+        {/* Creator Panel Button - only for creators */}
+        {isCreator && (
+          <div className="mt-6">
+            <Button
+              onClick={() => navigate('/creator-app')}
+              className="w-full justify-start gap-2"
+              variant="default"
+            >
+              <Briefcase className="h-5 w-5" />
+              Mi Negocio
+            </Button>
+          </div>
+        )}
       </nav>
 
       {/* Bottom Actions */}

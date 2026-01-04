@@ -55,6 +55,9 @@ const App = () => (
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
 
+              {/* Course preview route - standalone without layout restrictions */}
+              <Route path="/preview/course/:id" element={<CoursePlayerPage />} />
+
               {/* Student routes */}
               <Route path="/app" element={<StudentLayout />}>
                 <Route index element={<StudentDashboard />} />

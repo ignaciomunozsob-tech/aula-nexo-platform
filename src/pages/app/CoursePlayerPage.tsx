@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, Navigate, useSearchParams } from 'react-router-dom';
+import { useParams, Link, Navigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
@@ -22,7 +22,9 @@ import { useToast } from '@/hooks/use-toast';
 export default function CoursePlayerPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
-  const isPreviewMode = searchParams.get('preview') === 'true';
+  const location = useLocation();
+  const isPreviewRoute = location.pathname.startsWith('/preview/');
+  const isPreviewMode = searchParams.get('preview') === 'true' || isPreviewRoute;
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -49,7 +51,7 @@ export default function CoursePlayerPage() {
   });
 
   // Check if user is the creator (for preview mode)
-  const { data: isCreator } = useQuery({
+  const { data: isCreator, isLoading: creatorCheckLoading } = useQuery({
     queryKey: ['is-course-creator', id, user?.id],
     queryFn: async () => {
       if (!user || !id) return false;
@@ -165,7 +167,7 @@ export default function CoursePlayerPage() {
     },
   });
 
-  if (enrollmentLoading && !isPreviewMode) {
+  if ((enrollmentLoading && !isPreviewMode) || (creatorCheckLoading && isPreviewMode)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -175,7 +177,14 @@ export default function CoursePlayerPage() {
 
   // In preview mode, only allow the creator
   if (isPreviewMode && !isCreator) {
-    return <Navigate to={`/course/${course?.slug || id}`} replace />;
+    return (
+      <div className="min-h-screen flex items-center justify-center flex-col gap-4">
+        <p className="text-muted-foreground">Solo el creador puede ver la vista previa de este curso.</p>
+        <Button asChild variant="outline">
+          <Link to="/">Volver al inicio</Link>
+        </Button>
+      </div>
+    );
   }
 
   if (!enrollment && !isPreviewMode) {

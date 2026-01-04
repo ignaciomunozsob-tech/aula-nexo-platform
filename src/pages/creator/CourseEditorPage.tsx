@@ -517,7 +517,7 @@ export default function CourseEditorPage() {
                 </a>
               </Button>
               <Button variant="outline" asChild>
-                <a href={`${window.location.origin}/#/app/course/${course.id}?preview=true`} target="_blank" rel="noreferrer">
+                <a href={`${window.location.origin}/#/preview/course/${course.id}?preview=true`} target="_blank" rel="noreferrer">
                   <Users className="h-4 w-4 mr-2" />
                   Vista previa alumno
                 </a>
@@ -799,115 +799,127 @@ export default function CourseEditorPage() {
                         <div className="px-3 pb-3 pt-1">
                           <div className="space-y-2 pl-4 border-l-2 border-primary/30">
                             {(mod.lessons || []).map((les, li) => (
-                              <div key={les.id} className="flex gap-2 items-start bg-background/80 p-3 rounded-lg shadow-sm">
-                                <div className="flex-1 space-y-2">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-muted-foreground">Lección {li + 1}</span>
-                                  </div>
-                                  <Input
-                                    value={les.title}
-                                    onChange={(e) => {
-                                      const u = [...modules];
-                                      if (u[mi]?.lessons?.[li]) {
-                                        u[mi].lessons[li].title = e.target.value;
-                                        setModules(u);
-                                      }
-                                    }}
-                                    placeholder="Título de la lección"
-                                    className="font-medium"
-                                  />
-
-                                  <Select
-                                    value={les.type}
-                                    onValueChange={(v) => {
-                                      const u = [...modules];
-                                      if (u[mi]?.lessons?.[li]) {
-                                        u[mi].lessons[li].type = v as any;
-                                        if (v === "video") u[mi].lessons[li].content_text = "";
-                                        if (v === "text") u[mi].lessons[li].video_url = "";
-                                        setModules(u);
-                                      }
-                                    }}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="video">Video</SelectItem>
-                                      <SelectItem value="text">Texto</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-
-                                  {les.type === "video" && (
-                                    <LessonVideoUploader
-                                      lessonId={les.id}
-                                      currentUrl={les.video_url || null}
-                                      onUrlChange={(url) => {
-                                        const u = [...modules];
-                                        if (u[mi]?.lessons?.[li]) {
-                                          u[mi].lessons[li].video_url = url;
-                                          setModules(u);
-                                        }
-                                      }}
-                                    />
-                                  )}
-
-                                  {les.type === "text" && (
-                                    <Textarea
-                                      value={les.content_text || ""}
+                              <Collapsible key={les.id} defaultOpen={les.id?.startsWith("new-")}>
+                                <div className="bg-background/80 rounded-lg shadow-sm overflow-hidden">
+                                  {/* Header de la lección - siempre visible */}
+                                  <div className="flex items-center gap-2 p-3">
+                                    <CollapsibleTrigger className="flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 rounded p-1 -m-1 transition-colors">
+                                      <ChevronRight className="h-4 w-4 transition-transform duration-200 [[data-state=open]_&]:rotate-90" />
+                                      <span className="text-xs text-muted-foreground font-medium">
+                                        Lección {li + 1}
+                                      </span>
+                                    </CollapsibleTrigger>
+                                    
+                                    <Input
+                                      value={les.title}
                                       onChange={(e) => {
                                         const u = [...modules];
                                         if (u[mi]?.lessons?.[li]) {
-                                          u[mi].lessons[li].content_text = e.target.value;
+                                          u[mi].lessons[li].title = e.target.value;
                                           setModules(u);
                                         }
                                       }}
-                                      placeholder="Escribe el contenido de la lección aquí..."
-                                      className="min-h-[200px]"
+                                      placeholder="Título de la lección"
+                                      className="flex-1 font-medium"
                                     />
-                                  )}
+
+                                    <div className="flex items-center gap-1">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        disabled={li === 0}
+                                        onClick={() => {
+                                          const u = [...modules];
+                                          [u[mi].lessons[li], u[mi].lessons[li - 1]] = [u[mi].lessons[li - 1], u[mi].lessons[li]];
+                                          setModules(u);
+                                        }}
+                                        title="Subir lección"
+                                      >
+                                        <ChevronUp className="h-4 w-4" />
+                                      </Button>
+
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        disabled={li === (mod.lessons?.length || 0) - 1}
+                                        onClick={() => {
+                                          const u = [...modules];
+                                          [u[mi].lessons[li], u[mi].lessons[li + 1]] = [u[mi].lessons[li + 1], u[mi].lessons[li]];
+                                          setModules(u);
+                                        }}
+                                        title="Bajar lección"
+                                      >
+                                        <ChevronDown className="h-4 w-4" />
+                                      </Button>
+
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        onClick={() => deleteLesson(mi, li)}
+                                        className="text-destructive hover:text-destructive"
+                                        title="Eliminar lección"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </div>
+
+                                  {/* Contenido colapsable de la lección */}
+                                  <CollapsibleContent>
+                                    <div className="px-3 pb-3 space-y-3">
+                                      <Select
+                                        value={les.type}
+                                        onValueChange={(v) => {
+                                          const u = [...modules];
+                                          if (u[mi]?.lessons?.[li]) {
+                                            u[mi].lessons[li].type = v as any;
+                                            if (v === "video") u[mi].lessons[li].content_text = "";
+                                            if (v === "text") u[mi].lessons[li].video_url = "";
+                                            setModules(u);
+                                          }
+                                        }}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="video">Video</SelectItem>
+                                          <SelectItem value="text">Texto</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+
+                                      {les.type === "video" && (
+                                        <LessonVideoUploader
+                                          lessonId={les.id}
+                                          currentUrl={les.video_url || null}
+                                          onUrlChange={(url) => {
+                                            const u = [...modules];
+                                            if (u[mi]?.lessons?.[li]) {
+                                              u[mi].lessons[li].video_url = url;
+                                              setModules(u);
+                                            }
+                                          }}
+                                        />
+                                      )}
+
+                                      {les.type === "text" && (
+                                        <Textarea
+                                          value={les.content_text || ""}
+                                          onChange={(e) => {
+                                            const u = [...modules];
+                                            if (u[mi]?.lessons?.[li]) {
+                                              u[mi].lessons[li].content_text = e.target.value;
+                                              setModules(u);
+                                            }
+                                          }}
+                                          placeholder="Escribe el contenido de la lección aquí..."
+                                          className="min-h-[200px]"
+                                        />
+                                      )}
+                                    </div>
+                                  </CollapsibleContent>
                                 </div>
-
-                                <div className="flex flex-col gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    disabled={li === 0}
-                                    onClick={() => {
-                                      const u = [...modules];
-                                      [u[mi].lessons[li], u[mi].lessons[li - 1]] = [u[mi].lessons[li - 1], u[mi].lessons[li]];
-                                      setModules(u);
-                                    }}
-                                    title="Subir lección"
-                                  >
-                                    <ChevronUp className="h-4 w-4" />
-                                  </Button>
-
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    disabled={li === (mod.lessons?.length || 0) - 1}
-                                    onClick={() => {
-                                      const u = [...modules];
-                                      [u[mi].lessons[li], u[mi].lessons[li + 1]] = [u[mi].lessons[li + 1], u[mi].lessons[li]];
-                                      setModules(u);
-                                    }}
-                                    title="Bajar lección"
-                                  >
-                                    <ChevronDown className="h-4 w-4" />
-                                  </Button>
-
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    onClick={() => deleteLesson(mi, li)}
-                                    className="text-destructive hover:text-destructive"
-                                    title="Eliminar lección"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
+                              </Collapsible>
                             ))}
 
                             <Button variant="outline" size="sm" onClick={() => addLesson(mi)} className="mt-2">

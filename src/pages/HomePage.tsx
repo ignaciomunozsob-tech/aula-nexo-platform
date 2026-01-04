@@ -240,17 +240,17 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
             {productTypes.map((product) => (
               <div
                 key={product.title}
-                className="bg-card border border-border rounded-2xl p-6 hover:border-primary/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                className="bg-card border border-border rounded-xl sm:rounded-2xl p-4 sm:p-6 hover:border-primary/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
               >
-                <div className={`w-14 h-14 rounded-2xl ${product.color} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform`}>
-                  <product.icon className="h-7 w-7" />
+                <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl ${product.color} flex items-center justify-center mb-3 sm:mb-5 group-hover:scale-110 transition-transform`}>
+                  <product.icon className="h-5 w-5 sm:h-7 sm:w-7" />
                 </div>
-                <h3 className="font-semibold text-lg">{product.title}</h3>
-                <p className="text-muted-foreground text-sm mt-1">{product.description}</p>
+                <h3 className="font-semibold text-sm sm:text-lg">{product.title}</h3>
+                <p className="text-muted-foreground text-xs sm:text-sm mt-1">{product.description}</p>
               </div>
             ))}
           </div>
@@ -420,26 +420,97 @@ export default function HomePage() {
 
       {/* Final CTA */}
       <section className="py-24 bg-gradient-to-b from-muted/30 to-background">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-            <Rocket className="h-4 w-4" />
-            Comienza hoy
-          </div>
-          
-          <h2 className="text-3xl md:text-5xl font-bold mb-6">
-            ¿Listo para vender?
-          </h2>
-          <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">
-            Crea tu cuenta gratis y sube tu primer producto. 
-            Sin tarjeta de crédito. Sin compromisos.
-          </p>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left: CTA Content */}
+            <div className="text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
+                <Rocket className="h-4 w-4" />
+                Comienza hoy
+              </div>
+              
+              <h2 className="text-3xl md:text-5xl font-bold mb-6">
+                ¿Listo para vender?
+              </h2>
+              <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto lg:mx-0">
+                Crea tu cuenta gratis y sube tu primer producto. 
+                Sin tarjeta de crédito. Sin compromisos.
+              </p>
 
-          <Button size="lg" className="text-base px-10 h-14 text-lg" asChild>
-            <Link to="/signup?role=creator">
-              Crear mi cuenta gratis
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-          </Button>
+              <Button size="lg" className="text-base px-10 h-14 text-lg" asChild>
+                <Link to="/signup?role=creator">
+                  Crear mi cuenta gratis
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+            </div>
+
+            {/* Right: Creator Profile Preview */}
+            <div className="relative hidden sm:block">
+              <div className="bg-card border border-border rounded-2xl shadow-xl p-6">
+                {/* Profile Header */}
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+                    <span className="text-2xl font-bold text-primary-foreground">M</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-lg">María González</h4>
+                    <p className="text-sm text-muted-foreground">Experta en Marketing Digital</p>
+                    <div className="flex items-center gap-1 mt-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+                      ))}
+                      <span className="text-xs text-muted-foreground ml-1">(24 reseñas)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  <div className="bg-muted/50 rounded-xl p-3 text-center">
+                    <p className="text-xl font-bold">3</p>
+                    <p className="text-xs text-muted-foreground">Cursos</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-xl p-3 text-center">
+                    <p className="text-xl font-bold">156</p>
+                    <p className="text-xs text-muted-foreground">Alumnos</p>
+                  </div>
+                  <div className="bg-muted/50 rounded-xl p-3 text-center">
+                    <p className="text-xl font-bold">4.9</p>
+                    <p className="text-xs text-muted-foreground">Rating</p>
+                  </div>
+                </div>
+
+                {/* Products Preview */}
+                <div className="space-y-3">
+                  <p className="text-xs text-muted-foreground font-medium">Productos destacados</p>
+                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
+                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                      <BookOpen className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">Marketing en Redes</p>
+                      <p className="text-xs text-muted-foreground">$29.990</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
+                    <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                      <FileText className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">Guía de Email Marketing</p>
+                      <p className="text-xs text-muted-foreground">$9.990</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Floating decoration */}
+              <div className="absolute -top-3 -right-3 bg-emerald-500 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-lg">
+                ✨ Perfil verificado
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </>

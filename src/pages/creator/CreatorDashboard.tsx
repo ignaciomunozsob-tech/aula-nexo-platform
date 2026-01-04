@@ -9,9 +9,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 import { Loader2, Plus, BookOpen, Users, TrendingUp, CalendarDays } from "lucide-react";
 
@@ -45,62 +57,57 @@ function getRangeStartISO(range: RangeKey) {
 
 function isPaidStatus(status?: string | null) {
   const s = (status || "").toLowerCase();
-  // MVP: si no hay status lo contamos
-  if (!s) return true;
+  if (!s) return true; // MVP: si no hay status, lo contamos
   if (s.includes("refund") || s.includes("reemb") || s.includes("cancel")) return false;
   return true;
 }
+
+type CreatorSaleRow = {
+  enrollment_id: string;
+  purchased_at: string | null;
+  status: string | null;
+  course_id: string;
+  course_title: string | null;
+  price_clp: number | null;
+  creator_id: string;
+  buyer_user_id: string;
+  buyer_name: string | null;
+  buyer_avatar_url: string | null;
+};
 
 export default function CreatorDashboard() {
   const { user } = useAuth();
   const [range, setRange] = useState<RangeKey>("30d");
 
-  // 1) Cursos del creador (para obtener courseIds)
-  const { data: courses = [], isLoading: isLoadingCourses } = useQuery({
+  // Cursos del creador (para tarjeta “Cursos” + navegación)
+  const { data: courses, isLoading: isLoadingCourses } = useQuery({
     queryKey: ["creator-courses", user?.id],
-    enabled: !!user?.id,
     queryFn: async () => {
+      if (!user?.id) return [];
       const { data, error } = await supabase
         .from("courses")
         .select("id,title,status,price_clp,created_at")
-        .eq("creator_id", user!.id)
+        .eq("creator_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data ?? [];
+      return data || [];
     },
+    enabled: !!user?.id,
   });
 
-  const courseIds = useMemo(() => courses.map((c: any) => c.id), [courses]);
-
-  // 2) Ventas/inscripciones (enrollments) asociadas a esos cursos
-  const { data: enrollments = [], isLoading: isLoadingSales } = useQuery({
-    queryKey: ["creator-sales", user?.id, range, courseIds.join("|")],
-    enabled: !!user?.id && courseIds.length > 0,
+  // Ventas (MVP) desde VIEW creator_sales
+  const { data: sales, isLoading: isLoadingSales } = useQuery({
+    queryKey: ["creator-sales", user?.id, range],
     queryFn: async () => {
+      if (!user?.id) return [];
+
       const startISO = getRangeStartISO(range);
 
       let q = supabase
-        .from("enrollments")
-        .select(
-          `
-          id,
-          status,
-          purchased_at,
-          course_id,
-          user_id,
-          courses:course_id (
-            id,
-            title,
-            price_clp
-          ),
-          profiles:user_id (
-            name,
-            avatar_url
-          )
-        `
-        )
-        .in("course_id", courseIds)
+        .from("creator_sales")
+        .select("*")
+        .eq("creator_id", user.id)
         .order("purchased_at", { ascending: false })
         .limit(200);
 
@@ -109,26 +116,25 @@ export default function CreatorDashboard() {
       const { data, error } = await q;
       if (error) throw error;
 
-      return (data ?? []).filter((r: any) => isPaidStatus(r.status));
+      return ((data as CreatorSaleRow[]) || []).filter((r) => isPaidStatus(r.status));
     },
+    enabled: !!user?.id,
   });
 
-  // 3) Stats
-  const uniqueStudents = useMemo(() => {
-    const uniq = new Set(enrollments.map((e: any) => e.user_id));
-    return uniq.size;
-  }, [enrollments]);
-
   const stats = useMemo(() => {
-    const revenue = enrollments.reduce((acc: number, r: any) => acc + Number(r?.courses?.price_clp || 0), 0);
-    const sales = enrollments.length;
-    const avg = sales > 0 ? Math.round(revenue / sales) : 0;
+    const rows = sales || [];
+
+    const revenue = rows.reduce((acc, r) => acc + Number(r.price_clp || 0), 0);
+    const salesCount = rows.length;
+    const avg = salesCount > 0 ? Math.round(revenue / salesCount) : 0;
+
+    const uniqStudents = new Set(rows.map((r) => r.buyer_user_id)).size;
 
     const byCourse = new Map<string, { title: string; revenue: number; sales: number }>();
-    for (const r of enrollments) {
+    for (const r of rows) {
       const cid = String(r.course_id);
-      const title = r?.courses?.title || "Curso";
-      const price = Number(r?.courses?.price_clp || 0);
+      const title = r.course_title || "Curso";
+      const price = Number(r.price_clp || 0);
 
       const prev = byCourse.get(cid) || { title, revenue: 0, sales: 0 };
       byCourse.set(cid, { title, revenue: prev.revenue + price, sales: prev.sales + 1 });
@@ -136,8 +142,8 @@ export default function CreatorDashboard() {
 
     const top = Array.from(byCourse.values()).sort((a, b) => b.revenue - a.revenue)[0] || null;
 
-    return { revenue, sales, avg, top };
-  }, [enrollments]);
+    return { revenue, salesCount, avg, uniqStudents, top };
+  }, [sales]);
 
   const loading = isLoadingCourses || isLoadingSales;
 
@@ -149,7 +155,9 @@ export default function CreatorDashboard() {
             <CardTitle>Debes iniciar sesión</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground text-sm">Inicia sesión para ver tu dashboard de creador.</p>
+            <p className="text-muted-foreground text-sm">
+              Inicia sesión para ver tu dashboard de creador.
+            </p>
             <Button className="mt-4" asChild>
               <Link to="/login">Ir a login</Link>
             </Button>
@@ -165,7 +173,9 @@ export default function CreatorDashboard() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Dashboard Creador</h1>
-          <p className="text-sm text-muted-foreground">Vista rápida de cursos + ventas (MVP).</p>
+          <p className="text-sm text-muted-foreground">
+            Cursos + ventas (MVP). Luego sumamos payouts/retiros cuando metas Webpay.
+          </p>
         </div>
 
         <div className="flex gap-2">
@@ -185,7 +195,7 @@ export default function CreatorDashboard() {
         </div>
       </div>
 
-      {/* Cards */}
+      {/* Cards superiores */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader>
@@ -194,7 +204,7 @@ export default function CreatorDashboard() {
           <CardContent>
             <div className="flex items-center gap-2">
               <BookOpen className="h-4 w-4 text-muted-foreground" />
-              <span className="text-2xl font-bold">{courses.length}</span>
+              <span className="text-2xl font-bold">{courses?.length || 0}</span>
             </div>
             <p className="text-xs text-muted-foreground mt-2">Total de cursos creados</p>
           </CardContent>
@@ -207,7 +217,7 @@ export default function CreatorDashboard() {
           <CardContent>
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-muted-foreground" />
-              <span className="text-2xl font-bold">{uniqueStudents}</span>
+              <span className="text-2xl font-bold">{stats.uniqStudents}</span>
             </div>
             <p className="text-xs text-muted-foreground mt-2">Únicos en el rango</p>
           </CardContent>
@@ -220,7 +230,7 @@ export default function CreatorDashboard() {
           <CardContent>
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              <span className="text-2xl font-bold">{stats.sales}</span>
+              <span className="text-2xl font-bold">{stats.salesCount}</span>
             </div>
             <p className="text-xs text-muted-foreground mt-2">Inscripciones en el rango</p>
           </CardContent>
@@ -232,7 +242,9 @@ export default function CreatorDashboard() {
         <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="space-y-1">
             <CardTitle className="text-base">Finanzas</CardTitle>
-            <p className="text-sm text-muted-foreground">Ingresos estimados: enrollments × precio del curso.</p>
+            <p className="text-sm text-muted-foreground">
+              Ingresos estimados = ventas × precio del curso (enrollments).
+            </p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -275,7 +287,7 @@ export default function CreatorDashboard() {
                     <CardTitle className="text-sm font-medium">Ventas</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{stats.sales}</div>
+                    <div className="text-2xl font-bold">{stats.salesCount}</div>
                     <p className="text-xs text-muted-foreground mt-1">Inscripciones</p>
                   </CardContent>
                 </Card>
@@ -319,9 +331,9 @@ export default function CreatorDashboard() {
                 <Badge variant="outline">MVP</Badge>
               </div>
 
-              {enrollments.length === 0 ? (
+              {(sales || []).length === 0 ? (
                 <div className="rounded-lg border bg-muted/20 p-6 text-sm text-muted-foreground">
-                  Aún no tienes ventas en este rango.
+                  Aún no tienes ventas en este rango. Cuando alguien compre, aquí verás el registro.
                 </div>
               ) : (
                 <div className="rounded-lg border overflow-hidden">
@@ -336,39 +348,46 @@ export default function CreatorDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {enrollments.slice(0, 12).map((r: any) => {
-                        const name = r?.profiles?.name || "Estudiante";
-                        const initials = name
-                          .split(" ")
-                          .filter(Boolean)
-                          .slice(0, 2)
-                          .map((x: string) => x[0]?.toUpperCase())
-                          .join("");
+                      {(sales || []).slice(0, 12).map((r) => {
+                        const name = r.buyer_name || "Estudiante";
+                        const initials =
+                          name
+                            .split(" ")
+                            .filter(Boolean)
+                            .slice(0, 2)
+                            .map((x) => x[0]?.toUpperCase())
+                            .join("") || "E";
 
-                        const status = (r?.status || "paid").toLowerCase();
-                        const badgeVariant =
-                          status.includes("refund") || status.includes("cancel") ? "destructive" : "secondary";
+                        const status = (r.status || "paid").toLowerCase();
 
                         return (
-                          <TableRow key={r.id}>
+                          <TableRow key={r.enrollment_id}>
                             <TableCell className="whitespace-nowrap">{formatDate(r.purchased_at)}</TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <Avatar className="h-7 w-7">
-                                  <AvatarImage src={r?.profiles?.avatar_url || ""} />
-                                  <AvatarFallback>{initials || "E"}</AvatarFallback>
+                                  <AvatarImage src={r.buyer_avatar_url || ""} />
+                                  <AvatarFallback>{initials}</AvatarFallback>
                                 </Avatar>
                                 <span className="text-sm">{name}</span>
                               </div>
                             </TableCell>
                             <TableCell className="max-w-[360px]">
-                              <span className="text-sm line-clamp-1">{r?.courses?.title || "Curso"}</span>
+                              <span className="text-sm line-clamp-1">{r.course_title || "Curso"}</span>
                             </TableCell>
                             <TableCell className="text-right font-medium whitespace-nowrap">
-                              {formatCLP(r?.courses?.price_clp)}
+                              {formatCLP(r.price_clp)}
                             </TableCell>
                             <TableCell className="text-right">
-                              <Badge variant={badgeVariant as any}>{r?.status || "paid"}</Badge>
+                              <Badge
+                                variant={
+                                  status.includes("refund") || status.includes("cancel")
+                                    ? "destructive"
+                                    : "secondary"
+                                }
+                              >
+                                {r.status || "paid"}
+                              </Badge>
                             </TableCell>
                           </TableRow>
                         );
@@ -379,7 +398,7 @@ export default function CreatorDashboard() {
               )}
 
               <p className="text-xs text-muted-foreground">
-                Próximo paso: “payouts/retiros” y separar “saldo disponible” vs “en tránsito”.
+                Próximo paso: agregar “payouts/retiros” y separar “saldo disponible” vs “en tránsito”.
               </p>
             </>
           )}

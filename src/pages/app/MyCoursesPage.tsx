@@ -2,13 +2,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
-import { BookOpen, Play, ShoppingBag, FileText, Calendar } from 'lucide-react';
+import { BookOpen, Play, ShoppingBag, Calendar, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function MyCoursesPage() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   // Fetch course enrollments
   const { data: enrollments, isLoading: loadingCourses } = useQuery({
@@ -83,11 +88,17 @@ export default function MyCoursesPage() {
 
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold">Mis Productos</h1>
-        <p className="text-muted-foreground">
-          Todos los productos que has adquirido
-        </p>
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <h1 className="text-2xl font-bold">Mis Productos</h1>
+          <p className="text-muted-foreground">
+            Todos los productos que has adquirido
+          </p>
+        </div>
+        <Button variant="outline" onClick={handleSignOut} className="gap-2">
+          <LogOut className="h-4 w-4" />
+          Cerrar Sesión
+        </Button>
       </div>
 
       {isLoading ? (

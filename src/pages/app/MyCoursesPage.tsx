@@ -1,13 +1,18 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { BookOpen, Play } from 'lucide-react';
-import { MarketplaceView } from '@/components/marketplace/MarketplaceView';
+import { useAuth } from '@/lib/auth';
+import { BookOpen, Play, ShoppingBag } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function MyCoursesPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
   const { data: enrollments, isLoading } = useQuery({
-    queryKey: ['my-enrollments-all'],
+    queryKey: ['my-enrollments-all', user?.id],
     queryFn: async () => {
+      if (!user) return [];
       const { data, error } = await supabase
         .from('enrollments')
         .select(`
@@ -20,25 +25,24 @@ export default function MyCoursesPage() {
             duration_minutes_est
           )
         `)
+        .eq('user_id', user.id)
         .eq('status', 'active')
         .order('purchased_at', { ascending: false });
       
       if (error) throw error;
       return data;
     },
+    enabled: !!user,
   });
 
-  // Show marketplace when user has no courses
-  const showMarketplace = !isLoading && (!enrollments || enrollments.length === 0);
+  const hasNoCourses = !isLoading && (!enrollments || enrollments.length === 0);
 
   return (
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Mis Cursos</h1>
         <p className="text-muted-foreground">
-          {showMarketplace 
-            ? 'Explora y descubre contenido para potenciar tus habilidades'
-            : 'Todos los cursos en los que estás inscrito'}
+          Todos los cursos en los que estás inscrito
         </p>
       </div>
 
@@ -54,8 +58,20 @@ export default function MyCoursesPage() {
             </div>
           ))}
         </div>
-      ) : showMarketplace ? (
-        <MarketplaceView />
+      ) : hasNoCourses ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-6">
+            <BookOpen className="h-10 w-10 text-muted-foreground" />
+          </div>
+          <h2 className="text-xl font-semibold mb-2">Aún no tienes cursos</h2>
+          <p className="text-muted-foreground mb-6 max-w-sm">
+            Explora nuestro marketplace y encuentra cursos que te ayuden a alcanzar tus metas.
+          </p>
+          <Button onClick={() => navigate('/app/marketplace')} className="gap-2">
+            <ShoppingBag className="h-4 w-4" />
+            Ir al Marketplace
+          </Button>
+        </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {enrollments?.map((enrollment) => {

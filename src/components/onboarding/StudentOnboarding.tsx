@@ -38,11 +38,13 @@ export function StudentOnboarding() {
         .eq('id', user.id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-      refreshProfile();
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['profile-onboarding'] });
+      await queryClient.invalidateQueries({ queryKey: ['profile'] });
+      await refreshProfile();
       toast.success('¡Preferencias guardadas!');
-      navigate('/app/marketplace');
+      // Force navigation with a small delay to ensure state is updated
+      window.location.href = '#/app/marketplace';
     },
     onError: () => {
       toast.error('Error al guardar preferencias');

@@ -1,15 +1,26 @@
-import { useMemo } from "react";
-import { Link, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Loader2,
   Clock,
@@ -23,6 +34,7 @@ import {
   Radio,
   Layers
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 function formatCLP(value: number | null | undefined) {
   const n = Number(value || 0);
@@ -47,6 +59,13 @@ function formatLabel(format?: string | null) {
 
 export default function CourseDetailPage() {
   const { slug } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  const [showFreeEnrollDialog, setShowFreeEnrollDialog] = useState(false);
+  const [enrollName, setEnrollName] = useState("");
+  const [enrollEmail, setEnrollEmail] = useState("");
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["course-public", slug],
@@ -106,12 +125,104 @@ export default function CourseDetailPage() {
 
   const course = data?.course;
   const modules = data?.modules || [];
+  const isFree = (course?.price_clp || 0) === 0;
 
   const totalLessons = useMemo(() => {
     return modules.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0);
   }, [modules]);
 
   const courseFormat = formatLabel((course as any)?.format);
+
+  // Check if user already enrolled
+  const { data: existingEnrollment } = useQuery({
+    queryKey: ["enrollment-check", course?.id, user?.id],
+    queryFn: async () => {
+      if (!user || !course) return null;
+      const { data, error } = await supabase
+        .from("enrollments")
+        .select("id, status")
+        .eq("course_id", course.id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!user && !!course?.id,
+  });
+
+  // Free enrollment mutation
+  const freeEnrollMutation = useMutation({
+    mutationFn: async () => {
+      if (!course) throw new Error("Curso no encontrado");
+      
+      // If user is logged in, use their ID
+      if (user) {
+        const { error } = await supabase.from("enrollments").insert({
+          course_id: course.id,
+          user_id: user.id,
+          status: "active",
+        });
+        if (error) throw error;
+        return { userId: user.id };
+      }
+      
+      // For anonymous users, we need them to sign up first
+      // Create a temporary signup
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: enrollEmail,
+        password: crypto.randomUUID(), // Random password, they can reset later
+        options: {
+          data: { name: enrollName },
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+      
+      if (authError) throw authError;
+      if (!authData.user) throw new Error("Error al crear cuenta");
+      
+      // Create enrollment
+      const { error } = await supabase.from("enrollments").insert({
+        course_id: course.id,
+        user_id: authData.user.id,
+        status: "active",
+      });
+      if (error) throw error;
+      
+      return { userId: authData.user.id };
+    },
+    onSuccess: () => {
+      toast({ title: "¡Inscripción exitosa! 🎉", description: "Ya puedes acceder al curso." });
+      setShowFreeEnrollDialog(false);
+      navigate(`/app/course/${course?.id}/play`);
+    },
+    onError: (err: any) => {
+      toast({
+        title: "Error al inscribirse",
+        description: err?.message || "Intenta nuevamente",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEnrollClick = () => {
+    if (existingEnrollment?.status === "active") {
+      navigate(`/app/course/${course?.id}/play`);
+      return;
+    }
+    
+    if (isFree) {
+      if (user) {
+        // If logged in, enroll directly
+        freeEnrollMutation.mutate();
+      } else {
+        // Show dialog to collect info
+        setShowFreeEnrollDialog(true);
+      }
+    } else {
+      // TODO: Payment flow
+      toast({ title: "Próximamente", description: "El sistema de pagos estará disponible pronto." });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -246,12 +357,30 @@ export default function CourseDetailPage() {
                 )}
 
                 <div className="text-3xl font-bold text-foreground mb-1">
-                    {formatCLP(course.price_clp)}
+                    {isFree ? (
+                      <span className="text-green-600">Gratis</span>
+                    ) : (
+                      formatCLP(course.price_clp)
+                    )}
                 </div>
-                <p className="text-xs text-muted-foreground mb-4">Pago único · acceso de por vida</p>
+                <p className="text-xs text-muted-foreground mb-4">
+                  {isFree ? "Acceso gratuito" : "Pago único · acceso de por vida"}
+                </p>
 
-                <Button className="w-full mb-4" size="lg">
-                  Comprar ahora
+                <Button 
+                  className="w-full mb-4" 
+                  size="lg"
+                  onClick={handleEnrollClick}
+                  disabled={freeEnrollMutation.isPending}
+                >
+                  {freeEnrollMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : null}
+                  {existingEnrollment?.status === "active" 
+                    ? "Ir al curso" 
+                    : isFree 
+                      ? "Inscribirse gratis" 
+                      : "Comprar ahora"}
                 </Button>
 
                 <div className="space-y-3 text-sm">
@@ -333,6 +462,53 @@ export default function CourseDetailPage() {
           </div>
         </div>
       </section>
+
+      {/* Free Enrollment Dialog */}
+      <Dialog open={showFreeEnrollDialog} onOpenChange={setShowFreeEnrollDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Inscribirse al curso</DialogTitle>
+            <DialogDescription>
+              Ingresa tus datos para acceder al curso de forma gratuita.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="enroll-name">Nombre</Label>
+              <Input
+                id="enroll-name"
+                value={enrollName}
+                onChange={(e) => setEnrollName(e.target.value)}
+                placeholder="Tu nombre"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="enroll-email">Correo electrónico</Label>
+              <Input
+                id="enroll-email"
+                type="email"
+                value={enrollEmail}
+                onChange={(e) => setEnrollEmail(e.target.value)}
+                placeholder="tu@email.com"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFreeEnrollDialog(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => freeEnrollMutation.mutate()}
+              disabled={!enrollName || !enrollEmail || freeEnrollMutation.isPending}
+            >
+              {freeEnrollMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Inscribirse
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

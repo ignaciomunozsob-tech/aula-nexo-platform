@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useParams, Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
@@ -14,19 +14,22 @@ import {
   ChevronLeft, 
   ChevronRight,
   Loader2,
-  BookOpen
+  BookOpen,
+  Eye
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function CoursePlayerPage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const isPreviewMode = searchParams.get('preview') === 'true';
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
 
-  // Check enrollment
+  // Check enrollment (skip if preview mode)
   const { data: enrollment, isLoading: enrollmentLoading } = useQuery({
     queryKey: ['my-enrollment', id, user?.id],
     queryFn: async () => {
@@ -42,7 +45,24 @@ export default function CoursePlayerPage() {
       if (error) throw error;
       return data;
     },
-    enabled: !!user && !!id,
+    enabled: !!user && !!id && !isPreviewMode,
+  });
+
+  // Check if user is the creator (for preview mode)
+  const { data: isCreator } = useQuery({
+    queryKey: ['is-course-creator', id, user?.id],
+    queryFn: async () => {
+      if (!user || !id) return false;
+      const { data, error } = await supabase
+        .from('courses')
+        .select('creator_id')
+        .eq('id', id)
+        .single();
+      
+      if (error) return false;
+      return data?.creator_id === user.id;
+    },
+    enabled: !!user && !!id && isPreviewMode,
   });
 
   // Get course with modules and lessons
@@ -82,10 +102,10 @@ export default function CoursePlayerPage() {
         lessons: (m.lessons as any[])?.sort((a, b) => a.order_index - b.order_index)
       }));
     },
-    enabled: !!id && !!enrollment,
+    enabled: !!id && (!!enrollment || isPreviewMode),
   });
 
-  // Get progress
+  // Get progress (skip if preview mode)
   const { data: progress } = useQuery({
     queryKey: ['lesson-progress', enrollment?.id],
     queryFn: async () => {
@@ -98,7 +118,7 @@ export default function CoursePlayerPage() {
       if (error) throw error;
       return data;
     },
-    enabled: !!enrollment?.id,
+    enabled: !!enrollment?.id && !isPreviewMode,
   });
 
   // Select first lesson by default
@@ -145,7 +165,7 @@ export default function CoursePlayerPage() {
     },
   });
 
-  if (enrollmentLoading) {
+  if (enrollmentLoading && !isPreviewMode) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -153,7 +173,12 @@ export default function CoursePlayerPage() {
     );
   }
 
-  if (!enrollment) {
+  // In preview mode, only allow the creator
+  if (isPreviewMode && !isCreator) {
+    return <Navigate to={`/course/${course?.slug || id}`} replace />;
+  }
+
+  if (!enrollment && !isPreviewMode) {
     return <Navigate to={`/course/${course?.slug || id}`} replace />;
   }
 
@@ -174,24 +199,39 @@ export default function CoursePlayerPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col">
+      {/* Preview Mode Banner */}
+      {isPreviewMode && (
+        <div className="bg-amber-100 border-b border-amber-300 px-4 py-3 flex items-center justify-center gap-2 text-amber-800">
+          <Eye className="h-5 w-5" />
+          <span className="font-medium">Estás viendo el curso en formato vista previa</span>
+          <span className="text-sm opacity-75">— Los cambios no guardados no se reflejarán aquí</span>
+        </div>
+      )}
+
+      <div className="flex-1 flex">
       {/* Sidebar - Course content */}
       <aside className="w-80 bg-sidebar border-r border-sidebar-border flex flex-col">
         <div className="p-4 border-b border-sidebar-border">
-          <Link to="/app/my-courses" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mb-3">
+          <Link 
+            to={isPreviewMode ? `/creator-app/courses/${id}/edit` : "/app/my-courses"} 
+            className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mb-3"
+          >
             <ChevronLeft className="h-4 w-4" />
-            Volver a mis cursos
+            {isPreviewMode ? 'Volver al editor' : 'Volver a mis cursos'}
           </Link>
           <h2 className="font-semibold line-clamp-2">{course?.title}</h2>
-          <div className="mt-3">
-            <div className="flex justify-between text-xs text-muted-foreground mb-1">
-              <span>{progressPercent}% completado</span>
-              <span>{completedCount}/{totalLessons}</span>
+          {!isPreviewMode && (
+            <div className="mt-3">
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>{progressPercent}% completado</span>
+                <span>{completedCount}/{totalLessons}</span>
+              </div>
+              <div className="progress-bar">
+                <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
+              </div>
             </div>
-            <div className="progress-bar">
-              <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
-            </div>
-          </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -307,20 +347,28 @@ export default function CoursePlayerPage() {
                 )}
               </div>
 
-              <Button
-                onClick={() => markCompleteMutation.mutate(currentLesson.id)}
-                disabled={isLessonComplete(currentLesson.id) || markCompleteMutation.isPending}
-                variant={isLessonComplete(currentLesson.id) ? 'outline' : 'default'}
-              >
-                {isLessonComplete(currentLesson.id) ? (
-                  <>
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Completada
-                  </>
-                ) : (
-                  'Marcar como completada'
-                )}
-              </Button>
+              {!isPreviewMode && (
+                <Button
+                  onClick={() => markCompleteMutation.mutate(currentLesson.id)}
+                  disabled={isLessonComplete(currentLesson.id) || markCompleteMutation.isPending}
+                  variant={isLessonComplete(currentLesson.id) ? 'outline' : 'default'}
+                >
+                  {isLessonComplete(currentLesson.id) ? (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Completada
+                    </>
+                  ) : (
+                    'Marcar como completada'
+                  )}
+                </Button>
+              )}
+
+              {isPreviewMode && (
+                <div className="text-sm text-muted-foreground italic">
+                  Vista previa — sin progreso
+                </div>
+              )}
 
               <div>
                 {nextLesson && (
@@ -338,6 +386,7 @@ export default function CoursePlayerPage() {
           </div>
         )}
       </main>
+      </div>
     </div>
   );
 }

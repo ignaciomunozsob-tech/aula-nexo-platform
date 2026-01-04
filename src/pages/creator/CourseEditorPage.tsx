@@ -542,12 +542,20 @@ export default function CourseEditorPage() {
         <h1 className="text-2xl font-bold">Editar Curso</h1>
         <div className="flex gap-2">
           {course?.slug && (
-            <Button variant="outline" asChild>
-              <a href={`${window.location.origin}${window.location.pathname}#/course/${course.slug}`} target="_blank" rel="noreferrer">
-                <Link2 className="h-4 w-4 mr-2" />
-                Ver página pública
-              </a>
-            </Button>
+            <>
+              <Button variant="outline" asChild>
+                <a href={`${window.location.origin}${window.location.pathname}#/course/${course.slug}`} target="_blank" rel="noreferrer">
+                  <Link2 className="h-4 w-4 mr-2" />
+                  Ver página pública
+                </a>
+              </Button>
+              <Button variant="outline" asChild>
+                <a href={`${window.location.origin}${window.location.pathname}#/app/course/${course.id}/play?preview=true`} target="_blank" rel="noreferrer">
+                  <Users className="h-4 w-4 mr-2" />
+                  Vista previa alumno
+                </a>
+              </Button>
+            </>
           )}
           {course?.status === "draft" ? (
             <>

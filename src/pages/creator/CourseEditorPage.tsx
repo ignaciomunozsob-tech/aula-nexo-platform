@@ -220,6 +220,7 @@ export default function CourseEditorPage() {
     level: "beginner",
     category_id: "",
     status: "draft",
+    format: "recorded",
   });
 
   const [modules, setModules] = useState<ModuleForm[]>([]);
@@ -325,6 +326,7 @@ export default function CourseEditorPage() {
       level: course.level ?? "beginner",
       category_id: course.category_id ?? "",
       status: course.status ?? "draft",
+      format: (course as any).format ?? "recorded",
     }));
   }, [course]);
 
@@ -350,6 +352,7 @@ export default function CourseEditorPage() {
         level: form.level,
         category_id: form.category_id || null,
         status: form.status,
+        format: form.format,
         updated_at: nowIso,
       };
 
@@ -575,7 +578,7 @@ export default function CourseEditorPage() {
             </Select>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <Label>Precio CLP</Label>
               <Input
@@ -596,6 +599,20 @@ export default function CourseEditorPage() {
                   <SelectItem value="beginner">Principiante</SelectItem>
                   <SelectItem value="intermediate">Intermedio</SelectItem>
                   <SelectItem value="advanced">Avanzado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Formato</Label>
+              <Select value={form.format} onValueChange={(v) => setForm({ ...form, format: v })}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recorded">Grabado</SelectItem>
+                  <SelectItem value="live">En vivo</SelectItem>
+                  <SelectItem value="hybrid">Híbrido</SelectItem>
                 </SelectContent>
               </Select>
             </div>

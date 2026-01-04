@@ -75,6 +75,7 @@ export type Database = {
           creator_id: string
           description: string | null
           duration_minutes_est: number | null
+          format: string
           id: string
           level: string | null
           price_clp: number
@@ -91,6 +92,7 @@ export type Database = {
           creator_id: string
           description?: string | null
           duration_minutes_est?: number | null
+          format?: string
           id?: string
           level?: string | null
           price_clp?: number
@@ -107,6 +109,7 @@ export type Database = {
           creator_id?: string
           description?: string | null
           duration_minutes_est?: number | null
+          format?: string
           id?: string
           level?: string | null
           price_clp?: number

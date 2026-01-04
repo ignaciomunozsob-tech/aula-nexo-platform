@@ -15,7 +15,7 @@ export function CreatorSidebar() {
 
   const navItems = [
     { to: '/creator-app', icon: LayoutDashboard, label: 'Dashboard', end: true },
-    { to: '/creator-app/courses', icon: BookOpen, label: 'Mis Cursos', end: false },
+    { to: '/creator-app/products', icon: BookOpen, label: 'Mis Productos', end: false },
     { to: '/creator-app/finances', icon: DollarSign, label: 'Finanzas', end: false },
     { to: '/creator-app/reviews', icon: Star, label: 'Evaluaciones', end: false },
     { to: '/creator-app/profile', icon: User, label: 'Mi Perfil Público', end: false },

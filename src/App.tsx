@@ -18,8 +18,10 @@ import MyCoursesPage from "@/pages/app/MyCoursesPage";
 import CoursePlayerPage from "@/pages/app/CoursePlayerPage";
 import StudentSettings from "@/pages/app/StudentSettings";
 import CreatorDashboard from "@/pages/creator/CreatorDashboard";
-import CreatorCoursesPage from "@/pages/creator/CreatorCoursesPage";
+import CreatorProductsPage from "@/pages/creator/CreatorProductsPage";
 import CourseEditorPage from "@/pages/creator/CourseEditorPage";
+import EbookEditorPage from "@/pages/creator/EbookEditorPage";
+import EventEditorPage from "@/pages/creator/EventEditorPage";
 import CreatorProfileEdit from "@/pages/creator/CreatorProfileEdit";
 import CreatorFinancesPage from "@/pages/creator/CreatorFinancesPage";
 import CreatorReviewsPage from "@/pages/creator/CreatorReviewsPage";
@@ -64,9 +66,14 @@ const App = () => (
               {/* Creator routes */}
               <Route path="/creator-app" element={<CreatorLayout />}>
                 <Route index element={<CreatorDashboard />} />
-                <Route path="courses" element={<CreatorCoursesPage />} />
+                <Route path="products" element={<CreatorProductsPage />} />
+                <Route path="courses" element={<CreatorProductsPage />} />
                 <Route path="courses/new" element={<CourseEditorPage />} />
                 <Route path="courses/:id/edit" element={<CourseEditorPage />} />
+                <Route path="ebooks/new" element={<EbookEditorPage />} />
+                <Route path="ebooks/:id/edit" element={<EbookEditorPage />} />
+                <Route path="events/new" element={<EventEditorPage />} />
+                <Route path="events/:id/edit" element={<EventEditorPage />} />
                 <Route path="finances" element={<CreatorFinancesPage />} />
                 <Route path="reviews" element={<CreatorReviewsPage />} />
                 <Route path="profile" element={<CreatorProfileEdit />} />

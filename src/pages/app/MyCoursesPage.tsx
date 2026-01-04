@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { BookOpen, Play, CheckCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { BookOpen, Play } from 'lucide-react';
+import { MarketplaceView } from '@/components/marketplace/MarketplaceView';
 
 export default function MyCoursesPage() {
   const { data: enrollments, isLoading } = useQuery({
@@ -28,12 +28,17 @@ export default function MyCoursesPage() {
     },
   });
 
+  // Show marketplace when user has no courses
+  const showMarketplace = !isLoading && (!enrollments || enrollments.length === 0);
+
   return (
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Mis Cursos</h1>
         <p className="text-muted-foreground">
-          Todos los cursos en los que estás inscrito
+          {showMarketplace 
+            ? 'Explora y descubre contenido para potenciar tus habilidades'
+            : 'Todos los cursos en los que estás inscrito'}
         </p>
       </div>
 
@@ -49,9 +54,11 @@ export default function MyCoursesPage() {
             </div>
           ))}
         </div>
-      ) : enrollments && enrollments.length > 0 ? (
+      ) : showMarketplace ? (
+        <MarketplaceView />
+      ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {enrollments.map((enrollment) => {
+          {enrollments?.map((enrollment) => {
             const course = enrollment.courses as any;
             return (
               <Link
@@ -89,17 +96,6 @@ export default function MyCoursesPage() {
               </Link>
             );
           })}
-        </div>
-      ) : (
-        <div className="bg-card border border-border rounded-lg p-12 text-center">
-          <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Aún no tienes cursos</h2>
-          <p className="text-muted-foreground mb-6">
-            Explora nuestro catálogo y encuentra el curso perfecto para ti
-          </p>
-          <Button asChild>
-            <Link to="/courses">Explorar cursos</Link>
-          </Button>
         </div>
       )}
     </div>

@@ -11,8 +11,8 @@ const corsHeaders = {
 interface WelcomeEmailRequest {
   email: string;
   name: string;
-  tempPassword: string;
   courseName: string;
+  resetPasswordUrl?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -21,11 +21,12 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, name, tempPassword, courseName }: WelcomeEmailRequest = await req.json();
+    const { email, name, courseName, resetPasswordUrl }: WelcomeEmailRequest = await req.json();
 
     console.log(`Sending welcome email to ${email} for course: ${courseName}`);
 
     const loginUrl = `${Deno.env.get("SITE_URL") || "https://aulanexo.lovable.app"}/login`;
+    const setPasswordUrl = resetPasswordUrl || `${Deno.env.get("SITE_URL") || "https://aulanexo.lovable.app"}/forgot-password`;
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -58,21 +59,22 @@ const handler = async (req: Request): Promise<Response> => {
                 <h2 style="color: #667eea; margin: 0;">${courseName}</h2>
               </div>
               
-              <p>Para acceder a tu curso, necesitas iniciar sesión con tus credenciales:</p>
-              
-              <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 20px; margin: 20px 0;">
-                <p style="margin: 0 0 10px 0;"><strong>📧 Email:</strong> ${email}</p>
-                <p style="margin: 0;"><strong>🔑 Contraseña temporal:</strong></p>
-                <code style="display: block; background: #333; color: #fff; padding: 10px; border-radius: 4px; margin-top: 10px; font-size: 18px; text-align: center;">${tempPassword}</code>
-              </div>
-              
-              <p style="color: #dc3545;"><strong>⚠️ Importante:</strong> Al iniciar sesión por primera vez, se te pedirá que cambies esta contraseña temporal por una contraseña de tu elección.</p>
+              <p>Para acceder a tu curso, primero necesitas establecer tu contraseña:</p>
               
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${loginUrl}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">Iniciar Sesión</a>
+                <a href="${setPasswordUrl}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">Establecer mi contraseña</a>
               </div>
               
-              <p style="color: #666; font-size: 14px; margin-bottom: 0;">Si tienes alguna pregunta, no dudes en contactarnos.</p>
+              <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <p style="margin: 0 0 10px 0;"><strong>📧 Tu email de acceso:</strong> ${email}</p>
+                <p style="margin: 0; font-size: 14px; color: #856404;">Haz clic en el botón de arriba para crear tu contraseña de acceso.</p>
+              </div>
+              
+              <p style="color: #666; font-size: 14px;">Una vez que establezcas tu contraseña, podrás acceder a tu curso iniciando sesión en:</p>
+              
+              <p style="text-align: center;">
+                <a href="${loginUrl}" style="color: #667eea; text-decoration: underline;">${loginUrl}</a>
+              </p>
               
               <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
               

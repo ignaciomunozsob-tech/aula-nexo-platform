@@ -28,6 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Loader2, Users, UserPlus, Trash2 } from "lucide-react";
+import { z } from "zod";
 
 function formatDate(date: string) {
   return new Date(date).toLocaleDateString("es-CL", {
@@ -37,10 +38,13 @@ function formatDate(date: string) {
   });
 }
 
-type StudentEntry = {
-  name: string;
-  email: string;
-};
+// Validation schema for student entries
+const studentSchema = z.object({
+  name: z.string().min(2, "Nombre debe tener al menos 2 caracteres").max(100, "Nombre muy largo"),
+  email: z.string().email("Email inválido").max(255, "Email muy largo"),
+});
+
+type StudentEntry = z.infer<typeof studentSchema>;
 
 interface StudentManagementProps {
   productId: string;
@@ -52,10 +56,9 @@ export default function StudentManagement({ productId, productType }: StudentMan
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [students, setStudents] = useState<StudentEntry[]>([{ name: "", email: "" }]);
-  const [isAdding, setIsAdding] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<number, { name?: string; email?: string }>>({});
 
   const tableName = productType === "event" ? "event_registrations" : "enrollments";
-  const foreignKey = productType === "event" ? "event_id" : "course_id";
 
   const { data: enrollments, isLoading } = useQuery({
     queryKey: [tableName, productId],
@@ -81,6 +84,54 @@ export default function StudentManagement({ productId, productType }: StudentMan
     enabled: !!productId,
   });
 
+  const addStudentsMutation = useMutation({
+    mutationFn: async (validStudents: StudentEntry[]) => {
+      const { data, error } = await supabase.functions.invoke("add-students", {
+        body: {
+          students: validStudents,
+          productId,
+          productType,
+        },
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || "Error al agregar alumnos");
+      
+      return data;
+    },
+    onSuccess: (data) => {
+      const successCount = data.results?.filter((r: any) => r.success).length || 0;
+      const failedCount = data.results?.filter((r: any) => !r.success).length || 0;
+
+      if (successCount > 0) {
+        toast({
+          title: "Alumnos agregados",
+          description: `Se agregaron ${successCount} alumno(s) correctamente${failedCount > 0 ? `. ${failedCount} fallaron.` : "."}`,
+        });
+      }
+
+      if (failedCount > 0 && successCount === 0) {
+        toast({
+          title: "Error al agregar alumnos",
+          description: data.results?.find((r: any) => !r.success)?.message || "Algunos alumnos no pudieron ser agregados",
+          variant: "destructive",
+        });
+      }
+
+      setStudents([{ name: "", email: "" }]);
+      setValidationErrors({});
+      setOpen(false);
+      queryClient.invalidateQueries({ queryKey: [tableName, productId] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error al agregar alumnos",
+        description: error.message || "Intenta nuevamente",
+        variant: "destructive",
+      });
+    },
+  });
+
   const addStudentRow = () => {
     if (students.length >= 10) {
       toast({
@@ -98,19 +149,64 @@ export default function StudentManagement({ productId, productType }: StudentMan
     const updated = [...students];
     updated.splice(index, 1);
     setStudents(updated);
+    
+    // Remove validation errors for this index
+    const newErrors = { ...validationErrors };
+    delete newErrors[index];
+    setValidationErrors(newErrors);
   };
 
   const updateStudent = (index: number, field: "name" | "email", value: string) => {
     const updated = [...students];
     updated[index][field] = value;
     setStudents(updated);
+    
+    // Clear validation error for this field
+    if (validationErrors[index]?.[field]) {
+      const newErrors = { ...validationErrors };
+      if (newErrors[index]) {
+        delete newErrors[index][field];
+        if (Object.keys(newErrors[index]).length === 0) {
+          delete newErrors[index];
+        }
+      }
+      setValidationErrors(newErrors);
+    }
+  };
+
+  const validateStudents = (): StudentEntry[] => {
+    const errors: Record<number, { name?: string; email?: string }> = {};
+    const validStudents: StudentEntry[] = [];
+
+    students.forEach((student, index) => {
+      // Skip empty rows
+      if (!student.name.trim() && !student.email.trim()) {
+        return;
+      }
+
+      try {
+        const validated = studentSchema.parse({
+          name: student.name.trim(),
+          email: student.email.trim().toLowerCase(),
+        });
+        validStudents.push(validated);
+      } catch (err) {
+        if (err instanceof z.ZodError) {
+          errors[index] = {};
+          err.errors.forEach((e) => {
+            const field = e.path[0] as "name" | "email";
+            errors[index][field] = e.message;
+          });
+        }
+      }
+    });
+
+    setValidationErrors(errors);
+    return validStudents;
   };
 
   const handleAddStudents = async () => {
-    // Validate entries
-    const validStudents = students.filter(
-      (s) => s.name.trim() && s.email.trim() && s.email.includes("@")
-    );
+    const validStudents = validateStudents();
 
     if (validStudents.length === 0) {
       toast({
@@ -121,98 +217,7 @@ export default function StudentManagement({ productId, productType }: StudentMan
       return;
     }
 
-    setIsAdding(true);
-
-    try {
-      for (const student of validStudents) {
-        // Check if user exists
-        const { data: existingProfiles } = await supabase
-          .from("profiles")
-          .select("id")
-          .ilike("name", student.email)
-          .limit(1);
-
-        let userId: string;
-
-        // Try to find user by checking if there's a profile with matching name (email as identifier)
-        // Since we can't query auth.users directly, we'll create a new user
-        const randomPassword = Math.random().toString(36).slice(-12) + "Aa1!";
-        
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: student.email,
-          password: randomPassword,
-          options: {
-            data: {
-              name: student.name,
-            },
-          },
-        });
-
-        if (signUpError) {
-          // User might already exist - try to find them
-          if (signUpError.message.includes("already registered")) {
-            // Query profiles to find user by looking for profile with similar email pattern in name
-            const { data: profiles } = await supabase
-              .from("profiles")
-              .select("id, name")
-              .limit(100);
-
-            // We need to find the user - since we can't query by email directly,
-            // we'll skip this user and notify
-            toast({
-              title: "Usuario ya existe",
-              description: `El correo ${student.email} ya está registrado. El alumno debe inscribirse manualmente o ya está inscrito.`,
-            });
-            continue;
-          }
-          throw signUpError;
-        }
-
-        if (!signUpData.user) {
-          throw new Error("No se pudo crear el usuario");
-        }
-
-        userId = signUpData.user.id;
-
-        // Create enrollment/registration
-        if (productType === "event") {
-          const { error: regError } = await supabase.from("event_registrations").insert({
-            event_id: productId,
-            user_id: userId,
-            status: "registered",
-          });
-          if (regError && !regError.message.includes("duplicate")) throw regError;
-        } else {
-          const { error: enrollError } = await supabase.from("enrollments").insert({
-            course_id: productId,
-            user_id: userId,
-            status: "active",
-          });
-          if (enrollError && !enrollError.message.includes("duplicate")) throw enrollError;
-        }
-      }
-
-      toast({
-        title: "Alumnos agregados",
-        description: `Se agregaron ${validStudents.length} alumno(s) correctamente`,
-      });
-
-      // Reset form and close dialog
-      setStudents([{ name: "", email: "" }]);
-      setOpen(false);
-      
-      // Refresh the list
-      queryClient.invalidateQueries({ queryKey: [tableName, productId] });
-    } catch (error: any) {
-      console.error("Error adding students:", error);
-      toast({
-        title: "Error al agregar alumnos",
-        description: error.message || "Intenta nuevamente",
-        variant: "destructive",
-      });
-    } finally {
-      setIsAdding(false);
-    }
+    addStudentsMutation.mutate(validStudents);
   };
 
   const activeItems = (enrollments || []).filter(
@@ -244,21 +249,24 @@ export default function StudentManagement({ productId, productType }: StudentMan
               <DialogTitle>Agregar Alumnos Manualmente</DialogTitle>
               <DialogDescription>
                 Ingresa los datos de los alumnos que deseas inscribir en este {productLabel}. 
-                Máximo 10 alumnos por vez.
+                Máximo 10 alumnos por vez. Se les enviará un email con instrucciones para establecer su contraseña.
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 mt-4">
               {students.map((student, index) => (
-                <div key={index} className="flex gap-3 items-end">
+                <div key={index} className="flex gap-3 items-start">
                   <div className="flex-1">
                     <Label className="text-xs">Nombre</Label>
                     <Input
                       value={student.name}
                       onChange={(e) => updateStudent(index, "name", e.target.value)}
                       placeholder="Nombre del alumno"
-                      className="mt-1"
+                      className={`mt-1 ${validationErrors[index]?.name ? "border-destructive" : ""}`}
                     />
+                    {validationErrors[index]?.name && (
+                      <p className="text-xs text-destructive mt-1">{validationErrors[index].name}</p>
+                    )}
                   </div>
                   <div className="flex-1">
                     <Label className="text-xs">Correo electrónico</Label>
@@ -267,14 +275,18 @@ export default function StudentManagement({ productId, productType }: StudentMan
                       value={student.email}
                       onChange={(e) => updateStudent(index, "email", e.target.value)}
                       placeholder="correo@ejemplo.com"
-                      className="mt-1"
+                      className={`mt-1 ${validationErrors[index]?.email ? "border-destructive" : ""}`}
                     />
+                    {validationErrors[index]?.email && (
+                      <p className="text-xs text-destructive mt-1">{validationErrors[index].email}</p>
+                    )}
                   </div>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => removeStudentRow(index)}
                     disabled={students.length === 1}
+                    className="mt-6"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -292,8 +304,8 @@ export default function StudentManagement({ productId, productType }: StudentMan
                   Agregar otro ({students.length}/10)
                 </Button>
 
-                <Button onClick={handleAddStudents} disabled={isAdding}>
-                  {isAdding ? (
+                <Button onClick={handleAddStudents} disabled={addStudentsMutation.isPending}>
+                  {addStudentsMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
                       Agregando...

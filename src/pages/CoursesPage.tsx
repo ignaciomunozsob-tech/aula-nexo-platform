@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { CourseCard } from '@/components/courses/CourseCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -48,14 +48,14 @@ export default function CoursesPage() {
         `)
         .eq('status', 'published');
 
-      if (categoryFilter) {
+      if (categoryFilter && categoryFilter !== 'all') {
         const category = categories?.find(c => c.slug === categoryFilter);
         if (category) {
           query = query.eq('category_id', category.id);
         }
       }
 
-      if (levelFilter) {
+      if (levelFilter && levelFilter !== 'all') {
         query = query.eq('level', levelFilter);
       }
 
@@ -84,7 +84,7 @@ export default function CoursesPage() {
 
   const setFilter = (key: string, value: string | null) => {
     const newParams = new URLSearchParams(searchParams);
-    if (value) {
+    if (value && value !== 'all') {
       newParams.set(key, value);
     } else {
       newParams.delete(key);
@@ -124,15 +124,16 @@ export default function CoursesPage() {
           </div>
 
           <Select
-            value={categoryFilter || ''}
-            onValueChange={(value) => setFilter('category', value || null)}
+            value={categoryFilter || 'all'}
+            onValueChange={(value) => setFilter('category', value)}
           >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Categoría" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas las categorías</SelectItem>
-              {categories?.map((cat) => (
+              {/* CORREGIDO: value="all" en lugar de "" */}
+              <SelectItem value="all">Todas las categorías</SelectItem>
+              {categories?.map((cat: any) => (
                 <SelectItem key={cat.id} value={cat.slug}>
                   {cat.name}
                 </SelectItem>
@@ -141,14 +142,15 @@ export default function CoursesPage() {
           </Select>
 
           <Select
-            value={levelFilter || ''}
-            onValueChange={(value) => setFilter('level', value || null)}
+            value={levelFilter || 'all'}
+            onValueChange={(value) => setFilter('level', value)}
           >
             <SelectTrigger className="w-[150px]">
               <SelectValue placeholder="Nivel" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos los niveles</SelectItem>
+              {/* CORREGIDO: value="all" en lugar de "" */}
+              <SelectItem value="all">Todos los niveles</SelectItem>
               <SelectItem value="beginner">Principiante</SelectItem>
               <SelectItem value="intermediate">Intermedio</SelectItem>
               <SelectItem value="advanced">Avanzado</SelectItem>
@@ -186,7 +188,7 @@ export default function CoursesPage() {
             {courses.length} curso{courses.length !== 1 ? 's' : ''} encontrado{courses.length !== 1 ? 's' : ''}
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course) => (
+            {courses.map((course: any) => (
               <CourseCard
                 key={course.id}
                 id={course.id}
@@ -197,8 +199,8 @@ export default function CoursesPage() {
                 priceCLP={course.price_clp}
                 level={course.level}
                 durationMinutes={course.duration_minutes_est}
-                creatorName={(course.profiles as any)?.name}
-                creatorSlug={(course.profiles as any)?.creator_slug}
+                creatorName={course.profiles?.name}
+                creatorSlug={course.profiles?.creator_slug}
               />
             ))}
           </div>

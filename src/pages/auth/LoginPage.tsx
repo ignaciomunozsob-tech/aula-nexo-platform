@@ -89,13 +89,8 @@ export default function LoginPage() {
           description: "Enviando código de verificación a tu correo..." 
         });
 
-        const { error: sendError } = await supabase.functions.invoke("send-2fa-code", {
-          body: {
-            userId: user.id,
-            email: user.email,
-            userName: profile.name,
-          },
-        });
+        // Call 2FA function - user info is extracted from the auth token on server-side
+        const { error: sendError } = await supabase.functions.invoke("send-2fa-code");
 
         if (sendError) {
           console.error("[2FA] Error sending code:", sendError);

@@ -10,10 +10,26 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface Send2FARequest {
-  userId: string;
-  email: string;
-  userName?: string;
+// In-memory rate limiting (resets on function cold start)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_MAX = 3; // Max 3 requests per window
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+
+function isRateLimited(userId: string): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(userId);
+  
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+  
+  if (record.count >= RATE_LIMIT_MAX) {
+    return true;
+  }
+  
+  record.count++;
+  return false;
 }
 
 function generateCode(): string {
@@ -30,24 +46,92 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { userId, email, userName }: Send2FARequest = await req.json();
-    
-    console.log("[send-2fa-code] Processing for user:", userId, email);
-
-    if (!userId || !email) {
-      console.error("[send-2fa-code] Missing userId or email");
+    // 1. Verify Authorization header exists
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      console.error("[send-2fa-code] Missing authorization header");
       return new Response(
-        JSON.stringify({ error: "userId and email are required" }),
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // 2. Create Supabase client to verify the user
+    const supabaseAuth = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      {
+        auth: { autoRefreshToken: false, persistSession: false },
+        global: { headers: { Authorization: authHeader } }
+      }
+    );
+
+    // 3. Verify the JWT and get the authenticated user
+    const { data: { user: authUser }, error: authError } = await supabaseAuth.auth.getUser();
+    
+    if (authError || !authUser) {
+      console.error("[send-2fa-code] Auth error:", authError?.message);
+      return new Response(
+        JSON.stringify({ error: "Invalid authentication token" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    console.log("[send-2fa-code] Authenticated user:", authUser.id);
+
+    // 4. Users can only request 2FA codes for themselves
+    // The userId and email come from the authenticated user, not from request body
+    const userId = authUser.id;
+    const email = authUser.email;
+
+    if (!email) {
+      console.error("[send-2fa-code] User has no email");
+      return new Response(
+        JSON.stringify({ error: "User email not found" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // Create Supabase client with service role
+    // 5. Check rate limiting
+    if (isRateLimited(userId)) {
+      console.warn("[send-2fa-code] Rate limited user:", userId);
+      return new Response(
+        JSON.stringify({ error: "Too many requests. Please try again later." }),
+        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    console.log("[send-2fa-code] Processing 2FA for user:", userId, email);
+
+    // Create Supabase client with service role for database operations
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
+
+    // 6. Verify the user is a creator (only creators need 2FA)
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .select("role, name")
+      .eq("id", userId)
+      .single();
+
+    if (profileError || !profile) {
+      console.error("[send-2fa-code] Profile not found:", profileError?.message);
+      return new Response(
+        JSON.stringify({ error: "User profile not found" }),
+        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    if (profile.role !== "creator" && profile.role !== "admin") {
+      console.warn("[send-2fa-code] Non-creator attempting 2FA:", userId, profile.role);
+      return new Response(
+        JSON.stringify({ error: "2FA is only required for creators" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     // Generate 6-digit code
     const code = generateCode();
@@ -81,6 +165,8 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    const userName = profile.name || undefined;
 
     // Send email with the code
     const emailResponse = await resend.emails.send({
@@ -147,7 +233,7 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("[send-2fa-code] Error:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "An error occurred" }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },

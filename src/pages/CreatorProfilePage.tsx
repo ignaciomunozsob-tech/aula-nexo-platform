@@ -185,76 +185,79 @@ export default function CreatorProfilePage() {
 
   return (
     <div className="page-container">
-      {/* Profile Header */}
+      {/* Profile Header with Video */}
       <div className="bg-gradient-to-br from-primary/10 to-background rounded-2xl p-8 mb-12">
-        <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-          <div className="w-28 h-28 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-            {creator.avatar_url ? (
-              <img
-                src={creator.avatar_url}
-                alt={creator.name || 'Creador'}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <User className="h-14 w-14 text-primary" />
-            )}
-          </div>
-          <div className="text-center md:text-left flex-1">
-            <h1 className="text-3xl font-bold">{creator.name}</h1>
-            <p className="text-primary font-medium mt-1">Creador de cursos</p>
-            
-            {avgRating && (
-              <div className="flex items-center gap-2 mt-2 justify-center md:justify-start">
-                <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                <span className="font-semibold">{avgRating}</span>
-                <span className="text-muted-foreground">({reviews?.length} evaluaciones)</span>
-              </div>
-            )}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left: Profile Info */}
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden shrink-0">
+              {creator.avatar_url ? (
+                <img
+                  src={creator.avatar_url}
+                  alt={creator.name || 'Creador'}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="h-12 w-12 text-primary" />
+              )}
+            </div>
+            <div className="text-center md:text-left flex-1">
+              <h1 className="text-2xl font-bold">{creator.name}</h1>
+              <p className="text-primary font-medium mt-1">Creador de cursos</p>
+              
+              {avgRating && (
+                <div className="flex items-center gap-2 mt-2 justify-center md:justify-start">
+                  <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                  <span className="font-semibold">{avgRating}</span>
+                  <span className="text-muted-foreground text-sm">({reviews?.length} evaluaciones)</span>
+                </div>
+              )}
 
-            {creator.bio && (
-              <p className="text-muted-foreground mt-4 max-w-2xl">{creator.bio}</p>
-            )}
+              {creator.bio && (
+                <p className="text-muted-foreground mt-3 text-sm">{creator.bio}</p>
+              )}
 
-            {links.length > 0 && (
-              <div className="flex flex-wrap gap-3 mt-4 justify-center md:justify-start">
-                {links.map((link: any, index: number) => {
-                  const Icon = socialIcons[link.type] || Globe;
-                  return (
-                    <a
-                      key={index}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-background border rounded-full text-sm hover:border-primary transition-colors"
-                    >
-                      <Icon className="h-4 w-4" />
-                      {link.label}
-                    </a>
-                  );
-                })}
-              </div>
-            )}
+              {links.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-4 justify-center md:justify-start">
+                  {links.map((link: any, index: number) => {
+                    const Icon = socialIcons[link.type] || Globe;
+                    return (
+                      <a
+                        key={index}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-background border rounded-full text-sm hover:border-primary transition-colors"
+                      >
+                        <Icon className="h-4 w-4" />
+                        {link.label}
+                      </a>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Right: Intro Video */}
+          {embedUrl && (
+            <div className="flex flex-col">
+              <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
+                <Play className="h-4 w-4" />
+                Conóceme
+              </h3>
+              <div className="aspect-video rounded-xl overflow-hidden bg-muted flex-1">
+                <iframe
+                  src={embedUrl}
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Intro Video */}
-      {embedUrl && (
-        <div className="mb-12">
-          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-            <Play className="h-6 w-6" />
-            Conóceme
-          </h2>
-          <div className="aspect-video rounded-xl overflow-hidden bg-muted">
-            <iframe
-              src={embedUrl}
-              className="w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-          </div>
-        </div>
-      )}
 
       {/* Courses */}
       <div className="mb-12">

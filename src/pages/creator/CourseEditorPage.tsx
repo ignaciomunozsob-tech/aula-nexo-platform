@@ -353,7 +353,7 @@ export default function CourseEditorPage() {
         updated_at: nowIso,
       };
 
-      if (form.status === "published" && !course?.published_at) payload.published_at = nowIso;
+      // Status is already handled in the payload
       if (!course?.slug) payload.slug = `${generateSlug(form.title || "curso")}-${Date.now().toString(36)}`;
 
       // 1. Actualización directa

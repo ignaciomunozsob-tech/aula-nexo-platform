@@ -592,6 +592,27 @@ export type Database = {
         }
         Relationships: []
       }
+      student_creation_logs: {
+        Row: {
+          created_at: string
+          creator_id: string
+          id: string
+          students_count: number
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          id?: string
+          students_count?: number
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          id?: string
+          students_count?: number
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string

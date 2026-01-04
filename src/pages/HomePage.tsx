@@ -116,99 +116,42 @@ export default function HomePage() {
         </div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-            {/* Left: Copy */}
-            <div className="text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-                <Sparkles className="h-4 w-4" />
-                Nueva plataforma para creadores
-              </div>
-              
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-[1.1] tracking-tight">
-                Vende tus productos digitales{' '}
-                <span className="text-primary">sin complicarte</span>
-              </h1>
-              
-              <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-xl">
-                Crea, publica y vende cursos, ebooks, talleres y más. 
-                Tus clientes pagan y reciben acceso automático.
-              </p>
+          <div className="max-w-3xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
+              <Sparkles className="h-4 w-4" />
+              Nueva plataforma para creadores
+            </div>
+            
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-[1.1] tracking-tight">
+              Vende tus productos digitales{' '}
+              <span className="text-primary">sin complicarte</span>
+            </h1>
+            
+            <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-xl mx-auto">
+              Crea, publica y vende cursos, ebooks, talleres y más. 
+              Tus clientes pagan y reciben acceso automático.
+            </p>
 
-              <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Button size="lg" className="text-base px-8 h-12" asChild>
-                  <Link to="/signup?role=creator">
-                    Empezar gratis
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Link>
-                </Button>
-                
-                <Button size="lg" variant="outline" className="text-base px-8 h-12 group" asChild>
-                  <a href="#como-funciona">
-                    <Play className="mr-2 h-4 w-4 group-hover:text-primary transition-colors" />
-                    Ver cómo funciona
-                  </a>
-                </Button>
-              </div>
-
-              {/* Trust line */}
-              <p className="mt-6 text-sm text-muted-foreground">
-                Gratis para empezar · Sin mensualidad · Sin tarjeta de crédito
-              </p>
+            <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+              <Button size="lg" className="text-base px-8 h-12" asChild>
+                <Link to="/signup?role=creator">
+                  Empezar gratis
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+              
+              <Button size="lg" variant="outline" className="text-base px-8 h-12 group" asChild>
+                <a href="#como-funciona">
+                  <Play className="mr-2 h-4 w-4 group-hover:text-primary transition-colors" />
+                  Ver cómo funciona
+                </a>
+              </Button>
             </div>
 
-            {/* Right: Visual */}
-            <div className="relative">
-              {/* Floating cards */}
-              <div className="relative">
-                {/* Main card */}
-                <div className="bg-card border border-border rounded-2xl shadow-2xl p-6 transform rotate-1 hover:rotate-0 transition-transform duration-500">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-                      <BookOpen className="h-6 w-6 text-primary-foreground" />
-                    </div>
-                    <div>
-                      <p className="font-semibold">Curso de Marketing Digital</p>
-                      <p className="text-sm text-muted-foreground">12 lecciones · 4 horas</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold">$29.990</span>
-                    <Button size="sm">Comprar</Button>
-                  </div>
-                </div>
-
-                {/* Secondary floating cards */}
-                <div className="absolute -top-4 -right-4 bg-card border border-border rounded-xl shadow-lg p-4 transform -rotate-3 w-48">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                      <FileText className="h-4 w-4 text-emerald-600" />
-                    </div>
-                    <span className="text-sm font-medium">Ebook</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Guía de Ventas</p>
-                </div>
-
-                <div className="absolute -bottom-4 -left-4 bg-card border border-border rounded-xl shadow-lg p-4 transform rotate-2 w-52">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                      <Video className="h-4 w-4 text-purple-600" />
-                    </div>
-                    <span className="text-sm font-medium">Webinar</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Star className="h-3 w-3 text-amber-500 fill-amber-500" />
-                    <span>42 inscritos</span>
-                  </div>
-                </div>
-
-                {/* Decoration dots */}
-                <div className="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%]">
-                  <div className="absolute top-0 left-0 w-3 h-3 bg-primary/20 rounded-full" />
-                  <div className="absolute top-1/4 right-0 w-2 h-2 bg-purple-500/30 rounded-full" />
-                  <div className="absolute bottom-0 left-1/4 w-4 h-4 bg-emerald-500/20 rounded-full" />
-                </div>
-              </div>
-            </div>
+            {/* Trust line */}
+            <p className="mt-6 text-sm text-muted-foreground">
+              Gratis para empezar · Sin mensualidad · Sin tarjeta de crédito
+            </p>
           </div>
 
           {/* Social proof */}

@@ -14,6 +14,7 @@ import CreatorProfilePage from "@/pages/CreatorProfilePage";
 import LoginPage from "@/pages/auth/LoginPage";
 import SignupPage from "@/pages/auth/SignupPage";
 import ResetPasswordPage from "@/pages/auth/ResetPasswordPage";
+import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage";
 import Verify2FAPage from "@/pages/auth/Verify2FAPage";
 import StudentDashboard from "@/pages/app/StudentDashboard";
 import MyCoursesPage from "@/pages/app/MyCoursesPage";
@@ -57,6 +58,7 @@ const App = () => (
               {/* Auth routes */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/verify-2fa" element={<Verify2FAPage />} />
 

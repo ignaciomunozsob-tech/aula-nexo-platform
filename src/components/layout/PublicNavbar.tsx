@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
-import { Menu, X, ChevronDown, LogIn } from 'lucide-react';
+import { Menu, X, ChevronDown, LogIn, GraduationCap } from 'lucide-react';
 import { useState } from 'react';
 import {
   DropdownMenu,
@@ -38,7 +38,7 @@ export function PublicNavbar() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">N</span>
+              <GraduationCap className="h-5 w-5 text-primary-foreground" />
             </div>
             <span className="text-xl font-bold text-foreground">NOVU</span>
           </Link>

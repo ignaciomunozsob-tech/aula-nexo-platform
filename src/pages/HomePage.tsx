@@ -290,37 +290,26 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Commissions */}
-      <section className="py-20 bg-primary text-primary-foreground">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Comisiones claras
-          </h2>
-          <p className="text-lg opacity-90 mb-12">
-            Sin sorpresas. Sin letras chicas.
-          </p>
-
-          <div className="grid md:grid-cols-3 gap-6 mb-10">
-            <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-              <div className="text-4xl font-bold mb-2">90%</div>
-              <p className="opacity-90">Te quedas con el 90%</p>
+      {/* Pricing note - subtle */}
+      <section className="py-12 border-y border-border bg-muted/20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <Percent className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <p className="font-medium text-foreground">Solo pagas cuando vendes</p>
+                <p className="text-sm text-muted-foreground">Te quedas con el 90% de cada venta. Sin mensualidades.</p>
+              </div>
             </div>
-            <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-              <div className="text-4xl font-bold mb-2">10%</div>
-              <p className="opacity-90">NOVU cobra por venta</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur rounded-xl p-6">
-              <div className="text-4xl font-bold mb-2">$0</div>
-              <p className="opacity-90">Si no vendes, no pagas</p>
-            </div>
+            <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+              <Link to="/comisiones">
+                Ver detalles
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
           </div>
-
-          <Button size="lg" variant="secondary" asChild>
-            <Link to="/comisiones">
-              Leer términos y comisiones
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-          </Button>
         </div>
       </section>
 
@@ -400,32 +389,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-muted/30 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">N</span>
-              </div>
-              <span className="text-xl font-bold">NOVU</span>
-            </div>
-
-            <nav className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
-              <Link to="/" className="hover:text-foreground transition-colors">Inicio</Link>
-              <a href="#como-funciona" className="hover:text-foreground transition-colors">Cómo funciona</a>
-              <Link to="/comisiones" className="hover:text-foreground transition-colors">Comisiones</Link>
-              <Link to="/courses" className="hover:text-foreground transition-colors">Marketplace</Link>
-              <Link to="/login" className="hover:text-foreground transition-colors">Iniciar sesión</Link>
-              <Link to="/signup" className="hover:text-foreground transition-colors">Crear cuenta</Link>
-            </nav>
-          </div>
-
-          <div className="mt-8 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} NOVU. Todos los derechos reservados.
-          </div>
-        </div>
-      </footer>
     </>
   );
 }

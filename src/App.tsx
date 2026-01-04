@@ -8,6 +8,7 @@ import { PublicLayout } from "@/components/layout/PublicLayout";
 import { StudentLayout } from "@/components/layout/StudentLayout";
 import { CreatorLayout } from "@/components/layout/CreatorLayout";
 import HomePage from "@/pages/HomePage";
+import ComisionesPage from "@/pages/ComisionesPage";
 import CoursesPage from "@/pages/CoursesPage";
 import CourseDetailPage from "@/pages/CourseDetailPage";
 import CreatorProfilePage from "@/pages/CreatorProfilePage";
@@ -51,6 +52,9 @@ const App = () => (
                 <Route path="/course/:slug" element={<CourseDetailPage />} />
                 <Route path="/creator/:slug" element={<CreatorProfilePage />} />
               </Route>
+
+              {/* Comisiones route - standalone */}
+              <Route path="/comisiones" element={<ComisionesPage />} />
 
               {/* Debug route */}
               <Route path="/debug" element={<DebugPage />} />

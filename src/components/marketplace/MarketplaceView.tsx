@@ -149,9 +149,9 @@ export function MarketplaceView({ showHeader = true }: MarketplaceViewProps) {
       {/* Header */}
       {showHeader && (
         <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl p-6 md:p-8">
-          <h2 className="text-2xl font-bold mb-2">🎓 Marketplace de AulaNexo</h2>
+          <h2 className="text-2xl font-bold mb-2">✨ Marketplace NOVU</h2>
           <p className="text-muted-foreground">
-            Descubre cursos, ebooks y eventos para potenciar tus habilidades
+            Descubre cursos, ebooks y eventos de creadores expertos
           </p>
         </div>
       )}

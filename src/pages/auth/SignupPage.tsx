@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { GraduationCap, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 
@@ -77,7 +77,7 @@ export default function SignupPage() {
 
     toast({
       title: '¡Cuenta creada!',
-      description: 'Bienvenido a AulaNexo',
+      description: 'Bienvenido a NOVU',
     });
 
     // Validate next parameter to prevent open redirect attacks
@@ -91,7 +91,7 @@ export default function SignupPage() {
       return;
     }
 
-    navigate(role === 'creator' ? '/creator' : '/app');
+    navigate(role === 'creator' ? '/creator-app' : '/app');
   };
 
   const loginLink = next ? `/login?next=${encodeURIComponent(next)}` : '/login';
@@ -102,12 +102,14 @@ export default function SignupPage() {
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           <Link to="/" className="flex items-center gap-2 mb-8">
-            <GraduationCap className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold">AulaNexo</span>
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <span className="text-primary-foreground font-bold text-sm">N</span>
+            </div>
+            <span className="text-xl font-bold">NOVU</span>
           </Link>
 
-          <h1 className="text-2xl font-bold mb-2">Crear cuenta</h1>
-          <p className="text-muted-foreground mb-8">Comienza tu viaje de aprendizaje hoy</p>
+          <h1 className="text-2xl font-bold mb-2">Crear cuenta gratis</h1>
+          <p className="text-muted-foreground mb-8">Empieza a vender tus productos digitales hoy</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -170,8 +172,8 @@ export default function SignupPage() {
                     role === 'student' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
                   }`}
                 >
-                  <p className="font-semibold">Aprender</p>
-                  <p className="text-sm text-muted-foreground">Tomar cursos</p>
+                  <p className="font-semibold">Comprar</p>
+                  <p className="text-sm text-muted-foreground">Acceder a productos</p>
                 </button>
 
                 <button
@@ -181,8 +183,8 @@ export default function SignupPage() {
                     role === 'creator' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
                   }`}
                 >
-                  <p className="font-semibold">Enseñar</p>
-                  <p className="text-sm text-muted-foreground">Crear cursos</p>
+                  <p className="font-semibold">Vender</p>
+                  <p className="text-sm text-muted-foreground">Crear productos</p>
                 </button>
               </div>
             </div>
@@ -211,14 +213,16 @@ export default function SignupPage() {
       {/* Right side - Image/Gradient */}
       <div className="hidden lg:flex flex-1 bg-gradient-to-br from-primary to-primary/70 items-center justify-center p-8">
         <div className="text-center text-white max-w-md">
-          <GraduationCap className="h-20 w-20 mx-auto mb-6" />
+          <div className="w-20 h-20 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-6">
+            <span className="text-4xl font-bold">N</span>
+          </div>
           <h2 className="text-3xl font-bold mb-4">
-            {role === 'creator' ? 'Comparte tu conocimiento' : 'Aprende sin límites'}
+            {role === 'creator' ? 'Vende tu conocimiento' : 'Accede al mejor contenido'}
           </h2>
           <p className="text-white/80">
             {role === 'creator'
-              ? 'Crea cursos increíbles y alcanza estudiantes en toda Latinoamérica.'
-              : 'Accede a los mejores cursos creados por expertos en cada área.'}
+              ? 'Crea productos digitales y empieza a generar ingresos hoy mismo.'
+              : 'Descubre cursos, ebooks, talleres y más de creadores expertos.'}
           </p>
         </div>
       </div>

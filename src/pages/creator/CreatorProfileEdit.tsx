@@ -25,15 +25,18 @@ export default function CreatorProfileEdit() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [name, setName] = useState(profile?.name || '');
-  const [bio, setBio] = useState(profile?.bio || '');
-  const [creatorSlug, setCreatorSlug] = useState(profile?.creator_slug || '');
-  const [introVideoUrl, setIntroVideoUrl] = useState((profile as any)?.intro_video_url || '');
+  // Cast profile to access new columns not yet in types
+  const profileData = profile as any;
+
+  const [name, setName] = useState(profileData?.name || '');
+  const [bio, setBio] = useState(profileData?.bio || '');
+  const [creatorSlug, setCreatorSlug] = useState(profileData?.creator_slug || '');
+  const [introVideoUrl, setIntroVideoUrl] = useState(profileData?.intro_video_url || '');
   const [uploading, setUploading] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '');
+  const [avatarUrl, setAvatarUrl] = useState(profileData?.avatar_url || '');
 
   // Parse existing links
-  const existingLinks = Array.isArray(profile?.links) ? profile.links : [];
+  const existingLinks = Array.isArray(profileData?.links) ? profileData.links : [];
   const parsedLinks: SocialLinks = {};
   existingLinks.forEach((link: any) => {
     if (link.type) parsedLinks[link.type as keyof SocialLinks] = link.url;
@@ -49,12 +52,12 @@ export default function CreatorProfileEdit() {
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !profile?.id) return;
+    if (!file || !profileData?.id) return;
 
     setUploading(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${profile.id}/avatar.${fileExt}`;
+      const fileName = `${profileData.id}/avatar.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('course-assets')
@@ -73,7 +76,7 @@ export default function CreatorProfileEdit() {
       await supabase
         .from('profiles')
         .update({ avatar_url: newAvatarUrl })
-        .eq('id', profile.id);
+        .eq('id', profileData.id);
 
       refreshProfile();
       toast({ title: 'Foto de perfil actualizada' });
@@ -105,8 +108,8 @@ export default function CreatorProfileEdit() {
           creator_slug: slug,
           intro_video_url: introVideoUrl || null,
           links: linksArray,
-        })
-        .eq('id', profile!.id);
+        } as any)
+        .eq('id', profileData!.id);
 
       if (error) throw error;
     },
@@ -286,9 +289,9 @@ export default function CreatorProfileEdit() {
             {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Guardar Cambios
           </Button>
-          {profile?.creator_slug && (
+          {profileData?.creator_slug && (
             <Button variant="outline" asChild>
-              <Link to={`/creator/${profile.creator_slug}`} target="_blank">
+              <Link to={`/creator/${profileData.creator_slug}`} target="_blank">
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Ver perfil público
               </Link>

@@ -504,11 +504,6 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
-
-              {/* Floating decoration */}
-              <div className="absolute -top-3 -right-3 bg-emerald-500 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-lg">
-                ✨ Perfil verificado
-              </div>
             </div>
           </div>
         </div>

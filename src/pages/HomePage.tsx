@@ -446,7 +446,7 @@ export default function HomePage() {
             </div>
 
             {/* Right: Creator Profile Preview */}
-            <div className="relative hidden sm:block">
+            <div className="relative">
               <div className="bg-card border border-border rounded-2xl shadow-xl p-6">
                 {/* Profile Header */}
                 <div className="flex items-center gap-4 mb-6">

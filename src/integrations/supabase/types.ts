@@ -130,6 +130,51 @@ export type Database = {
           },
         ]
       }
+      creator_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          creator_id: string
+          id: string
+          rating: number
+          reviewer_id: string
+          updated_at: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          creator_id: string
+          id?: string
+          rating: number
+          reviewer_id: string
+          updated_at?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          creator_id?: string
+          id?: string
+          rating?: number
+          reviewer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_reviews_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       enrollments: {
         Row: {
           course_id: string
@@ -326,6 +371,7 @@ export type Database = {
           created_at: string
           creator_slug: string | null
           id: string
+          intro_video_url: string | null
           links: Json | null
           name: string | null
           role: Database["public"]["Enums"]["app_role"]
@@ -337,6 +383,7 @@ export type Database = {
           created_at?: string
           creator_slug?: string | null
           id: string
+          intro_video_url?: string | null
           links?: Json | null
           name?: string | null
           role?: Database["public"]["Enums"]["app_role"]
@@ -348,6 +395,7 @@ export type Database = {
           created_at?: string
           creator_slug?: string | null
           id?: string
+          intro_video_url?: string | null
           links?: Json | null
           name?: string | null
           role?: Database["public"]["Enums"]["app_role"]

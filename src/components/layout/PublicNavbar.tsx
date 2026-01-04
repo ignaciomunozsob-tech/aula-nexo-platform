@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
-import { GraduationCap, Menu, X, User, LogOut, ChevronDown, LogIn } from 'lucide-react';
+import { GraduationCap, Menu, X, LogOut, ChevronDown, LogIn } from 'lucide-react';
 import { useState } from 'react';
 import {
   DropdownMenu,
@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export function PublicNavbar() {
   const { user, profile, signOut } = useAuth();
@@ -31,6 +32,8 @@ export function PublicNavbar() {
   const studentLoginUrl = `/login?next=${encodeURIComponent('/app')}`;
   const creatorLoginUrl = `/login?next=${encodeURIComponent('/creator-app')}`;
 
+  const initials = profile?.name?.charAt(0).toUpperCase() || 'U';
+
   return (
     <nav className="border-b border-border bg-background sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -51,7 +54,12 @@ export function PublicNavbar() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
+                    <Avatar className="h-7 w-7">
+                      <AvatarImage src={profile?.avatar_url || ''} alt={profile?.name || 'Usuario'} />
+                      <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
                     <span>{profile?.name || 'Mi Cuenta'}</span>
                     <ChevronDown className="h-4 w-4 opacity-70" />
                   </Button>

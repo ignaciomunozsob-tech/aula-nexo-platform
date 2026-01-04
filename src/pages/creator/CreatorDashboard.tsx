@@ -1,97 +1,419 @@
-import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/lib/auth';
-import { BookOpen, Users, Eye, Plus, TrendingUp } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Loader2, Plus, BookOpen, Users, TrendingUp, CalendarDays } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+
+type RangeKey = "7d" | "30d" | "90d" | "all";
+
+function formatCLP(value: number | null | undefined) {
+  const n = Number(value || 0);
+  return new Intl.NumberFormat("es-CL", {
+    style: "currency",
+    currency: "CLP",
+    maximumFractionDigits: 0,
+  }).format(n);
+}
+
+function formatDate(iso?: string | null) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return new Intl.DateTimeFormat("es-CL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(d);
+}
+
+function getRangeStartISO(range: RangeKey) {
+  if (range === "all") return null;
+  const days = range === "7d" ? 7 : range === "30d" ? 30 : 90;
+  const ms = days * 24 * 60 * 60 * 1000;
+  return new Date(Date.now() - ms).toISOString();
+}
+
+function isPaidStatus(status?: string | null) {
+  const s = (status || "").toLowerCase();
+  // ajusta estos valores según tus estados reales
+  if (!s) return true; // si no hay status, lo contamos igual (MVP)
+  if (s.includes("refund") || s.includes("reemb") || s.includes("cancel")) return false;
+  return true;
+}
 
 export default function CreatorDashboard() {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
+  const [range, setRange] = useState<RangeKey>("30d");
 
-  const { data: stats } = useQuery({
-    queryKey: ['creator-stats', user?.id],
+  const { data: courses, isLoading: isLoadingCourses } = useQuery({
+    queryKey: ["creator-courses", user?.id],
     queryFn: async () => {
-      const [coursesRes, enrollmentsRes, viewsRes] = await Promise.all([
-        supabase.from('courses').select('id', { count: 'exact' }).eq('creator_id', user!.id),
-        supabase.from('enrollments').select('id, courses!inner(creator_id)', { count: 'exact' }).eq('courses.creator_id', user!.id),
-        supabase.from('page_views').select('id', { count: 'exact' }).or(`type.eq.creator_profile,type.eq.course`).gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
-      ]);
-      
-      return {
-        courses: coursesRes.count || 0,
-        students: enrollmentsRes.count || 0,
-        views: viewsRes.count || 0,
-      };
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("courses")
+        .select("id,title,status,price_clp,created_at")
+        .eq("creator_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data || [];
     },
-    enabled: !!user,
+    enabled: !!user?.id,
   });
 
+  const courseIds = useMemo(() => (courses || []).map((c: any) => c.id), [courses]);
+
+  const { data: enrollments, isLoading: isLoadingSales } = useQuery({
+    queryKey: ["creator-sales", user?.id, range, courseIds.join("|")],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      if (courseIds.length === 0) return [];
+
+      const startISO = getRangeStartISO(range);
+
+      // Traemos inscripciones ligadas a cursos del creador
+      let q = supabase
+        .from("enrollments")
+        .select(
+          `
+          id,
+          status,
+          purchased_at,
+          course_id,
+          student_id,
+          courses:course_id (
+            id,
+            title,
+            price_clp
+          ),
+          profiles:student_id (
+            name,
+            avatar_url
+          )
+        `
+        )
+        .in("course_id", courseIds)
+        .order("purchased_at", { ascending: false })
+        .limit(200);
+
+      if (startISO) q = q.gte("purchased_at", startISO);
+
+      const { data, error } = await q;
+      if (error) throw error;
+
+      // Normaliza y filtra “pagadas” para el cálculo
+      const rows = (data || []).filter((r: any) => isPaidStatus(r.status));
+      return rows;
+    },
+    enabled: !!user?.id && courseIds.length > 0,
+  });
+
+  const stats = useMemo(() => {
+    const rows = enrollments || [];
+    const revenue = rows.reduce((acc: number, r: any) => acc + Number(r?.courses?.price_clp || 0), 0);
+    const sales = rows.length;
+    const avg = sales > 0 ? Math.round(revenue / sales) : 0;
+
+    // Top curso por ingresos (en el rango)
+    const byCourse = new Map<string, { title: string; revenue: number; sales: number }>();
+    for (const r of rows) {
+      const cid = String(r.course_id);
+      const title = r?.courses?.title || "Curso";
+      const price = Number(r?.courses?.price_clp || 0);
+
+      const prev = byCourse.get(cid) || { title, revenue: 0, sales: 0 };
+      byCourse.set(cid, {
+        title,
+        revenue: prev.revenue + price,
+        sales: prev.sales + 1,
+      });
+    }
+
+    const top = Array.from(byCourse.values()).sort((a, b) => b.revenue - a.revenue)[0] || null;
+
+    return {
+      revenue,
+      sales,
+      avg,
+      top,
+    };
+  }, [enrollments]);
+
+  const loading = isLoadingCourses || isLoadingSales;
+
+  if (!user) {
+    return (
+      <div className="p-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Debes iniciar sesión</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground text-sm">Inicia sesión para ver tu dashboard de creador.</p>
+            <Button className="mt-4" asChild>
+              <Link to="/login">Ir a login</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="p-8 space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Panel de Creador</h1>
-          <p className="text-muted-foreground">Bienvenido, {profile?.name}</p>
+          <h1 className="text-2xl font-bold">Dashboard Creador</h1>
+          <p className="text-sm text-muted-foreground">
+            Vista rápida de cursos + ventas (MVP). Después sumamos retiros/payouts.
+          </p>
         </div>
-        <Button asChild>
-          <Link to="/creator-app/courses/new">
-            <Plus className="h-4 w-4 mr-2" />
-            Nuevo Curso
-          </Link>
-        </Button>
-      </div>
 
-      <div className="grid sm:grid-cols-3 gap-6 mb-8">
-        <div className="bg-card border border-border rounded-lg p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-              <BookOpen className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-3xl font-bold">{stats?.courses || 0}</p>
-              <p className="text-sm text-muted-foreground">Cursos</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-card border border-border rounded-lg p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
-              <Users className="h-6 w-6 text-success" />
-            </div>
-            <div>
-              <p className="text-3xl font-bold">{stats?.students || 0}</p>
-              <p className="text-sm text-muted-foreground">Estudiantes</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-card border border-border rounded-lg p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-warning/10 flex items-center justify-center">
-              <Eye className="h-6 w-6 text-warning" />
-            </div>
-            <div>
-              <p className="text-3xl font-bold">{stats?.views || 0}</p>
-              <p className="text-sm text-muted-foreground">Vistas (30d)</p>
-            </div>
-          </div>
+        <div className="flex gap-2">
+          <Button asChild>
+            <Link to="/creator-app/courses/new">
+              <Plus className="h-4 w-4 mr-2" />
+              Nuevo curso
+            </Link>
+          </Button>
+
+          <Button variant="outline" asChild>
+            <Link to="/creator-app/courses">
+              <BookOpen className="h-4 w-4 mr-2" />
+              Mis cursos
+            </Link>
+          </Button>
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-lg p-6">
-        <h2 className="font-semibold mb-4">Acciones rápidas</h2>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <Link to="/creator-app/courses" className="p-4 border border-border rounded-lg hover:bg-muted transition-colors">
-            <BookOpen className="h-6 w-6 text-primary mb-2" />
-            <p className="font-medium">Gestionar cursos</p>
-            <p className="text-sm text-muted-foreground">Ver y editar tus cursos</p>
-          </Link>
-          <Link to="/creator-app/profile" className="p-4 border border-border rounded-lg hover:bg-muted transition-colors">
-            <TrendingUp className="h-6 w-6 text-primary mb-2" />
-            <p className="font-medium">Editar perfil público</p>
-            <p className="text-sm text-muted-foreground">Personaliza tu vitrina</p>
-          </Link>
-        </div>
+      {/* Cards: cursos */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Cursos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-muted-foreground" />
+              <span className="text-2xl font-bold">{courses?.length || 0}</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">Total de cursos creados</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Estudiantes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="text-2xl font-bold">
+                {useMemo(() => {
+                  const uniq = new Set((enrollments || []).map((e: any) => e.student_id));
+                  return uniq.size;
+                }, [enrollments])}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">Únicos en el rango</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Rendimiento</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <span className="text-2xl font-bold">{stats.sales}</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">Ventas (inscripciones) en el rango</p>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Finanzas */}
+      <Card>
+        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div className="space-y-1">
+            <CardTitle className="text-base">Finanzas</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Ingresos estimados basados en inscripciones (enrollments) × precio del curso.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            <Select value={range} onValueChange={(v) => setRange(v as RangeKey)}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Rango" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7d">Últimos 7 días</SelectItem>
+                <SelectItem value="30d">Últimos 30 días</SelectItem>
+                <SelectItem value="90d">Últimos 90 días</SelectItem>
+                <SelectItem value="all">Todo el tiempo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-6">
+          {loading ? (
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Cargando finanzas…
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium">Ingresos</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{formatCLP(stats.revenue)}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Estimado (MVP)</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium">Ventas</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{stats.sales}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Inscripciones</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium">Ticket promedio</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{formatCLP(stats.avg)}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Ingresos / ventas</p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium">Top curso</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {stats.top ? (
+                      <>
+                        <div className="font-semibold line-clamp-1">{stats.top.title}</div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatCLP(stats.top.revenue)} · {stats.top.sales} ventas
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">—</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold">Ventas recientes</h3>
+                  <p className="text-sm text-muted-foreground">Últimas inscripciones registradas.</p>
+                </div>
+                <Badge variant="outline">MVP</Badge>
+              </div>
+
+              {(enrollments || []).length === 0 ? (
+                <div className="rounded-lg border bg-muted/20 p-6 text-sm text-muted-foreground">
+                  Aún no tienes ventas en este rango. Cuando alguien compre, aquí verás la transacción.
+                </div>
+              ) : (
+                <div className="rounded-lg border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead>Estudiante</TableHead>
+                        <TableHead>Curso</TableHead>
+                        <TableHead className="text-right">Monto</TableHead>
+                        <TableHead className="text-right">Estado</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(enrollments || []).slice(0, 12).map((r: any) => {
+                        const name = r?.profiles?.name || "Estudiante";
+                        const initials = name
+                          .split(" ")
+                          .filter(Boolean)
+                          .slice(0, 2)
+                          .map((x: string) => x[0]?.toUpperCase())
+                          .join("");
+
+                        const status = (r?.status || "paid").toLowerCase();
+
+                        return (
+                          <TableRow key={r.id}>
+                            <TableCell className="whitespace-nowrap">{formatDate(r.purchased_at)}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-7 w-7">
+                                  <AvatarImage src={r?.profiles?.avatar_url || ""} />
+                                  <AvatarFallback>{initials || "E"}</AvatarFallback>
+                                </Avatar>
+                                <span className="text-sm">{name}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="max-w-[360px]">
+                              <span className="text-sm line-clamp-1">{r?.courses?.title || "Curso"}</span>
+                            </TableCell>
+                            <TableCell className="text-right font-medium whitespace-nowrap">
+                              {formatCLP(r?.courses?.price_clp)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Badge variant={status.includes("refund") || status.includes("cancel") ? "destructive" : "secondary"}>
+                                {r?.status || "paid"}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground">
+                Próximo paso: crear “payouts/retiros” y separar “saldo disponible” vs “en tránsito”.
+              </p>
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

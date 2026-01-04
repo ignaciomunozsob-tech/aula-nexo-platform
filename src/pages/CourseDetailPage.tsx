@@ -18,7 +18,10 @@ import {
   CheckCircle2,
   Shield,
   PlayCircle,
-  FileCheck
+  FileCheck,
+  Video,
+  Radio,
+  Layers
 } from "lucide-react";
 
 function formatCLP(value: number | null | undefined) {
@@ -34,6 +37,12 @@ function levelLabel(level?: string | null) {
   if (level === "advanced") return "Avanzado";
   if (level === "intermediate") return "Intermedio";
   return "Principiante";
+}
+
+function formatLabel(format?: string | null) {
+  if (format === "live") return { label: "En vivo", description: "Clases en tiempo real con el instructor", icon: Radio };
+  if (format === "hybrid") return { label: "Híbrido", description: "Combina clases grabadas y en vivo", icon: Layers };
+  return { label: "Grabado", description: "Aprende a tu propio ritmo", icon: Video };
 }
 
 export default function CourseDetailPage() {
@@ -55,6 +64,7 @@ export default function CourseDetailPage() {
           cover_image_url,
           price_clp,
           level,
+          format,
           duration_minutes_est,
           status,
           category_id,
@@ -100,6 +110,8 @@ export default function CourseDetailPage() {
   const totalLessons = useMemo(() => {
     return modules.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0);
   }, [modules]);
+
+  const courseFormat = formatLabel((course as any)?.format);
 
   if (isLoading) {
     return (
@@ -177,7 +189,20 @@ export default function CourseDetailPage() {
                 )}
               </div>
 
-              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Format Badge Block */}
+              <div className="mt-6 bg-primary/5 border border-primary/20 rounded-lg px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <courseFormat.icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-primary">Curso en formato {courseFormat.label}</p>
+                    <p className="text-xs text-muted-foreground">{courseFormat.description}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="flex items-center gap-3 bg-background border rounded-lg px-4 py-3">
                    <PlayCircle className="h-5 w-5 text-primary" />
                    <div>

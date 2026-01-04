@@ -54,9 +54,15 @@ export default function SignupPage() {
 
     if (error) {
       if ((error as any).message?.includes('already registered')) {
+        setErrors({ email: 'Este email ya tiene una cuenta' });
         toast({
           title: 'Usuario ya registrado',
-          description: 'Este email ya tiene una cuenta. Intenta iniciar sesión.',
+          description: (
+            <span>
+              Este email ya tiene una cuenta.{' '}
+              <a href={loginLink} className="underline font-medium">Inicia sesión aquí</a>
+            </span>
+          ),
           variant: 'destructive',
         });
       } else {

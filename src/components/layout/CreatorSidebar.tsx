@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { GraduationCap, LayoutDashboard, BookOpen, User, LogOut, Home, BarChart3 } from 'lucide-react';
+import { GraduationCap, LayoutDashboard, BookOpen, User, LogOut, Home, DollarSign } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
@@ -15,6 +15,7 @@ export function CreatorSidebar() {
   const navItems = [
     { to: '/creator-app', icon: LayoutDashboard, label: 'Dashboard', end: true },
     { to: '/creator-app/courses', icon: BookOpen, label: 'Mis Cursos', end: false },
+    { to: '/creator-app/finances', icon: DollarSign, label: 'Finanzas', end: false },
     { to: '/creator-app/profile', icon: User, label: 'Mi Perfil Público', end: false },
   ];
 

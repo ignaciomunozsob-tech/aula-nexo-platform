@@ -21,6 +21,7 @@ import CreatorDashboard from "@/pages/creator/CreatorDashboard";
 import CreatorCoursesPage from "@/pages/creator/CreatorCoursesPage";
 import CourseEditorPage from "@/pages/creator/CourseEditorPage";
 import CreatorProfileEdit from "@/pages/creator/CreatorProfileEdit";
+import CreatorFinancesPage from "@/pages/creator/CreatorFinancesPage";
 import NotFound from "@/pages/NotFound";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import DebugPage from "@/pages/DebugPage";
@@ -65,6 +66,7 @@ const App = () => (
                 <Route path="courses" element={<CreatorCoursesPage />} />
                 <Route path="courses/new" element={<CourseEditorPage />} />
                 <Route path="courses/:id/edit" element={<CourseEditorPage />} />
+                <Route path="finances" element={<CreatorFinancesPage />} />
                 <Route path="profile" element={<CreatorProfileEdit />} />
               </Route>
 

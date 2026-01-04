@@ -23,7 +23,16 @@ import {
   List,
   ListOrdered,
   Link2,
+  Users,
 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import CourseCoverUploader from "@/components/layout/CourseCoverUploader";
 
 type LessonForm = {
@@ -108,6 +117,86 @@ function RichTextEditor({ value, onChange }: { value: string; onChange: (html: s
       />
 
       <p className="text-xs text-muted-foreground">Tip: pega texto normal y luego aplica formato con los botones.</p>
+    </div>
+  );
+}
+
+function formatDate(date: string) {
+  return new Date(date).toLocaleDateString("es-CL", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function CourseStudentsSection({ courseId }: { courseId: string }) {
+  const { data: enrollments, isLoading } = useQuery({
+    queryKey: ["course-enrollments", courseId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("enrollments")
+        .select("id, user_id, purchased_at, status, profiles:user_id(name)")
+        .eq("course_id", courseId)
+        .order("purchased_at", { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!courseId,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="bg-card border rounded-lg p-6">
+        <div className="flex justify-center py-4">
+          <Loader2 className="h-5 w-5 animate-spin" />
+        </div>
+      </div>
+    );
+  }
+
+  const activeEnrollments = (enrollments || []).filter((e: any) => e.status === "active");
+
+  return (
+    <div className="bg-card border rounded-lg p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Users className="h-5 w-5" />
+        <h2 className="font-semibold">Alumnos Inscritos</h2>
+        <span className="ml-auto text-sm text-muted-foreground">
+          {activeEnrollments.length} alumno{activeEnrollments.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      {activeEnrollments.length === 0 ? (
+        <p className="text-muted-foreground text-center py-6 text-sm">
+          Aún no hay alumnos inscritos en este curso.
+        </p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Alumno</TableHead>
+              <TableHead>Fecha de inscripción</TableHead>
+              <TableHead>Estado</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {activeEnrollments.map((enrollment: any) => (
+              <TableRow key={enrollment.id}>
+                <TableCell className="font-medium">
+                  {enrollment.profiles?.name || "Usuario"}
+                </TableCell>
+                <TableCell>{formatDate(enrollment.purchased_at)}</TableCell>
+                <TableCell>
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Activo
+                  </span>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
     </div>
   );
 }
@@ -416,7 +505,7 @@ export default function CourseEditorPage() {
         <div className="flex gap-2">
           {course?.slug && (
             <Button variant="outline" asChild>
-              <a href={`/course/${course.slug}`} target="_blank" rel="noreferrer">
+              <a href={`${window.location.origin}${window.location.pathname}#/course/${course.slug}`} target="_blank" rel="noreferrer">
                 <Link2 className="h-4 w-4 mr-2" />
                 Ver página pública
               </a>
@@ -694,6 +783,9 @@ export default function CourseEditorPage() {
             ))}
           </div>
         </div>
+
+        {/* Enrolled Students Section */}
+        {id && <CourseStudentsSection courseId={id} />}
 
         <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} size="lg" className="w-full">
           {saveMutation.isPending ? (

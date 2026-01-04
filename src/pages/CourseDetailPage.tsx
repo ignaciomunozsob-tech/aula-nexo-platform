@@ -163,16 +163,20 @@ export default function CourseDetailPage() {
           status: "active",
         });
         if (error) throw error;
-        return { userId: user.id };
+        return { userId: user.id, isNewUser: false };
       }
       
-      // For anonymous users, we need them to sign up first
-      // Create a temporary signup
+      // For anonymous users, create account with temp password
+      const tempPassword = generateTempPassword();
+      
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: enrollEmail,
-        password: crypto.randomUUID(), // Random password, they can reset later
+        password: tempPassword,
         options: {
-          data: { name: enrollName },
+          data: { 
+            name: enrollName,
+            needs_password_change: true,
+          },
           emailRedirectTo: `${window.location.origin}/`,
         },
       });
@@ -188,12 +192,44 @@ export default function CourseDetailPage() {
       });
       if (error) throw error;
       
-      return { userId: authData.user.id };
+      // Mark onboarding as completed since they already have a course
+      await supabase
+        .from("profiles")
+        .update({ onboarding_completed: true })
+        .eq("id", authData.user.id);
+      
+      // Send welcome email with temp password
+      try {
+        await supabase.functions.invoke("send-welcome-email", {
+          body: {
+            email: enrollEmail,
+            name: enrollName,
+            tempPassword,
+            courseName: course.title,
+          },
+        });
+      } catch (emailErr) {
+        console.error("Error sending welcome email:", emailErr);
+      }
+      
+      // Sign out so user can login with temp password
+      await supabase.auth.signOut();
+      
+      return { userId: authData.user.id, isNewUser: true, tempPassword };
     },
-    onSuccess: () => {
-      toast({ title: "¡Inscripción exitosa! 🎉", description: "Ya puedes acceder al curso." });
+    onSuccess: (data) => {
       setShowFreeEnrollDialog(false);
-      navigate(`/app/course/${course?.id}/play`);
+      
+      if (data.isNewUser) {
+        toast({ 
+          title: "¡Inscripción exitosa! 🎉", 
+          description: "Te hemos enviado un email con tu contraseña temporal para acceder." 
+        });
+        navigate("/login");
+      } else {
+        toast({ title: "¡Inscripción exitosa! 🎉", description: "Ya puedes acceder al curso." });
+        navigate(`/app/course/${course?.id}/play`);
+      }
     },
     onError: (err: any) => {
       toast({
@@ -203,6 +239,16 @@ export default function CourseDetailPage() {
       });
     },
   });
+
+  // Generate a random temporary password
+  function generateTempPassword(): string {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+    let password = "";
+    for (let i = 0; i < 8; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  }
 
   const handleEnrollClick = () => {
     if (existingEnrollment?.status === "active") {

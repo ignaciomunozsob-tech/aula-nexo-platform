@@ -11,6 +11,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Loader2,
   Plus,
   Trash2,
@@ -226,6 +236,7 @@ export default function CourseEditorPage() {
   const [modules, setModules] = useState<ModuleForm[]>([]);
   const [deletedModuleIds, setDeletedModuleIds] = useState<string[]>([]);
   const [deletedLessonIds, setDeletedLessonIds] = useState<string[]>([]);
+  const [showPublishDialog, setShowPublishDialog] = useState(false);
 
   // auto-create para tener id al tiro (portada inmediata)
   useEffect(() => {
@@ -503,6 +514,29 @@ export default function CourseEditorPage() {
 
   return (
     <div className="p-8 max-w-4xl">
+      {/* Diálogo de confirmación para publicar */}
+      <AlertDialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro de publicar este curso?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Una vez publicado, el curso será visible para todos los usuarios. Puedes cambiarlo a borrador en cualquier momento.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setForm((prev) => ({ ...prev, status: "published" }));
+                setTimeout(() => saveMutation.mutate(), 0);
+              }}
+            >
+              Sí, publicar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Editar Curso</h1>
         <div className="flex gap-2">
@@ -514,14 +548,25 @@ export default function CourseEditorPage() {
               </a>
             </Button>
           )}
-          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-            {saveMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <Save className="h-4 w-4 mr-2" />
-            )}
-            Guardar Cambios
-          </Button>
+          {course?.status === "draft" ? (
+            <Button onClick={() => setShowPublishDialog(true)} disabled={saveMutation.isPending}>
+              {saveMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              Guardar y Publicar
+            </Button>
+          ) : (
+            <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+              {saveMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              Guardar Cambios
+            </Button>
+          )}
         </div>
       </div>
 

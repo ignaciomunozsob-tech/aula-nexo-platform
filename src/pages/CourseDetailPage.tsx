@@ -152,9 +152,14 @@ export default function CourseDetailPage() {
                 {course.title}
               </h1>
 
-              <p className="text-muted-foreground mt-3 max-w-2xl text-lg">
-                {course.description || "Sin descripción."}
-              </p>
+              {course.description ? (
+                <div 
+                  className="text-muted-foreground mt-3 max-w-2xl text-lg prose prose-sm dark:prose-invert"
+                  dangerouslySetInnerHTML={{ __html: course.description }}
+                />
+              ) : (
+                <p className="text-muted-foreground mt-3 max-w-2xl text-lg">Sin descripción.</p>
+              )}
 
               <div className="mt-4 text-sm text-muted-foreground">
                 Creado por{" "}

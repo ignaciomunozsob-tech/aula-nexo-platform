@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { GraduationCap, BookOpen, Settings, LogOut, Home, Briefcase } from 'lucide-react';
+import { GraduationCap, BookOpen, Settings, LogOut, Home, Briefcase, Store } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ export function StudentSidebar() {
 
   const navItems = [
     { to: '/app/my-courses', icon: BookOpen, label: 'Mis Cursos', end: false },
+    { to: '/app/marketplace', icon: Store, label: 'Marketplace', end: false },
     { to: '/app/settings', icon: Settings, label: 'Configuración', end: false },
   ];
 
@@ -40,7 +41,7 @@ export function StudentSidebar() {
           </div>
           <div>
             <p className="font-medium text-sidebar-foreground text-sm">{profile?.name || 'Usuario'}</p>
-            <p className="text-xs text-muted-foreground capitalize">{profile?.role || 'Alumno'}</p>
+            <p className="text-xs text-muted-foreground">Estudiante</p>
           </div>
         </div>
       </div>

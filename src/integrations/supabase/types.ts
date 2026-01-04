@@ -527,9 +527,11 @@ export type Database = {
           created_at: string
           creator_slug: string | null
           id: string
+          interests: string[] | null
           intro_video_url: string | null
           links: Json | null
           name: string | null
+          onboarding_completed: boolean | null
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string
         }
@@ -539,9 +541,11 @@ export type Database = {
           created_at?: string
           creator_slug?: string | null
           id: string
+          interests?: string[] | null
           intro_video_url?: string | null
           links?: Json | null
           name?: string | null
+          onboarding_completed?: boolean | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
         }
@@ -551,9 +555,11 @@ export type Database = {
           created_at?: string
           creator_slug?: string | null
           id?: string
+          interests?: string[] | null
           intro_video_url?: string | null
           links?: Json | null
           name?: string | null
+          onboarding_completed?: boolean | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
         }

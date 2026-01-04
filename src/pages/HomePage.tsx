@@ -53,7 +53,7 @@ export default function HomePage() {
               <div className="mt-8 flex flex-col sm:flex-row gap-4">
                 <Button size="lg" asChild>
                   <Link to="/courses">
-                    Explorar Cursos
+                    Ir al Marketplace
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
@@ -126,7 +126,7 @@ export default function HomePage() {
         <section className="py-16 bg-muted/30">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-2xl md:text-3xl font-bold text-center mb-8">
-              Explora por categoría
+              Busca por categoría
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {categories.map((category: any) => (

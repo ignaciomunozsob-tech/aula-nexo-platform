@@ -169,6 +169,11 @@ export default function CourseEditorPage() {
   const [deletedModuleIds, setDeletedModuleIds] = useState<string[]>([]);
   const [deletedLessonIds, setDeletedLessonIds] = useState<string[]>([]);
   const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  
+  // Refs para comparar cambios
+  const initialFormRef = useRef<typeof form | null>(null);
+  const initialModulesRef = useRef<ModuleForm[] | null>(null);
 
   // auto-create para tener id al tiro (portada inmediata)
   useEffect(() => {
@@ -261,8 +266,7 @@ export default function CourseEditorPage() {
   useEffect(() => {
     if (!course) return;
 
-    setForm((prev) => ({
-      ...prev,
+    const initialForm = {
       title: course.title ?? "",
       description_html: course.description ?? "",
       price_clp: course.price_clp ?? 0,
@@ -270,16 +274,32 @@ export default function CourseEditorPage() {
       category_id: course.category_id ?? "",
       status: course.status ?? "draft",
       format: (course as any).format ?? "recorded",
-    }));
+    };
+    
+    setForm(initialForm);
+    initialFormRef.current = initialForm;
   }, [course]);
 
   useEffect(() => {
     if (existingModules) {
       setModules(existingModules as any);
+      initialModulesRef.current = JSON.parse(JSON.stringify(existingModules));
       setDeletedModuleIds([]);
       setDeletedLessonIds([]);
+      setHasChanges(false);
     }
   }, [existingModules]);
+
+  // Detectar cambios
+  useEffect(() => {
+    if (!initialFormRef.current || !initialModulesRef.current) return;
+    
+    const formChanged = JSON.stringify(form) !== JSON.stringify(initialFormRef.current);
+    const modulesChanged = JSON.stringify(modules) !== JSON.stringify(initialModulesRef.current);
+    const hasDeletes = deletedModuleIds.length > 0 || deletedLessonIds.length > 0;
+    
+    setHasChanges(formChanged || modulesChanged || hasDeletes);
+  }, [form, modules, deletedModuleIds, deletedLessonIds]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -375,6 +395,13 @@ export default function CourseEditorPage() {
       queryClient.invalidateQueries({ queryKey: ["creator-courses"] });
       queryClient.invalidateQueries({ queryKey: ["edit-course", courseId] });
       queryClient.invalidateQueries({ queryKey: ["edit-modules", courseId] });
+      
+      // Reset change tracking
+      setHasChanges(false);
+      initialFormRef.current = { ...form };
+      initialModulesRef.current = JSON.parse(JSON.stringify(modules));
+      setDeletedModuleIds([]);
+      setDeletedLessonIds([]);
 
       toast({ title: "Curso guardado correctamente ✅" });
     },
@@ -472,16 +499,16 @@ export default function CourseEditorPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Editar Curso</h1>
         <div className="flex gap-2">
-          {course?.slug && (
+          {course?.id && (
             <>
               <Button variant="outline" asChild>
-                <a href={`${window.location.origin}${window.location.pathname}#/course/${course.slug}`} target="_blank" rel="noreferrer">
+                <a href={`${window.location.origin}/#/course/${course.slug}`} target="_blank" rel="noreferrer">
                   <Link2 className="h-4 w-4 mr-2" />
                   Ver página pública
                 </a>
               </Button>
               <Button variant="outline" asChild>
-                <a href={`${window.location.origin}${window.location.pathname}#/app/course/${course.id}/play?preview=true`} target="_blank" rel="noreferrer">
+                <a href={`${window.location.origin}/#/app/course/${course.id}/play?preview=true`} target="_blank" rel="noreferrer">
                   <Users className="h-4 w-4 mr-2" />
                   Vista previa alumno
                 </a>
@@ -490,7 +517,12 @@ export default function CourseEditorPage() {
           )}
           {course?.status === "draft" ? (
             <>
-              <Button variant="outline" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+              <Button 
+                variant="outline" 
+                onClick={() => saveMutation.mutate()} 
+                disabled={saveMutation.isPending || !hasChanges}
+                className={!hasChanges ? "opacity-50" : ""}
+              >
                 {saveMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : (
@@ -508,7 +540,11 @@ export default function CourseEditorPage() {
               </Button>
             </>
           ) : (
-            <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+            <Button 
+              onClick={() => saveMutation.mutate()} 
+              disabled={saveMutation.isPending || !hasChanges}
+              className={!hasChanges ? "opacity-50" : ""}
+            >
               {saveMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : (
@@ -799,7 +835,12 @@ export default function CourseEditorPage() {
         {/* Student Management Section */}
         {id && <StudentManagement productId={id} productType="course" />}
 
-        <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} size="lg" className="w-full">
+        <Button 
+          onClick={() => saveMutation.mutate()} 
+          disabled={saveMutation.isPending || !hasChanges} 
+          size="lg" 
+          className={`w-full ${!hasChanges ? "opacity-50" : ""}`}
+        >
           {saveMutation.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
           ) : (

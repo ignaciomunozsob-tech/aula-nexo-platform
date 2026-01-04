@@ -40,17 +40,7 @@ type ModuleForm = {
   lessons: LessonForm[];
 };
 
-type ListKey = "learn_bullets" | "requirements" | "includes";
 
-function cleanArray(arr: string[]) {
-  return (arr || []).map((x) => String(x ?? "").trim()).filter(Boolean);
-}
-
-function htmlToPlainText(html: string) {
-  if (!html) return "";
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  return (doc.body.textContent || "").trim();
-}
 
 /**
  * Editor enriquecido liviano (sin deps):
@@ -136,15 +126,11 @@ export default function CourseEditorPage() {
 
   const [form, setForm] = useState({
     title: "",
-    short_description: "",
     description_html: "",
     price_clp: 0,
     level: "beginner",
     category_id: "",
     status: "draft",
-    learn_bullets: ["", "", "", ""],
-    requirements: [""],
-    includes: ["Acceso de por vida", "Aprende a tu ritmo"],
   });
 
   const [modules, setModules] = useState<ModuleForm[]>([]);
@@ -171,17 +157,11 @@ export default function CourseEditorPage() {
             title: tempTitle,
             slug: tempSlug,
             creator_id: user.id,
-            short_description: "",
             description: "",
-            description_html: "",
             price_clp: 0,
             level: "beginner",
             status: "draft",
             category_id: null,
-            learn_bullets: ["", "", "", ""],
-            requirements: [""],
-            includes: ["Acceso de por vida", "Aprende a tu ritmo"],
-            published_at: null,
           })
           .select()
           .single();
@@ -251,15 +231,11 @@ export default function CourseEditorPage() {
     setForm((prev) => ({
       ...prev,
       title: course.title ?? "",
-      short_description: course.short_description ?? "",
-      description_html: course.description_html ?? "",
+      description_html: course.description ?? "",
       price_clp: course.price_clp ?? 0,
       level: course.level ?? "beginner",
       category_id: course.category_id ?? "",
       status: course.status ?? "draft",
-      learn_bullets: Array.isArray(course.learn_bullets) ? course.learn_bullets : prev.learn_bullets,
-      requirements: Array.isArray(course.requirements) ? course.requirements : prev.requirements,
-      includes: Array.isArray(course.includes) ? course.includes : prev.includes,
     }));
   }, [course]);
 
@@ -271,27 +247,6 @@ export default function CourseEditorPage() {
     }
   }, [existingModules]);
 
-  // helpers listas
-  const updateListItem = (key: ListKey, idx: number, value: string) => {
-    setForm((prev) => {
-      const arr = [...(prev[key] as string[])];
-      arr[idx] = value;
-      return { ...prev, [key]: arr };
-    });
-  };
-
-  const addListItem = (key: ListKey) => {
-    setForm((prev) => ({ ...prev, [key]: [...(prev[key] as string[]), ""] }));
-  };
-
-  const removeListItem = (key: ListKey, idx: number) => {
-    setForm((prev) => {
-      const arr = [...(prev[key] as string[])];
-      arr.splice(idx, 1);
-      return { ...prev, [key]: arr.length ? arr : [""] };
-    });
-  };
-
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!user?.id) throw new Error("Debes iniciar sesión");
@@ -299,24 +254,13 @@ export default function CourseEditorPage() {
 
       const nowIso = new Date().toISOString();
 
-      const learn = cleanArray(form.learn_bullets);
-      const req = cleanArray(form.requirements);
-      const inc = cleanArray(form.includes);
-
-      const plain = htmlToPlainText(form.description_html);
-
       const payload: any = {
         title: (form.title || "").trim(),
-        short_description: (form.short_description || "").trim(),
-        description_html: form.description_html || "",
-        description: plain,
+        description: form.description_html || "",
         price_clp: Number(form.price_clp || 0),
         level: form.level,
         category_id: form.category_id || null,
         status: form.status,
-        learn_bullets: learn,
-        requirements: req,
-        includes: inc,
         updated_at: nowIso,
       };
 
@@ -513,16 +457,6 @@ export default function CourseEditorPage() {
           </div>
 
           <div>
-            <Label>Resumen corto</Label>
-            <Input
-              value={form.short_description}
-              onChange={(e) => setForm({ ...form, short_description: e.target.value })}
-              className="mt-1"
-              placeholder="1–2 líneas para la portada"
-            />
-          </div>
-
-          <div>
             <Label>Descripción (texto enriquecido)</Label>
             <div className="mt-1">
               <RichTextEditor
@@ -588,74 +522,6 @@ export default function CourseEditorPage() {
                   <SelectItem value="published">Publicado</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-          </div>
-        </div>
-
-        {/* Coursera-like fields */}
-        <div className="bg-card border rounded-lg p-6 space-y-6">
-          <h2 className="font-semibold">Página pública (tipo Coursera)</h2>
-
-          {/* Learn */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Lo que aprenderás</Label>
-              <Button type="button" variant="outline" size="sm" onClick={() => addListItem("learn_bullets")}>
-                <Plus className="h-4 w-4 mr-1" />
-                Agregar
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {(form.learn_bullets || []).map((val, idx) => (
-                <div key={idx} className="flex gap-2 items-center">
-                  <Input value={val} onChange={(e) => updateListItem("learn_bullets", idx, e.target.value)} />
-                  <Button type="button" variant="ghost" size="icon" onClick={() => removeListItem("learn_bullets", idx)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Requirements */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Requisitos</Label>
-              <Button type="button" variant="outline" size="sm" onClick={() => addListItem("requirements")}>
-                <Plus className="h-4 w-4 mr-1" />
-                Agregar
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {(form.requirements || []).map((val, idx) => (
-                <div key={idx} className="flex gap-2 items-center">
-                  <Input value={val} onChange={(e) => updateListItem("requirements", idx, e.target.value)} />
-                  <Button type="button" variant="ghost" size="icon" onClick={() => removeListItem("requirements", idx)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Includes */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Incluye</Label>
-              <Button type="button" variant="outline" size="sm" onClick={() => addListItem("includes")}>
-                <Plus className="h-4 w-4 mr-1" />
-                Agregar
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {(form.includes || []).map((val, idx) => (
-                <div key={idx} className="flex gap-2 items-center">
-                  <Input value={val} onChange={(e) => updateListItem("includes", idx, e.target.value)} />
-                  <Button type="button" variant="ghost" size="icon" onClick={() => removeListItem("includes", idx)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
             </div>
           </div>
         </div>

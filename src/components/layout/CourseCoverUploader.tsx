@@ -1,8 +1,8 @@
 // src/components/layout/CourseCoverUploader.tsx
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 type Props = {
   courseId: string;
@@ -29,6 +29,14 @@ export default function CourseCoverUploader({ courseId, currentUrl, onUploaded }
     return currentUrl ?? null;
   }, [file, currentUrl]);
 
+  // Auto-upload when file is selected
+  useEffect(() => {
+    if (file) {
+      handleUpload();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [file]);
+
   const handleUpload = async () => {
     if (!file) return;
 
@@ -38,6 +46,7 @@ export default function CourseCoverUploader({ courseId, currentUrl, onUploaded }
         description: "Usa JPG, PNG o WEBP.",
         variant: "destructive",
       });
+      setFile(null);
       return;
     }
 
@@ -83,6 +92,7 @@ export default function CourseCoverUploader({ courseId, currentUrl, onUploaded }
         description: e?.message ?? "Intenta nuevamente",
         variant: "destructive",
       });
+      setFile(null);
     } finally {
       setUploading(false);
     }
@@ -91,7 +101,7 @@ export default function CourseCoverUploader({ courseId, currentUrl, onUploaded }
   return (
     <div className="space-y-3">
       <div className="flex items-start gap-4">
-        <div className="w-44 h-28 rounded-lg border border-border bg-muted overflow-hidden flex items-center justify-center">
+        <div className="w-44 h-28 rounded-lg border border-border bg-muted overflow-hidden flex items-center justify-center relative">
           {previewUrl ? (
             <img
               src={previewUrl}
@@ -103,27 +113,33 @@ export default function CourseCoverUploader({ courseId, currentUrl, onUploaded }
               Sin portada
             </span>
           )}
+          {uploading && (
+            <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            </div>
+          )}
         </div>
 
         <div className="flex-1 space-y-2">
-          <input
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="block w-full text-sm"
-          />
-
-          <div className="flex gap-2">
-            <Button onClick={handleUpload} disabled={!file || uploading}>
-              {uploading ? "Subiendo..." : "Subir portada"}
-            </Button>
-
-            {file && (
-              <Button variant="outline" onClick={() => setFile(null)} disabled={uploading}>
-                Cancelar
-              </Button>
-            )}
-          </div>
+          <label className="block">
+            <span className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium cursor-pointer hover:bg-primary/90 transition-colors">
+              {uploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Subiendo...
+                </>
+              ) : (
+                "Seleccionar imagen"
+              )}
+            </span>
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              className="sr-only"
+              disabled={uploading}
+            />
+          </label>
 
           <p className="text-xs text-muted-foreground">
             Recomendado: 1280×720 (16:9). Formatos: JPG, PNG o WEBP.

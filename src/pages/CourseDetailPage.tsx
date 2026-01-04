@@ -172,18 +172,27 @@ export default function CourseDetailPage() {
                 )}
               </div>
 
-              <div className="mt-6 flex flex-wrap gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                   <PlayCircle className="h-4 w-4 text-muted-foreground" />
-                   <span>{totalLessons} lecciones</span>
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="flex items-center gap-3 bg-background border rounded-lg px-4 py-3">
+                   <PlayCircle className="h-5 w-5 text-primary" />
+                   <div>
+                     <p className="text-sm font-medium">{totalLessons} lecciones</p>
+                     <p className="text-xs text-muted-foreground">Contenido del curso</p>
+                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                   <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                   <span>Nivel {levelLabel(course.level)}</span>
+                <div className="flex items-center gap-3 bg-background border rounded-lg px-4 py-3">
+                   <BarChart3 className="h-5 w-5 text-primary" />
+                   <div>
+                     <p className="text-sm font-medium">{levelLabel(course.level)}</p>
+                     <p className="text-xs text-muted-foreground">Nivel del curso</p>
+                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                   <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                   <span>Certificado al finalizar</span>
+                <div className="flex items-center gap-3 bg-background border rounded-lg px-4 py-3">
+                   <GraduationCap className="h-5 w-5 text-primary" />
+                   <div>
+                     <p className="text-sm font-medium">Certificado</p>
+                     <p className="text-xs text-muted-foreground">Al finalizar</p>
+                   </div>
                 </div>
               </div>
             </div>
@@ -238,16 +247,6 @@ export default function CourseDetailPage() {
       <section className="max-w-6xl mx-auto px-4 py-10">
         <div className="grid lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-8 space-y-10">
-
-            {/* DESCRIPCIÓN COMPLETA */}
-            {course.description && (
-              <div>
-                <h2 className="text-xl font-bold mb-4">Descripción del curso</h2>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {course.description}
-                </p>
-              </div>
-            )}
 
             {/* CONTENIDO (ACORDEÓN) */}
             <div>

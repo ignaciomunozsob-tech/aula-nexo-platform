@@ -24,7 +24,22 @@ export function StudentLayout() {
     enabled: !!user,
   });
 
-  if (loading || loadingProfile) {
+  // Check if user has any enrollments (skip onboarding if they do)
+  const { data: hasEnrollments, isLoading: loadingEnrollments } = useQuery({
+    queryKey: ['user-enrollments-check', user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { count, error } = await supabase
+        .from('enrollments')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      if (error) return false;
+      return (count || 0) > 0;
+    },
+    enabled: !!user,
+  });
+
+  if (loading || loadingProfile || loadingEnrollments) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -36,8 +51,9 @@ export function StudentLayout() {
     return <Navigate to="/login" replace />;
   }
 
-  // Show onboarding if not completed
-  if (profile && !profile.onboarding_completed) {
+  // Show onboarding only if not completed AND user has no enrollments
+  // Users who bought a course without account should skip onboarding
+  if (profile && !profile.onboarding_completed && !hasEnrollments) {
     return <StudentOnboarding />;
   }
 

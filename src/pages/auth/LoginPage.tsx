@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +44,6 @@ export default function LoginPage() {
       const { error } = await signIn(email.trim(), password);
 
       if (error) {
-        // MUY IMPORTANTE para debug real:
         console.error("[LOGIN_ERROR]", error);
 
         toast({
@@ -54,8 +54,17 @@ export default function LoginPage() {
         return;
       }
 
-      toast({ title: "Sesión iniciada ✅" });
-      navigate("/app");
+      // Check if user needs to change password
+      const { data: { user } } = await supabase.auth.getUser();
+      const needsPasswordChange = user?.user_metadata?.needs_password_change;
+
+      if (needsPasswordChange) {
+        toast({ title: "Por favor, establece tu nueva contraseña" });
+        navigate("/reset-password");
+      } else {
+        toast({ title: "Sesión iniciada ✅" });
+        navigate("/app");
+      }
     } finally {
       setLoading(false);
     }

@@ -1,26 +1,17 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
-import { getEnv } from "@/lib/env";
 
-// Intentamos obtener las variables de forma segura
-let env = { supabaseUrl: "", supabaseKey: "" };
+// ------------------------------------------------------------------
+// CONFIGURACIÓN DE SUPABASE (MVP)
+// ------------------------------------------------------------------
+// Al estar en Lovable/Web, definimos las claves directamente aquí
+// para asegurar que la conexión nunca falle por variables de entorno.
+// ------------------------------------------------------------------
 
-try {
-  // getEnv lanzará error si faltan variables, lo capturamos aquí
-  env = getEnv();
-} catch (error) {
-  console.warn("⚠️ Advertencia: No se cargaron las variables de entorno de Supabase.");
-  console.warn(error);
-}
+const SUPABASE_URL = "https://kfyyzecqvjahdealixdp.supabase.co";
+const SUPABASE_KEY = "sb_publishable_fOob5bA28HMHZc7jH4KoMA_oTz0S2XJ"
 
-const { supabaseUrl, supabaseKey } = env;
-
-// Si faltan datos, usamos valores "placeholder" para que la app NO se rompa al inicio.
-// Esto permitirá que cargue la interfaz y te muestre errores amigables en lugar de pantalla blanca.
-const safeUrl = supabaseUrl || "https://placeholder.supabase.co";
-const safeKey = supabaseKey || "placeholder-key";
-
-export const supabase = createClient<Database>(safeUrl, safeKey, {
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_KEY, {
   auth: {
     storage: localStorage,
     persistSession: true,

@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { PublicNavbar } from './PublicNavbar';
 import { Link } from 'react-router-dom';
+import { GraduationCap } from 'lucide-react';
 
 export function PublicLayout() {
   return (
@@ -15,7 +16,7 @@ export function PublicLayout() {
             <div className="col-span-1 md:col-span-2">
               <Link to="/" className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-sm">N</span>
+                  <GraduationCap className="h-5 w-5 text-primary-foreground" />
                 </div>
                 <span className="text-xl font-bold">NOVU</span>
               </Link>

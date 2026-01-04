@@ -22,6 +22,9 @@ import CreatorCoursesPage from "@/pages/creator/CreatorCoursesPage";
 import CourseEditorPage from "@/pages/creator/CourseEditorPage";
 import CreatorProfileEdit from "@/pages/creator/CreatorProfileEdit";
 import NotFound from "@/pages/NotFound";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import DebugPage from "@/pages/DebugPage";
+
 
 const queryClient = new QueryClient();
 
@@ -33,15 +36,15 @@ const App = () => (
         <Sonner />
 
         {/* ✅ HashRouter evita 404 en Lovable al refrescar o entrar directo a rutas */}
-        <HashRouter>
-          <Routes>
-            {/* Public routes */}
-            <Route element={<PublicLayout />}>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/courses" element={<CoursesPage />} />
-              <Route path="/course/:slug" element={<CourseDetailPage />} />
-              <Route path="/creator/:slug" element={<CreatorProfilePage />} />
-            </Route>
+       <ErrorBoundary>
+  <HashRouter>
+    <Routes>
+      ...
+      <Route path="/debug" element={<DebugPage />} />
+      ...
+    </Routes>
+  </HashRouter>
+</ErrorBoundary>
 
             {/* Auth routes */}
             <Route path="/login" element={<LoginPage />} />

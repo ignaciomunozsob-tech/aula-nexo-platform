@@ -57,19 +57,18 @@ function getRangeStartISO(range: RangeKey) {
 
 function isPaidStatus(status?: string | null) {
   const s = (status || "").toLowerCase();
-  if (!s) return true; // MVP: si no hay status, lo contamos
+  if (!s) return true;
   if (s.includes("refund") || s.includes("reemb") || s.includes("cancel")) return false;
   return true;
 }
 
-type CreatorSaleRow = {
+type SaleRow = {
   enrollment_id: string;
   purchased_at: string | null;
   status: string | null;
   course_id: string;
   course_title: string | null;
   price_clp: number | null;
-  creator_id: string;
   buyer_user_id: string;
   buyer_name: string | null;
   buyer_avatar_url: string | null;
@@ -79,7 +78,7 @@ export default function CreatorDashboard() {
   const { user } = useAuth();
   const [range, setRange] = useState<RangeKey>("30d");
 
-  // Cursos del creador (para tarjeta “Cursos” + navegación)
+  // Cursos del creador
   const { data: courses, isLoading: isLoadingCourses } = useQuery({
     queryKey: ["creator-courses", user?.id],
     queryFn: async () => {
@@ -96,27 +95,67 @@ export default function CreatorDashboard() {
     enabled: !!user?.id,
   });
 
-  // Ventas (MVP) desde VIEW creator_sales
+  // Ventas - query enrollments + courses + profiles directly
   const { data: sales, isLoading: isLoadingSales } = useQuery({
     queryKey: ["creator-sales", user?.id, range],
     queryFn: async () => {
       if (!user?.id) return [];
 
-      const startISO = getRangeStartISO(range);
+      // First get creator's course IDs
+      const { data: creatorCourses, error: coursesError } = await supabase
+        .from("courses")
+        .select("id,title,price_clp")
+        .eq("creator_id", user.id);
 
-      let q = supabase
-        .from("creator_sales")
-        .select("*")
-        .eq("creator_id", user.id)
+      if (coursesError) throw coursesError;
+      if (!creatorCourses?.length) return [];
+
+      const courseIds = creatorCourses.map(c => c.id);
+      const courseMap = new Map(creatorCourses.map(c => [c.id, c]));
+
+      // Then get enrollments for those courses
+      const startISO = getRangeStartISO(range);
+      let query = supabase
+        .from("enrollments")
+        .select(`
+          id,
+          purchased_at,
+          status,
+          course_id,
+          user_id,
+          profiles:user_id (
+            name,
+            avatar_url
+          )
+        `)
+        .in("course_id", courseIds)
         .order("purchased_at", { ascending: false })
         .limit(200);
 
-      if (startISO) q = q.gte("purchased_at", startISO);
+      if (startISO) query = query.gte("purchased_at", startISO);
 
-      const { data, error } = await q;
-      if (error) throw error;
+      const { data: enrollments, error: enrollmentsError } = await query;
+      if (enrollmentsError) throw enrollmentsError;
 
-      return ((data as CreatorSaleRow[]) || []).filter((r) => isPaidStatus(r.status));
+      // Map to SaleRow format
+      const rows: SaleRow[] = (enrollments || [])
+        .filter(e => isPaidStatus(e.status))
+        .map(e => {
+          const course = courseMap.get(e.course_id);
+          return {
+            enrollment_id: e.id,
+            purchased_at: e.purchased_at,
+            status: e.status,
+            course_id: e.course_id,
+            course_title: course?.title || null,
+            price_clp: course?.price_clp || null,
+            buyer_user_id: e.user_id,
+            buyer_name: (e.profiles as any)?.name || null,
+            buyer_avatar_url: (e.profiles as any)?.avatar_url || null,
+          };
+        });
+
+      return rows;
     },
     enabled: !!user?.id,
   });
@@ -398,7 +437,7 @@ export default function CreatorDashboard() {
               )}
 
               <p className="text-xs text-muted-foreground">
-                Próximo paso: agregar “payouts/retiros” y separar “saldo disponible” vs “en tránsito”.
+                Próximo paso: agregar "payouts/retiros" y separar "saldo disponible" vs "en tránsito".
               </p>
             </>
           )}

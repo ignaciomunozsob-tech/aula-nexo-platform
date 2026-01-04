@@ -25,7 +25,6 @@ import NotFound from "@/pages/NotFound";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import DebugPage from "@/pages/DebugPage";
 
-
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -34,42 +33,45 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <ErrorBoundary>
+          <HashRouter>
+            <Routes>
+              {/* Public routes */}
+              <Route element={<PublicLayout />}>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/courses" element={<CoursesPage />} />
+                <Route path="/course/:slug" element={<CourseDetailPage />} />
+                <Route path="/creator/:slug" element={<CreatorProfilePage />} />
+              </Route>
 
-        {/* ✅ HashRouter evita 404 en Lovable al refrescar o entrar directo a rutas */}
-       <ErrorBoundary>
-  <HashRouter>
-    <Routes>
-      ...
-      <Route path="/debug" element={<DebugPage />} />
-      ...
-    </Routes>
-  </HashRouter>
-</ErrorBoundary>
+              {/* Debug route */}
+              <Route path="/debug" element={<DebugPage />} />
 
-            {/* Auth routes */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
+              {/* Auth routes */}
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
 
-            {/* Student routes */}
-            <Route path="/app" element={<StudentLayout />}>
-              <Route index element={<StudentDashboard />} />
-              <Route path="my-courses" element={<MyCoursesPage />} />
-              <Route path="course/:id" element={<CoursePlayerPage />} />
-              <Route path="settings" element={<StudentSettings />} />
-            </Route>
+              {/* Student routes */}
+              <Route path="/app" element={<StudentLayout />}>
+                <Route index element={<StudentDashboard />} />
+                <Route path="my-courses" element={<MyCoursesPage />} />
+                <Route path="course/:id" element={<CoursePlayerPage />} />
+                <Route path="settings" element={<StudentSettings />} />
+              </Route>
 
-            {/* Creator routes */}
-            <Route path="/creator-app" element={<CreatorLayout />}>
-              <Route index element={<CreatorDashboard />} />
-              <Route path="courses" element={<CreatorCoursesPage />} />
-              <Route path="courses/new" element={<CourseEditorPage />} />
-              <Route path="courses/:id/edit" element={<CourseEditorPage />} />
-              <Route path="profile" element={<CreatorProfileEdit />} />
-            </Route>
+              {/* Creator routes */}
+              <Route path="/creator-app" element={<CreatorLayout />}>
+                <Route index element={<CreatorDashboard />} />
+                <Route path="courses" element={<CreatorCoursesPage />} />
+                <Route path="courses/new" element={<CourseEditorPage />} />
+                <Route path="courses/:id/edit" element={<CourseEditorPage />} />
+                <Route path="profile" element={<CreatorProfileEdit />} />
+              </Route>
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </HashRouter>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </HashRouter>
+        </ErrorBoundary>
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>

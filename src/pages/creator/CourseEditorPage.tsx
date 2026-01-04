@@ -20,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Loader2,
   Plus,
@@ -34,6 +35,8 @@ import {
   ListOrdered,
   Link2,
   Users,
+  BookOpen,
+  Settings,
 } from "lucide-react";
 import {
   Table,
@@ -556,299 +559,335 @@ export default function CourseEditorPage() {
         </div>
       </div>
 
-      <div className="space-y-6">
-        <div className="bg-card border rounded-lg p-6 space-y-4">
-          <div className="space-y-2">
-            <Label>Portada del curso</Label>
-            {id ? (
-              <CourseCoverUploader
-                courseId={id}
-                currentUrl={course?.cover_image_url}
-                onUploaded={() => {
-                  queryClient.invalidateQueries({ queryKey: ["edit-course", id] });
-                  queryClient.invalidateQueries({ queryKey: ["creator-courses"] });
-                }}
-              />
+      <Tabs defaultValue="info" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsTrigger value="info" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Información del Curso
+          </TabsTrigger>
+          <TabsTrigger value="modules" className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4" />
+            Módulos y Lecciones
+          </TabsTrigger>
+          <TabsTrigger value="students" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Gestión de Alumnos
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab: Información del Curso */}
+        <TabsContent value="info" className="space-y-6">
+          <div className="bg-card border rounded-lg p-6 space-y-4">
+            <div className="space-y-2">
+              <Label>Portada del curso</Label>
+              {id ? (
+                <CourseCoverUploader
+                  courseId={id}
+                  currentUrl={course?.cover_image_url}
+                  onUploaded={() => {
+                    queryClient.invalidateQueries({ queryKey: ["edit-course", id] });
+                    queryClient.invalidateQueries({ queryKey: ["creator-courses"] });
+                  }}
+                />
+              ) : (
+                <div className="text-sm text-muted-foreground">Creando curso…</div>
+              )}
+            </div>
+
+            <div>
+              <Label>Título</Label>
+              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="mt-1" />
+            </div>
+
+            <div>
+              <Label>Descripción (texto enriquecido)</Label>
+              <div className="mt-1">
+                <RichTextEditor
+                  value={form.description_html}
+                  onChange={(html) => setForm((p) => ({ ...p, description_html: html }))}
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label>Categoría</Label>
+              <Select
+                value={form.category_id || "none"}
+                onValueChange={(v) => setForm({ ...form, category_id: v === "none" ? "" : v })}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Selecciona una categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin categoría</SelectItem>
+                  {(categories || []).map((c: any) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <Label>Precio CLP</Label>
+                <Input
+                  type="number"
+                  value={form.price_clp}
+                  onChange={(e) => setForm({ ...form, price_clp: Number(e.target.value || 0) })}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label>Nivel</Label>
+                <Select value={form.level} onValueChange={(v) => setForm({ ...form, level: v })}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="beginner">Principiante</SelectItem>
+                    <SelectItem value="intermediate">Intermedio</SelectItem>
+                    <SelectItem value="advanced">Avanzado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Formato</Label>
+                <Select value={form.format} onValueChange={(v) => setForm({ ...form, format: v })}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="recorded">Grabado</SelectItem>
+                    <SelectItem value="live">En vivo</SelectItem>
+                    <SelectItem value="hybrid">Híbrido</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Estado</Label>
+                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Borrador</SelectItem>
+                    <SelectItem value="published">Publicado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <Button 
+            onClick={() => saveMutation.mutate()} 
+            disabled={saveMutation.isPending || !hasChanges} 
+            size="lg" 
+            className={`w-full ${!hasChanges ? "opacity-50" : ""}`}
+          >
+            {saveMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
             ) : (
-              <div className="text-sm text-muted-foreground">Creando curso…</div>
+              <Save className="h-4 w-4 mr-2" />
             )}
-          </div>
+            Guardar Cambios
+          </Button>
+        </TabsContent>
 
-          <div>
-            <Label>Título</Label>
-            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="mt-1" />
-          </div>
-
-          <div>
-            <Label>Descripción (texto enriquecido)</Label>
-            <div className="mt-1">
-              <RichTextEditor
-                value={form.description_html}
-                onChange={(html) => setForm((p) => ({ ...p, description_html: html }))}
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label>Categoría</Label>
-            <Select
-              value={form.category_id || "none"}
-              onValueChange={(v) => setForm({ ...form, category_id: v === "none" ? "" : v })}
-            >
-              <SelectTrigger className="mt-1">
-                <SelectValue placeholder="Selecciona una categoría" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Sin categoría</SelectItem>
-                {(categories || []).map((c: any) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <Label>Precio CLP</Label>
-              <Input
-                type="number"
-                value={form.price_clp}
-                onChange={(e) => setForm({ ...form, price_clp: Number(e.target.value || 0) })}
-                className="mt-1"
-              />
+        {/* Tab: Módulos y Lecciones */}
+        <TabsContent value="modules" className="space-y-6">
+          <div className="bg-card border rounded-lg p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="font-semibold">Módulos y Lecciones</h2>
+              <Button variant="outline" size="sm" onClick={addModule}>
+                <Plus className="h-4 w-4 mr-1" />
+                Módulo
+              </Button>
             </div>
 
-            <div>
-              <Label>Nivel</Label>
-              <Select value={form.level} onValueChange={(v) => setForm({ ...form, level: v })}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="beginner">Principiante</SelectItem>
-                  <SelectItem value="intermediate">Intermedio</SelectItem>
-                  <SelectItem value="advanced">Avanzado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <div className="space-y-4">
+              {modules.map((mod, mi) => (
+                <div key={mod.id} className="border rounded-lg p-4">
+                  <div className="flex gap-2 mb-3 items-center">
+                    <Input
+                      value={mod.title}
+                      onChange={(e) => {
+                        const u = [...modules];
+                        if (u[mi]) {
+                          u[mi].title = e.target.value;
+                          setModules(u);
+                        }
+                      }}
+                      className="flex-1"
+                      placeholder="Título del módulo"
+                    />
 
-            <div>
-              <Label>Formato</Label>
-              <Select value={form.format} onValueChange={(v) => setForm({ ...form, format: v })}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="recorded">Grabado</SelectItem>
-                  <SelectItem value="live">En vivo</SelectItem>
-                  <SelectItem value="hybrid">Híbrido</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Estado</Label>
-              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">Borrador</SelectItem>
-                  <SelectItem value="published">Publicado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-
-        {/* Modules */}
-        <div className="bg-card border rounded-lg p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="font-semibold">Módulos y Lecciones</h2>
-            <Button variant="outline" size="sm" onClick={addModule}>
-              <Plus className="h-4 w-4 mr-1" />
-              Módulo
-            </Button>
-          </div>
-
-          <div className="space-y-4">
-            {modules.map((mod, mi) => (
-              <div key={mod.id} className="border rounded-lg p-4">
-                <div className="flex gap-2 mb-3 items-center">
-                  <Input
-                    value={mod.title}
-                    onChange={(e) => {
-                      const u = [...modules];
-                      if (u[mi]) {
-                        u[mi].title = e.target.value;
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={mi === 0}
+                      onClick={() => {
+                        const u = [...modules];
+                        [u[mi], u[mi - 1]] = [u[mi - 1], u[mi]];
                         setModules(u);
-                      }
-                    }}
-                    className="flex-1"
-                    placeholder="Título del módulo"
-                  />
+                      }}
+                    >
+                      <ChevronUp className="h-4 w-4" />
+                    </Button>
 
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={mi === 0}
-                    onClick={() => {
-                      const u = [...modules];
-                      [u[mi], u[mi - 1]] = [u[mi - 1], u[mi]];
-                      setModules(u);
-                    }}
-                  >
-                    <ChevronUp className="h-4 w-4" />
-                  </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={mi === modules.length - 1}
+                      onClick={() => {
+                        const u = [...modules];
+                        [u[mi], u[mi + 1]] = [u[mi + 1], u[mi]];
+                        setModules(u);
+                      }}
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
 
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={mi === modules.length - 1}
-                    onClick={() => {
-                      const u = [...modules];
-                      [u[mi], u[mi + 1]] = [u[mi + 1], u[mi]];
-                      setModules(u);
-                    }}
-                  >
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
+                    <Button variant="ghost" size="icon" onClick={() => deleteModule(mi)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
 
-                  <Button variant="ghost" size="icon" onClick={() => deleteModule(mi)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                <div className="space-y-2 pl-4 border-l-2 border-muted">
-                  {(mod.lessons || []).map((les, li) => (
-                    <div key={les.id} className="flex gap-2 items-start bg-muted/30 p-2 rounded">
-                      <div className="flex-1 space-y-2">
-                        <Input
-                          value={les.title}
-                          onChange={(e) => {
-                            const u = [...modules];
-                            if (u[mi]?.lessons?.[li]) {
-                              u[mi].lessons[li].title = e.target.value;
-                              setModules(u);
-                            }
-                          }}
-                          placeholder="Título lección"
-                        />
-
-                        <Select
-                          value={les.type}
-                          onValueChange={(v) => {
-                            const u = [...modules];
-                            if (u[mi]?.lessons?.[li]) {
-                              u[mi].lessons[li].type = v as any;
-                              if (v === "video") u[mi].lessons[li].content_text = "";
-                              if (v === "text") u[mi].lessons[li].video_url = "";
-                              setModules(u);
-                            }
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="video">Video</SelectItem>
-                            <SelectItem value="text">Texto</SelectItem>
-                          </SelectContent>
-                        </Select>
-
-                        {les.type === "video" && (
-                          <LessonVideoUploader
-                            lessonId={les.id}
-                            currentUrl={les.video_url || null}
-                            onUrlChange={(url) => {
-                              const u = [...modules];
-                              if (u[mi]?.lessons?.[li]) {
-                                u[mi].lessons[li].video_url = url;
-                                setModules(u);
-                              }
-                            }}
-                          />
-                        )}
-
-                        {les.type === "text" && (
-                          <Textarea
-                            value={les.content_text || ""}
+                  <div className="space-y-2 pl-4 border-l-2 border-muted">
+                    {(mod.lessons || []).map((les, li) => (
+                      <div key={les.id} className="flex gap-2 items-start bg-muted/30 p-2 rounded">
+                        <div className="flex-1 space-y-2">
+                          <Input
+                            value={les.title}
                             onChange={(e) => {
                               const u = [...modules];
                               if (u[mi]?.lessons?.[li]) {
-                                u[mi].lessons[li].content_text = e.target.value;
+                                u[mi].lessons[li].title = e.target.value;
                                 setModules(u);
                               }
                             }}
-                            placeholder="Escribe el contenido de la lección aquí..."
-                            className="min-h-[200px]"
+                            placeholder="Título lección"
                           />
-                        )}
+
+                          <Select
+                            value={les.type}
+                            onValueChange={(v) => {
+                              const u = [...modules];
+                              if (u[mi]?.lessons?.[li]) {
+                                u[mi].lessons[li].type = v as any;
+                                if (v === "video") u[mi].lessons[li].content_text = "";
+                                if (v === "text") u[mi].lessons[li].video_url = "";
+                                setModules(u);
+                              }
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="video">Video</SelectItem>
+                              <SelectItem value="text">Texto</SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          {les.type === "video" && (
+                            <LessonVideoUploader
+                              lessonId={les.id}
+                              currentUrl={les.video_url || null}
+                              onUrlChange={(url) => {
+                                const u = [...modules];
+                                if (u[mi]?.lessons?.[li]) {
+                                  u[mi].lessons[li].video_url = url;
+                                  setModules(u);
+                                }
+                              }}
+                            />
+                          )}
+
+                          {les.type === "text" && (
+                            <Textarea
+                              value={les.content_text || ""}
+                              onChange={(e) => {
+                                const u = [...modules];
+                                if (u[mi]?.lessons?.[li]) {
+                                  u[mi].lessons[li].content_text = e.target.value;
+                                  setModules(u);
+                                }
+                              }}
+                              placeholder="Escribe el contenido de la lección aquí..."
+                              className="min-h-[200px]"
+                            />
+                          )}
+                        </div>
+
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={li === 0}
+                            onClick={() => {
+                              const u = [...modules];
+                              [u[mi].lessons[li], u[mi].lessons[li - 1]] = [u[mi].lessons[li - 1], u[mi].lessons[li]];
+                              setModules(u);
+                            }}
+                          >
+                            <ChevronUp className="h-4 w-4" />
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={li === (mod.lessons?.length || 0) - 1}
+                            onClick={() => {
+                              const u = [...modules];
+                              [u[mi].lessons[li], u[mi].lessons[li + 1]] = [u[mi].lessons[li + 1], u[mi].lessons[li]];
+                              setModules(u);
+                            }}
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+
+                          <Button variant="ghost" size="icon" onClick={() => deleteLesson(mi, li)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
+                    ))}
 
-                      <div className="flex flex-col gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          disabled={li === 0}
-                          onClick={() => {
-                            const u = [...modules];
-                            [u[mi].lessons[li], u[mi].lessons[li - 1]] = [u[mi].lessons[li - 1], u[mi].lessons[li]];
-                            setModules(u);
-                          }}
-                        >
-                          <ChevronUp className="h-4 w-4" />
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          disabled={li === (mod.lessons?.length || 0) - 1}
-                          onClick={() => {
-                            const u = [...modules];
-                            [u[mi].lessons[li], u[mi].lessons[li + 1]] = [u[mi].lessons[li + 1], u[mi].lessons[li]];
-                            setModules(u);
-                          }}
-                        >
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-
-                        <Button variant="ghost" size="icon" onClick={() => deleteLesson(mi, li)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-
-                  <Button variant="ghost" size="sm" onClick={() => addLesson(mi)}>
-                    <Plus className="h-4 w-4 mr-1" />
-                    Lección
-                  </Button>
+                    <Button variant="ghost" size="sm" onClick={() => addLesson(mi)}>
+                      <Plus className="h-4 w-4 mr-1" />
+                      Lección
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Student Management Section */}
-        {id && <StudentManagement productId={id} productType="course" />}
+          <Button 
+            onClick={() => saveMutation.mutate()} 
+            disabled={saveMutation.isPending || !hasChanges} 
+            size="lg" 
+            className={`w-full ${!hasChanges ? "opacity-50" : ""}`}
+          >
+            {saveMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            Guardar Cambios
+          </Button>
+        </TabsContent>
 
-        <Button 
-          onClick={() => saveMutation.mutate()} 
-          disabled={saveMutation.isPending || !hasChanges} 
-          size="lg" 
-          className={`w-full ${!hasChanges ? "opacity-50" : ""}`}
-        >
-          {saveMutation.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <Save className="h-4 w-4 mr-2" />
-          )}
-          Guardar Curso Completo
-        </Button>
-      </div>
+        {/* Tab: Gestión de Alumnos */}
+        <TabsContent value="students">
+          {id && <StudentManagement productId={id} productType="course" />}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

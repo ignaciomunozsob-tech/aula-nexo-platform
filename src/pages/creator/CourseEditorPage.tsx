@@ -317,64 +317,35 @@ export default function CourseEditorPage() {
         learn_bullets: learn,
         requirements: req,
         includes: inc,
+        updated_at: nowIso,
       };
 
       if (form.status === "published" && !course?.published_at) payload.published_at = nowIso;
       if (!course?.slug) payload.slug = `${generateSlug(form.title || "curso")}-${Date.now().toString(36)}`;
 
-      // Intenta update normal; si falla por schema cache / columna inexistente, reintenta sin esas columnas
-      const tryUpdate = async (p: any) => {
-        const { error } = await supabase.from("courses").update(p).eq("id", id);
-        if (!error) return { removed: [] as string[] };
+      // 1. Actualización directa
+      const { error } = await supabase.from("courses").update(payload).eq("id", id);
+      if (error) throw error;
 
-        const msg = (error as any)?.message || "";
-        const maybeNewCols = ["description_html", "short_description", "learn_bullets", "requirements", "includes"];
-
-        let nextPayload = { ...p };
-        const removed: string[] = [];
-
-        for (const col of maybeNewCols) {
-          if (
-            msg.includes(`'${col}'`) ||
-            msg.includes(`courses.${col}`) ||
-            msg.toLowerCase().includes("schema cache")
-          ) {
-            if (col in nextPayload) {
-              delete nextPayload[col];
-              removed.push(col);
-            }
-          }
-        }
-
-        if (removed.length === 0) throw error;
-
-        const { error: retryErr } = await supabase.from("courses").update(nextPayload).eq("id", id);
-        if (retryErr) throw retryErr;
-
-        return { removed };
-      };
-
-      const { removed } = await tryUpdate(payload);
-
-      // deletes: lessons
+      // 2. Eliminaciones (Lessons)
       if (deletedLessonIds.length > 0) {
         const ids = deletedLessonIds.filter((x) => x && !x.startsWith("new-"));
         if (ids.length > 0) {
-          const { error } = await supabase.from("lessons").delete().in("id", ids);
-          if (error) throw error;
+          const { error: delLessErr } = await supabase.from("lessons").delete().in("id", ids);
+          if (delLessErr) throw delLessErr;
         }
       }
 
-      // deletes: modules
+      // 3. Eliminaciones (Modules)
       if (deletedModuleIds.length > 0) {
         const ids = deletedModuleIds.filter((x) => x && !x.startsWith("new-"));
         if (ids.length > 0) {
-          const { error } = await supabase.from("course_modules").delete().in("id", ids);
-          if (error) throw error;
+          const { error: delModErr } = await supabase.from("course_modules").delete().in("id", ids);
+          if (delModErr) throw delModErr;
         }
       }
 
-      // upsert modules + lessons
+      // 4. Guardar Módulos y Lecciones (Upsert)
       for (let mi = 0; mi < modules.length; mi++) {
         const mod = modules[mi];
         let moduleId = mod.id;
@@ -397,56 +368,42 @@ export default function CourseEditorPage() {
 
         for (let li = 0; li < (mod.lessons || []).length; li++) {
           const les = mod.lessons[li];
+          const lessonPayload = {
+            title: les.title,
+            type: les.type,
+            video_url: les.type === "video" ? (les.video_url || null) : null,
+            content_text: les.type === "text" ? (les.content_text || null) : null,
+            order_index: li,
+            module_id: moduleId,
+          };
 
           if (les.id?.startsWith("new-")) {
-            const { error } = await supabase.from("lessons").insert({
-              module_id: moduleId,
-              title: les.title,
-              type: les.type,
-              video_url: les.type === "video" ? (les.video_url || null) : null,
-              content_text: les.type === "text" ? (les.content_text || null) : null,
-              order_index: li,
-            });
+            const { error } = await supabase.from("lessons").insert(lessonPayload);
             if (error) throw error;
           } else {
             const { error } = await supabase
               .from("lessons")
-              .update({
-                title: les.title,
-                type: les.type,
-                video_url: les.type === "video" ? (les.video_url || null) : null,
-                content_text: les.type === "text" ? (les.content_text || null) : null,
-                order_index: li,
-              })
+              .update(lessonPayload)
               .eq("id", les.id);
             if (error) throw error;
           }
         }
       }
 
-      return { id, removed };
+      return { id };
     },
-    onSuccess: ({ id: courseId, removed }) => {
+    onSuccess: ({ id: courseId }) => {
       queryClient.invalidateQueries({ queryKey: ["creator-courses"] });
       queryClient.invalidateQueries({ queryKey: ["edit-course", courseId] });
       queryClient.invalidateQueries({ queryKey: ["edit-modules", courseId] });
 
-      if (removed?.length) {
-        toast({
-          title: "Guardado, pero ojo 👀",
-          description: `Supabase no reconoce aún: ${removed.join(
-            ", "
-          )}. Esto suele pasar si estás apuntando a otro proyecto o el schema cache está viejo.`,
-          variant: "destructive",
-        });
-      } else {
-        toast({ title: "Curso guardado ✅" });
-      }
+      toast({ title: "Curso guardado correctamente ✅" });
     },
     onError: (e: any) => {
+      console.error("Save error:", e);
       toast({
-        title: "Error",
-        description: e?.message ?? "Error guardando",
+        title: "Error al guardar",
+        description: e?.message ?? "Revisa tu conexión o intenta nuevamente",
         variant: "destructive",
       });
     },
@@ -510,7 +467,27 @@ export default function CourseEditorPage() {
 
   return (
     <div className="p-8 max-w-4xl">
-      <h1 className="text-2xl font-bold mb-6">Editar Curso</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Editar Curso</h1>
+        <div className="flex gap-2">
+          {course?.slug && (
+            <Button variant="outline" asChild>
+              <a href={`/course/${course.slug}`} target="_blank" rel="noreferrer">
+                <Link2 className="h-4 w-4 mr-2" />
+                Ver página pública
+              </a>
+            </Button>
+          )}
+          <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+            {saveMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            Guardar Cambios
+          </Button>
+        </div>
+      </div>
 
       <div className="space-y-6">
         <div className="bg-card border rounded-lg p-6 space-y-4">
@@ -701,8 +678,10 @@ export default function CourseEditorPage() {
                     value={mod.title}
                     onChange={(e) => {
                       const u = [...modules];
-                      u[mi].title = e.target.value;
-                      setModules(u);
+                      if (u[mi]) {
+                        u[mi].title = e.target.value;
+                        setModules(u);
+                      }
                     }}
                     className="flex-1"
                     placeholder="Título del módulo"
@@ -747,8 +726,10 @@ export default function CourseEditorPage() {
                           value={les.title}
                           onChange={(e) => {
                             const u = [...modules];
-                            u[mi].lessons[li].title = e.target.value;
-                            setModules(u);
+                            if (u[mi]?.lessons?.[li]) {
+                              u[mi].lessons[li].title = e.target.value;
+                              setModules(u);
+                            }
                           }}
                           placeholder="Título lección"
                         />
@@ -757,10 +738,12 @@ export default function CourseEditorPage() {
                           value={les.type}
                           onValueChange={(v) => {
                             const u = [...modules];
-                            u[mi].lessons[li].type = v as any;
-                            if (v === "video") u[mi].lessons[li].content_text = "";
-                            if (v === "text") u[mi].lessons[li].video_url = "";
-                            setModules(u);
+                            if (u[mi]?.lessons?.[li]) {
+                              u[mi].lessons[li].type = v as any;
+                              if (v === "video") u[mi].lessons[li].content_text = "";
+                              if (v === "text") u[mi].lessons[li].video_url = "";
+                              setModules(u);
+                            }
                           }}
                         >
                           <SelectTrigger>
@@ -777,8 +760,10 @@ export default function CourseEditorPage() {
                             value={les.video_url || ""}
                             onChange={(e) => {
                               const u = [...modules];
-                              u[mi].lessons[li].video_url = e.target.value;
-                              setModules(u);
+                              if (u[mi]?.lessons?.[li]) {
+                                u[mi].lessons[li].video_url = e.target.value;
+                                setModules(u);
+                              }
                             }}
                             placeholder="URL del video (YouTube)"
                           />
@@ -789,10 +774,13 @@ export default function CourseEditorPage() {
                             value={les.content_text || ""}
                             onChange={(e) => {
                               const u = [...modules];
-                              u[mi].lessons[li].content_text = e.target.value;
-                              setModules(u);
+                              if (u[mi]?.lessons?.[li]) {
+                                u[mi].lessons[li].content_text = e.target.value;
+                                setModules(u);
+                              }
                             }}
-                            placeholder="Contenido"
+                            placeholder="Escribe el contenido de la lección aquí..."
+                            className="min-h-[200px]"
                           />
                         )}
                       </div>
@@ -841,13 +829,13 @@ export default function CourseEditorPage() {
           </div>
         </div>
 
-        <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} size="lg">
+        <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} size="lg" className="w-full">
           {saveMutation.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
           ) : (
             <Save className="h-4 w-4 mr-2" />
           )}
-          Guardar Curso
+          Guardar Curso Completo
         </Button>
       </div>
     </div>

@@ -36,57 +36,6 @@ function levelLabel(level?: string | null) {
   return "Principiante";
 }
 
-function cleanArray(arr: any) {
-  if (!Array.isArray(arr)) return [];
-  return arr
-    .map((x) => String(x ?? "").trim())
-    .filter(Boolean);
-}
-
-/**
- * Sanitizado básico sin dependencias:
- * - elimina <script>, <style>, <iframe>, etc.
- * - elimina atributos on* (onclick, onerror...)
- * - permite href solo en <a> y lo fuerza a https/http/mailto
- *
- * Para producción: ideal usar DOMPurify, pero esto te salva el MVP.
- */
-function sanitizeHtmlBasic(html: string) {
-  if (!html) return "";
-
-  const doc = new DOMParser().parseFromString(html, "text/html");
-
-  // Eliminar tags peligrosos completos
-  const blocked = ["script", "style", "iframe", "object", "embed", "link", "meta"];
-  blocked.forEach((tag) => {
-    doc.querySelectorAll(tag).forEach((n) => n.remove());
-  });
-
-  // Limpiar atributos peligrosos
-  doc.querySelectorAll("*").forEach((el) => {
-    // remove on*
-    [...el.attributes].forEach((attr) => {
-      const name = attr.name.toLowerCase();
-      if (name.startsWith("on")) el.removeAttribute(attr.name);
-      if (name === "style") el.removeAttribute(attr.name); // opcional: evita inyecciones por CSS
-    });
-
-    // links: solo href seguro
-    if (el.tagName.toLowerCase() === "a") {
-      const href = el.getAttribute("href") || "";
-      const isSafe =
-        href.startsWith("http://") ||
-        href.startsWith("https://") ||
-        href.startsWith("mailto:");
-      if (!isSafe) el.removeAttribute("href");
-      el.setAttribute("rel", "noopener noreferrer");
-      el.setAttribute("target", "_blank");
-    }
-  });
-
-  return doc.body.innerHTML;
-}
-
 export default function CourseDetailPage() {
   const { slug } = useParams();
 
@@ -102,9 +51,7 @@ export default function CourseDetailPage() {
           id,
           slug,
           title,
-          short_description,
           description,
-          description_html,
           cover_image_url,
           price_clp,
           level,
@@ -112,9 +59,6 @@ export default function CourseDetailPage() {
           status,
           category_id,
           creator_id,
-          learn_bullets,
-          requirements,
-          includes,
           profiles:creator_id (
             name,
             creator_slug
@@ -156,15 +100,6 @@ export default function CourseDetailPage() {
   const totalLessons = useMemo(() => {
     return modules.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0);
   }, [modules]);
-
-  const learnBullets = useMemo(() => cleanArray(course?.learn_bullets), [course?.learn_bullets]);
-  const requirements = useMemo(() => cleanArray(course?.requirements), [course?.requirements]);
-  const includes = useMemo(() => cleanArray(course?.includes), [course?.includes]);
-
-  const safeHtml = useMemo(() => {
-    const html = String(course?.description_html || "");
-    return sanitizeHtmlBasic(html);
-  }, [course?.description_html]);
 
   if (isLoading) {
     return (
@@ -217,9 +152,8 @@ export default function CourseDetailPage() {
                 {course.title}
               </h1>
 
-              {/* ✅ resumen corto */}
               <p className="text-muted-foreground mt-3 max-w-2xl">
-                {course.short_description || "Descripción del curso próximamente."}
+                {course.description || "Descripción del curso próximamente."}
               </p>
 
               <div className="mt-4 text-sm text-muted-foreground">
@@ -295,18 +229,17 @@ export default function CourseDetailPage() {
                 </Button>
 
                 <div className="mt-4 space-y-2 text-sm">
-                  {(includes.length ? includes : ["Acceso de por vida", "Aprende a tu ritmo"]).map(
-                    (it: string, idx: number) => (
-                      <div key={idx} className="flex items-center gap-2 text-muted-foreground">
-                        <CheckCircle2 className="h-4 w-4 text-primary" />
-                        {it}
-                      </div>
-                    )
-                  )}
-
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                    Acceso de por vida
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                    Aprende a tu ritmo
+                  </div>
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Shield className="h-4 w-4 text-primary" />
-                    Plataforma segura (Supabase)
+                    Plataforma segura
                   </div>
                 </div>
 
@@ -322,36 +255,15 @@ export default function CourseDetailPage() {
       <section className="max-w-6xl mx-auto px-4 py-10">
         <div className="grid lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-8 space-y-10">
-            {/* ✅ Descripción larga (HTML) */}
-            {safeHtml ? (
+            {/* Descripción */}
+            {course.description && (
               <div className="bg-card border rounded-xl p-6">
                 <h2 className="text-xl font-bold">Descripción</h2>
-                <div
-                  className="mt-4 text-sm text-muted-foreground space-y-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:text-primary [&_a]:underline"
-                  dangerouslySetInnerHTML={{ __html: safeHtml }}
-                />
-              </div>
-            ) : null}
-
-            {/* ✅ Lo que aprenderás */}
-            <div className="bg-card border rounded-xl p-6">
-              <h2 className="text-xl font-bold">Lo que aprenderás</h2>
-
-              {learnBullets.length === 0 ? (
-                <p className="text-sm text-muted-foreground mt-3">
-                  El creador aún no agregó esta sección.
+                <p className="mt-4 text-sm text-muted-foreground whitespace-pre-wrap">
+                  {course.description}
                 </p>
-              ) : (
-                <div className="grid sm:grid-cols-2 gap-3 mt-4">
-                  {learnBullets.map((item: string, idx: number) => (
-                    <div key={idx} className="flex items-start gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-primary mt-0.5" />
-                      <p className="text-sm text-muted-foreground">{item}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Contenido del curso */}
             <div className="bg-card border rounded-xl p-6">
@@ -400,23 +312,6 @@ export default function CourseDetailPage() {
                   </Accordion>
                 )}
               </div>
-            </div>
-
-            {/* ✅ Requisitos */}
-            <div className="bg-card border rounded-xl p-6">
-              <h2 className="text-xl font-bold">Requisitos</h2>
-
-              {requirements.length === 0 ? (
-                <p className="text-sm text-muted-foreground mt-3">
-                  No hay requisitos.
-                </p>
-              ) : (
-                <ul className="mt-3 space-y-2 text-sm text-muted-foreground list-disc pl-5">
-                  {requirements.map((r: string, idx: number) => (
-                    <li key={idx}>{r}</li>
-                  ))}
-                </ul>
-              )}
             </div>
           </div>
 

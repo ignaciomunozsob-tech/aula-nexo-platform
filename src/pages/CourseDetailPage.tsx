@@ -19,6 +19,8 @@ import {
   CheckCircle2,
   Shield,
   PlayCircle,
+  AlertCircle,
+  FileCheck
 } from "lucide-react";
 
 function formatCLP(value: number | null | undefined) {
@@ -51,7 +53,12 @@ export default function CourseDetailPage() {
           id,
           slug,
           title,
+          short_description,
           description,
+          description_html,
+          learn_bullets,
+          requirements,
+          includes,
           cover_image_url,
           price_clp,
           level,
@@ -122,13 +129,18 @@ export default function CourseDetailPage() {
     );
   }
 
+  // Arrays de strings seguros
+  const learnBullets = Array.isArray(course.learn_bullets) ? course.learn_bullets : [];
+  const reqs = Array.isArray(course.requirements) ? course.requirements : [];
+  const includes = Array.isArray(course.includes) ? course.includes : [];
+
   return (
     <>
-      {/* HERO */}
+      {/* HERO SECTION */}
       <section className="bg-muted/30 border-b">
         <div className="max-w-6xl mx-auto px-4 py-10">
           <div className="grid lg:grid-cols-12 gap-8 items-start">
-            {/* LEFT */}
+            {/* LEFT HEADER */}
             <div className="lg:col-span-8">
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 {course.categories?.name && (
@@ -152,60 +164,46 @@ export default function CourseDetailPage() {
                 {course.title}
               </h1>
 
-              <p className="text-muted-foreground mt-3 max-w-2xl">
-                {course.description || "Descripción del curso próximamente."}
+              {/* Usamos short_description para el resumen superior */}
+              <p className="text-muted-foreground mt-3 max-w-2xl text-lg">
+                {course.short_description || course.description || "Sin descripción corta."}
               </p>
 
               <div className="mt-4 text-sm text-muted-foreground">
                 Creado por{" "}
                 {course.profiles?.creator_slug ? (
                   <Link
-                    className="text-primary hover:underline"
+                    className="text-primary hover:underline font-medium"
                     to={`/creator/${course.profiles.creator_slug}`}
                   >
                     {course.profiles?.name || "Creador"}
                   </Link>
                 ) : (
-                  <span className="text-foreground">
+                  <span className="text-foreground font-medium">
                     {course.profiles?.name || "Creador"}
                   </span>
                 )}
               </div>
 
-              <div className="mt-6 grid sm:grid-cols-3 gap-3">
-                <div className="bg-background border rounded-lg p-4">
-                  <div className="flex items-center gap-2 font-semibold">
-                    <PlayCircle className="h-4 w-4 text-primary" />
-                    Contenido
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {modules.length} módulos · {totalLessons} lecciones
-                  </p>
+              <div className="mt-6 flex flex-wrap gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                   <PlayCircle className="h-4 w-4 text-muted-foreground" />
+                   <span>{totalLessons} lecciones</span>
                 </div>
-
-                <div className="bg-background border rounded-lg p-4">
-                  <div className="flex items-center gap-2 font-semibold">
-                    <BarChart3 className="h-4 w-4 text-primary" />
-                    Nivel
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {levelLabel(course.level)}
-                  </p>
+                <div className="flex items-center gap-2">
+                   <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                   <span>Nivel {levelLabel(course.level)}</span>
                 </div>
-
-                <div className="bg-background border rounded-lg p-4">
-                  <div className="flex items-center gap-2 font-semibold">
-                    <GraduationCap className="h-4 w-4 text-primary" />
-                    Acceso
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">Web · A tu ritmo</p>
+                <div className="flex items-center gap-2">
+                   <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                   <span>Certificado al finalizar</span>
                 </div>
               </div>
             </div>
 
-            {/* RIGHT */}
-            <div className="lg:col-span-4">
-              <div className="bg-background border rounded-xl p-5 shadow-sm lg:sticky lg:top-6">
+            {/* RIGHT SIDEBAR (Desktop Sticky) */}
+            <div className="lg:col-span-4 lg:row-span-2">
+              <div className="bg-background border rounded-xl p-5 shadow-sm lg:sticky lg:top-24">
                 {course.cover_image_url ? (
                   <div className="w-full aspect-video rounded-lg overflow-hidden border mb-4 bg-muted">
                     <img
@@ -221,88 +219,140 @@ export default function CourseDetailPage() {
                   </div>
                 )}
 
-                <div className="text-2xl font-bold">{formatCLP(course.price_clp)}</div>
-                <p className="text-sm text-muted-foreground mt-1">Pago único · acceso para siempre</p>
+                <div className="text-3xl font-bold text-foreground mb-1">
+                    {formatCLP(course.price_clp)}
+                </div>
+                <p className="text-xs text-muted-foreground mb-4">Pago único · acceso de por vida</p>
 
-                <Button className="w-full mt-4" size="lg">
-                  Comprar / Inscribirme
+                <Button className="w-full mb-4" size="lg">
+                  Comprar ahora
                 </Button>
 
-                <div className="mt-4 space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <CheckCircle2 className="h-4 w-4 text-primary" />
-                    Acceso de por vida
-                  </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <CheckCircle2 className="h-4 w-4 text-primary" />
-                    Aprende a tu ritmo
-                  </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Shield className="h-4 w-4 text-primary" />
-                    Plataforma segura
-                  </div>
+                <div className="space-y-3 text-sm">
+                  <p className="font-semibold text-foreground">Este curso incluye:</p>
+                  
+                  {includes.length > 0 ? (
+                    <ul className="space-y-2">
+                      {includes.map((inc: string, i: number) => (
+                        inc && <li key={i} className="flex items-start gap-2 text-muted-foreground">
+                          <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                          <span>{inc}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <ul className="space-y-2">
+                       <li className="flex items-center gap-2 text-muted-foreground">
+                          <Shield className="h-4 w-4 text-primary" />
+                          <span>Acceso de por vida</span>
+                       </li>
+                       <li className="flex items-center gap-2 text-muted-foreground">
+                          <CheckCircle2 className="h-4 w-4 text-primary" />
+                          <span>Acceso en móviles</span>
+                       </li>
+                    </ul>
+                  )}
                 </div>
-
-                <Separator className="my-4" />
-                <p className="text-xs text-muted-foreground">MVP: el checkout lo conectamos después.</p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* BODY */}
+      {/* MAIN CONTENT */}
       <section className="max-w-6xl mx-auto px-4 py-10">
         <div className="grid lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-8 space-y-10">
-            {/* Descripción */}
-            {course.description && (
-              <div className="bg-card border rounded-xl p-6">
-                <h2 className="text-xl font-bold">Descripción</h2>
-                <p className="mt-4 text-sm text-muted-foreground whitespace-pre-wrap">
-                  {course.description}
-                </p>
+            
+            {/* LO QUE APRENDERÁS (Grid de beneficios) */}
+            {learnBullets.length > 0 && learnBullets[0] && (
+              <div className="border rounded-xl p-6 bg-card/50">
+                <h2 className="text-xl font-bold mb-4">Lo que aprenderás</h2>
+                <ul className="grid sm:grid-cols-2 gap-x-4 gap-y-2">
+                  {learnBullets.map((item: string, i: number) => (
+                    item && (
+                      <li key={i} className="flex gap-2 items-start text-sm text-muted-foreground">
+                        <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                        <span>{item}</span>
+                      </li>
+                    )
+                  ))}
+                </ul>
               </div>
             )}
 
-            {/* Contenido del curso */}
-            <div className="bg-card border rounded-xl p-6">
-              <h2 className="text-xl font-bold">Contenido del curso</h2>
-              <p className="text-sm text-muted-foreground mt-2">
-                {modules.length} módulos · {totalLessons} lecciones
-              </p>
+            {/* DESCRIPCIÓN COMPLETA (Rich Text) */}
+            {(course.description_html || course.description) && (
+              <div>
+                <h2 className="text-xl font-bold mb-4">Descripción del curso</h2>
+                {course.description_html ? (
+                    // Renderizamos el HTML seguro
+                    <div 
+                        className="prose prose-slate max-w-none text-muted-foreground text-sm leading-relaxed dark:prose-invert"
+                        dangerouslySetInnerHTML={{ __html: course.description_html }} 
+                    />
+                ) : (
+                    // Fallback a texto plano si no hay HTML
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {course.description}
+                    </p>
+                )}
+              </div>
+            )}
 
-              <div className="mt-4">
+            {/* REQUISITOS */}
+            {reqs.length > 0 && reqs[0] && (
+               <div>
+                  <h2 className="text-xl font-bold mb-4">Requisitos</h2>
+                  <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+                    {reqs.map((req: string, i: number) => (
+                      req && <li key={i}>{req}</li>
+                    ))}
+                  </ul>
+               </div>
+            )}
+
+            {/* CONTENIDO (ACORDEÓN) */}
+            <div>
+              <h2 className="text-xl font-bold mb-4">Contenido del curso</h2>
+              <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
+                <span>{modules.length} módulos</span>
+                <span>{totalLessons} lecciones</span>
+              </div>
+
+              <div className="border rounded-lg overflow-hidden">
                 {modules.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">
-                    Aún no hay módulos. El creador está armando el contenido.
+                  <div className="p-8 text-center text-muted-foreground text-sm">
+                    El creador está preparando el contenido de este curso.
                   </div>
                 ) : (
-                  <Accordion type="single" collapsible className="w-full">
+                  <Accordion type="multiple" className="w-full bg-card">
                     {modules.map((m: any) => (
-                      <AccordionItem key={m.id} value={m.id}>
-                        <AccordionTrigger className="text-left">
-                          <div className="flex flex-col">
-                            <span className="font-semibold">{m.title}</span>
-                            <span className="text-xs text-muted-foreground">
+                      <AccordionItem key={m.id} value={m.id} className="border-b last:border-0">
+                        <AccordionTrigger className="px-4 py-3 hover:bg-muted/50 hover:no-underline">
+                          <div className="flex flex-col items-start text-left">
+                            <span className="font-semibold text-sm">{m.title}</span>
+                            <span className="text-xs text-muted-foreground font-normal">
                               {(m.lessons?.length || 0)} lecciones
                             </span>
                           </div>
                         </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-2">
+                        <AccordionContent className="px-0 py-0">
+                          <div className="bg-muted/10 divide-y">
                             {(m.lessons || []).map((l: any) => (
                               <div
                                 key={l.id}
-                                className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2"
+                                className="flex items-center gap-3 px-4 py-3 pl-8 text-sm"
                               >
-                                <div className="flex items-center gap-2">
-                                  <PlayCircle className="h-4 w-4 text-primary" />
-                                  <span className="text-sm">{l.title}</span>
-                                </div>
-                                <Badge variant="outline" className="text-xs">
-                                  {l.type === "text" ? "Lectura" : "Video"}
-                                </Badge>
+                                {l.type === "video" ? (
+                                    <PlayCircle className="h-4 w-4 text-muted-foreground" />
+                                ) : (
+                                    <FileCheck className="h-4 w-4 text-muted-foreground" />
+                                )}
+                                <span className="text-foreground/80">{l.title}</span>
+                                {l.type === "text" && (
+                                    <Badge variant="secondary" className="ml-auto text-[10px] h-5">Lectura</Badge>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -313,33 +363,7 @@ export default function CourseDetailPage() {
                 )}
               </div>
             </div>
-          </div>
-
-          {/* SIDE SUMMARY */}
-          <div className="lg:col-span-4">
-            <div className="bg-card border rounded-xl p-6 lg:sticky lg:top-6">
-              <h3 className="font-bold">Resumen</h3>
-              <div className="mt-3 space-y-2 text-sm text-muted-foreground">
-                <div className="flex justify-between">
-                  <span>Módulos</span>
-                  <span className="text-foreground">{modules.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Lecciones</span>
-                  <span className="text-foreground">{totalLessons}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Nivel</span>
-                  <span className="text-foreground">{levelLabel(course.level)}</span>
-                </div>
-              </div>
-
-              <Separator className="my-4" />
-              <div className="text-2xl font-bold">{formatCLP(course.price_clp)}</div>
-              <Button className="w-full mt-3" size="lg">
-                Comprar / Inscribirme
-              </Button>
-            </div>
+            
           </div>
         </div>
       </section>

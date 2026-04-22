@@ -297,7 +297,7 @@ export default function CourseDetailPage() {
             <div className="lg:col-span-8">
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 {course.categories?.name && (
-                  <Badge variant="secondary">{course.categories.name}</Badge>
+                <Badge variant="secondary">{course.categories.name}</Badge>
                 )}
                 <Badge variant="outline">{levelLabel(course.level)}</Badge>
 
@@ -309,6 +309,12 @@ export default function CourseDetailPage() {
                 ) : (
                   <Badge variant="outline" className="gap-1">
                     <Clock className="h-3.5 w-3.5" />A tu ritmo
+                  </Badge>
+                )}
+                {(course as any).is_novu_official && (
+                  <Badge className="bg-primary text-primary-foreground gap-1">
+                    <Shield className="h-3.5 w-3.5" />
+                    NOVU Oficial
                   </Badge>
                 )}
               </div>
@@ -327,18 +333,31 @@ export default function CourseDetailPage() {
               )}
 
               <div className="mt-4 text-sm text-muted-foreground">
-                Creado por{" "}
-                {course.profiles?.creator_slug ? (
-                  <Link
-                    className="text-primary hover:underline font-medium"
-                    to={`/creator/${course.profiles.creator_slug}`}
-                  >
-                    {course.profiles?.name || "Creador"}
-                  </Link>
-                ) : (
-                  <span className="text-foreground font-medium">
-                    {course.profiles?.name || "Creador"}
+                {(course as any).is_novu_official && (course as any).instructor_name ? (
+                  <span>
+                    Dictado por{' '}
+                    <span className="text-foreground font-medium">
+                      {(course as any).instructor_name}
+                    </span>
+                    {' · '}
+                    <span className="text-primary font-medium">Curso oficial NOVU</span>
                   </span>
+                ) : (
+                  <>
+                    Creado por{' '}
+                    {course.profiles?.creator_slug ? (
+                      <Link
+                        className="text-primary hover:underline font-medium"
+                        to={`/creator/${course.profiles.creator_slug}`}
+                      >
+                        {course.profiles?.name || 'Creador'}
+                      </Link>
+                    ) : (
+                      <span className="text-foreground font-medium">
+                        {course.profiles?.name || 'Creador'}
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
 

@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { BookOpen, Settings, LogOut, Home, Briefcase, Store } from 'lucide-react';
+import { BookOpen, Settings, LogOut, Home, Briefcase, Store, Sparkles } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -80,6 +80,28 @@ export function StudentSidebar() {
             >
               <Briefcase className="h-5 w-5" />
               Mi Negocio
+            </Button>
+          </div>
+        )}
+
+        {/* Become creator CTA - only for plain students */}
+        {!isCreator && (
+          <div className="mt-6 p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <div className="flex items-center gap-2 mb-1.5">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <p className="text-sm font-semibold text-sidebar-foreground">
+                ¿Quieres vender tus cursos?
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Crea tu portal de creador y comparte tu conocimiento.
+            </p>
+            <Button
+              onClick={() => navigate('/signup?role=creator')}
+              size="sm"
+              className="w-full"
+            >
+              Empezar gratis
             </Button>
           </div>
         )}

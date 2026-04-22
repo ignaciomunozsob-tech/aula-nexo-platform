@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { BookOpen, Video, Calendar, FileText, Clock, Users, Search, X } from 'lucide-react';
+import { BookOpen, Video, Calendar, FileText, Clock, Users, Search, X, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -112,13 +112,23 @@ export function MarketplaceView({ showHeader = true }: MarketplaceViewProps) {
     return matchesTitle || matchesDescription || matchesCreator;
   };
 
-  // Filter courses
-  const filteredCourses = courses?.filter((course) => {
-    const matchesSearchQuery = matchesSearch(course, searchQuery);
-    const matchesCategory = selectedCategory === 'all' || course.category_id === selectedCategory;
-    const matchesFormat = selectedFormat === 'all' || course.format === selectedFormat;
-    return matchesSearchQuery && matchesCategory && matchesFormat;
-  });
+  // Filter courses (NOVU oficiales primero)
+  const filteredCourses = courses
+    ?.filter((course) => {
+      const matchesSearchQuery = matchesSearch(course, searchQuery);
+      const matchesCategory = selectedCategory === 'all' || course.category_id === selectedCategory;
+      const matchesFormat = selectedFormat === 'all' || course.format === selectedFormat;
+      return matchesSearchQuery && matchesCategory && matchesFormat;
+    })
+    .sort((a: any, b: any) => {
+      // NOVU oficiales primero
+      if (a.is_novu_official && !b.is_novu_official) return -1;
+      if (!a.is_novu_official && b.is_novu_official) return 1;
+      return 0;
+    });
+
+  const novuCourses = filteredCourses?.filter((c: any) => c.is_novu_official) || [];
+  const communityCourses = filteredCourses?.filter((c: any) => !c.is_novu_official) || [];
 
   // Filter ebooks
   const filteredEbooks = ebooks?.filter((ebook) => {
@@ -255,10 +265,38 @@ export function MarketplaceView({ showHeader = true }: MarketplaceViewProps) {
           {isLoading ? (
             <LoadingGrid />
           ) : filteredCourses && filteredCourses.length > 0 ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCourses.map((course) => (
-                <CourseCard key={course.id} course={course} formatPrice={formatPrice} />
-              ))}
+            <div className="space-y-10">
+              {novuCourses.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <ShieldCheck className="h-5 w-5 text-primary" />
+                    <h3 className="text-lg font-semibold">Cursos NOVU Oficiales</h3>
+                    <Badge variant="secondary">{novuCourses.length}</Badge>
+                  </div>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {novuCourses.map((course: any) => (
+                      <CourseCard key={course.id} course={course} formatPrice={formatPrice} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {communityCourses.length > 0 && (
+                <div>
+                  {novuCourses.length > 0 && (
+                    <div className="flex items-center gap-2 mb-4">
+                      <Users className="h-5 w-5 text-muted-foreground" />
+                      <h3 className="text-lg font-semibold">Cursos de la comunidad</h3>
+                      <Badge variant="secondary">{communityCourses.length}</Badge>
+                    </div>
+                  )}
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {communityCourses.map((course: any) => (
+                      <CourseCard key={course.id} course={course} formatPrice={formatPrice} />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <EmptyState type="cursos" />
@@ -321,14 +359,20 @@ function CourseCard({ course, formatPrice }: { course: any; formatPrice: (price:
             <BookOpen className="h-12 w-12 text-primary/30" />
           </div>
         )}
-        <div className="absolute top-2 left-2 flex gap-2">
+        <div className="absolute top-2 left-2 flex gap-2 flex-wrap">
+          {course.is_novu_official && (
+            <Badge className="bg-primary text-primary-foreground gap-1">
+              <ShieldCheck className="h-3 w-3" />
+              NOVU Oficial
+            </Badge>
+          )}
           {course.format === 'live' && (
             <Badge className="bg-red-500 text-white">
               <span className="w-2 h-2 bg-white rounded-full mr-1 animate-pulse" />
               En vivo
             </Badge>
           )}
-          {category && (
+          {category && !course.is_novu_official && (
             <Badge variant="secondary">{category.name}</Badge>
           )}
         </div>
@@ -342,9 +386,9 @@ function CourseCard({ course, formatPrice }: { course: any; formatPrice: (price:
         <h3 className="font-semibold line-clamp-2 group-hover:text-primary transition-colors">
           {course.title}
         </h3>
-        {creator && (
+        {(course.instructor_name || creator) && (
           <p className="text-sm text-muted-foreground mt-1">
-            Por {creator.name}
+            Por {course.instructor_name || creator?.name}
           </p>
         )}
         <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">

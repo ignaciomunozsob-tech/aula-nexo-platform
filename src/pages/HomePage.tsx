@@ -1,319 +1,372 @@
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { 
-  BookOpen, 
-  Video, 
-  Calendar, 
-  FileText, 
-  Users, 
-  Zap,
-  CheckCircle2,
+import { Badge } from '@/components/ui/badge';
+import {
+  TrendingUp,
+  Megaphone,
+  Mail,
+  BarChart3,
+  Search,
+  Palette,
   ArrowRight,
   Sparkles,
-  Shield,
-  LayoutDashboard,
-  Rocket,
-  Play,
-  Star
+  ShieldCheck,
+  Clock,
+  Users,
+  Star,
+  PlayCircle,
+  Award,
+  Target,
 } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion";
+} from '@/components/ui/accordion';
 
-const productTypes = [
-  { icon: BookOpen, title: 'Cursos online', description: 'Grabados o en vivo', color: 'bg-blue-500/10 text-blue-600' },
-  { icon: FileText, title: 'Ebooks', description: 'PDFs y documentos', color: 'bg-emerald-500/10 text-emerald-600' },
-  { icon: Video, title: 'Webinars', description: 'Sesiones en directo', color: 'bg-purple-500/10 text-purple-600' },
-  { icon: Calendar, title: 'Eventos', description: 'Talleres y workshops', color: 'bg-orange-500/10 text-orange-600' },
-  { icon: Users, title: 'Mentorías', description: 'Grabadas o 1:1', color: 'bg-pink-500/10 text-pink-600' },
-  { icon: Sparkles, title: 'Masterclasses', description: 'Contenido premium', color: 'bg-amber-500/10 text-amber-600' },
+const skills = [
+  { icon: Megaphone, title: 'Social Media Ads', color: 'bg-blue-500/10 text-blue-600' },
+  { icon: Search, title: 'SEO & SEM', color: 'bg-emerald-500/10 text-emerald-600' },
+  { icon: Mail, title: 'Email Marketing', color: 'bg-purple-500/10 text-purple-600' },
+  { icon: BarChart3, title: 'Analítica', color: 'bg-orange-500/10 text-orange-600' },
+  { icon: Palette, title: 'Branding', color: 'bg-pink-500/10 text-pink-600' },
+  { icon: TrendingUp, title: 'Growth', color: 'bg-amber-500/10 text-amber-600' },
 ];
 
-const steps = [
+const valueProps = [
   {
-    number: '01',
-    title: 'Crea tu producto',
-    description: 'Sube tu contenido en minutos. Sin complicaciones técnicas.',
-    icon: Rocket,
+    icon: Award,
+    title: 'Cursos certificados por NOVU',
+    description:
+      'Contenido producido y validado por nuestro equipo y profesores expertos del mundo del marketing.',
   },
   {
-    number: '02',
-    title: 'Compártelo',
-    description: 'Envía el link a tu audiencia por redes, email o donde quieras.',
-    icon: Zap,
-  },
-  {
-    number: '03',
-    title: 'Vende y entrega automático',
-    description: 'Tu cliente paga y recibe acceso al instante. Tú solo cobras.',
-    icon: CheckCircle2,
-  },
-];
-
-const benefits = [
-  {
-    icon: LayoutDashboard,
-    title: 'Página de venta lista',
-    description: 'Tu producto listo para vender en minutos, sin diseñar nada.',
-  },
-  {
-    icon: Zap,
-    title: 'Acceso inmediato',
-    description: 'Tus clientes acceden al contenido automáticamente al pagar.',
+    icon: Target,
+    title: 'Aprende haciendo',
+    description:
+      'Casos reales, ejercicios prácticos y proyectos que puedes mostrar en tu portafolio profesional.',
   },
   {
     icon: Users,
-    title: 'Gestión de alumnos',
-    description: 'Ve quién compró, su progreso y administra todo fácil.',
+    title: 'Aprende de los mejores',
+    description:
+      'Profesionales en activo como Ignacio Muñoz comparten estrategias que usan hoy en sus empresas.',
   },
   {
-    icon: Shield,
-    title: 'Todo en un lugar',
-    description: 'Ventas, contenido, alumnos y pagos. Sin saltar entre apps.',
+    icon: PlayCircle,
+    title: 'A tu ritmo, para siempre',
+    description:
+      'Acceso de por vida al contenido que compres. Avanza cuando quieras, donde quieras.',
   },
 ];
 
 const faqs = [
   {
-    question: '¿De verdad es gratis empezar?',
-    answer: 'Sí. No pagas nada por crear tu cuenta ni por subir productos. Solo cobramos cuando vendes.',
+    question: '¿Necesito conocimientos previos para empezar?',
+    answer:
+      'No. Nuestros cursos están pensados para todos los niveles, desde quien parte de cero hasta profesionales que quieren especializarse.',
   },
   {
-    question: '¿Cómo funciona el modelo de precios?',
-    answer: 'Es simple: solo cobramos una pequeña comisión cuando realizas una venta. Sin costos fijos, sin mensualidades. Más detalles en nuestra página de comisiones.',
+    question: '¿Los cursos tienen certificado?',
+    answer:
+      'Sí. Al completar un curso o carrera NOVU recibes un certificado digital con el respaldo de NOVU y del instructor.',
   },
   {
-    question: '¿Puedo vender ebooks, eventos o solo cursos?',
-    answer: 'Puedes vender todo tipo de productos digitales: cursos, ebooks, talleres, webinars, eventos, mentorías grabadas, plantillas y más.',
+    question: '¿Cuánto tiempo tengo para terminar el curso?',
+    answer:
+      'Una vez compras un curso, el acceso es de por vida. Avanzas a tu propio ritmo, sin presión.',
   },
   {
-    question: '¿Cuándo recibo mi dinero?',
-    answer: 'Próximamente integraremos pasarelas de pago como Webpay para que recibas tus pagos de forma automática. Por ahora, el sistema funciona en modo demo.',
+    question: '¿Quiénes son los profesores?',
+    answer:
+      'Profesionales en activo del marketing digital con experiencia comprobada en empresas y agencias. Cada curso indica claramente quién lo dicta.',
   },
   {
-    question: '¿Necesito tener audiencia para empezar?',
-    answer: 'No es obligatorio, pero ayuda. NOVU te da las herramientas para vender, tú decides cómo promocionar tus productos.',
-  },
-  {
-    question: '¿Puedo crear más de un producto?',
-    answer: 'Sí, puedes crear todos los productos que quieras. No hay límite.',
+    question: '¿Puedo vender mis propios cursos en NOVU?',
+    answer:
+      'Sí. Si eres experto en alguna habilidad, puedes crear tu cuenta de creador y vender tus propios cursos en nuestro marketplace. Tus cursos no llevarán el sello "NOVU Oficial", pero sí estarán disponibles para toda nuestra comunidad.',
   },
 ];
 
 export default function HomePage() {
+  // Fetch featured NOVU official courses
+  const { data: novuCourses } = useQuery({
+    queryKey: ['home-novu-courses'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('id, slug, title, description, cover_image_url, price_clp, level, duration_minutes_est, instructor_name, instructor_avatar_url')
+        .eq('is_novu_official', true)
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(6);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const formatPrice = (price: number) => {
+    if (price === 0) return 'Gratis';
+    return new Intl.NumberFormat('es-CL', {
+      style: 'currency',
+      currency: 'CLP',
+      maximumFractionDigits: 0,
+    }).format(price);
+  };
+
   return (
     <>
-      {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 md:py-32">
-        {/* Background decorations */}
+      {/* Hero */}
+      <section className="relative overflow-hidden py-20 md:py-28">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-b from-primary/8 via-primary/4 to-transparent rounded-full blur-3xl" />
           <div className="absolute top-40 -left-20 w-72 h-72 bg-purple-500/5 rounded-full blur-3xl" />
           <div className="absolute top-60 -right-20 w-72 h-72 bg-blue-500/5 rounded-full blur-3xl" />
         </div>
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
               <Sparkles className="h-4 w-4" />
-              Nueva plataforma para creadores
+              Academia de Marketing Digital
             </div>
-            
+
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-[1.1] tracking-tight">
-              Vende tus productos digitales{' '}
-              <span className="text-primary">sin complicarte</span>
+              Aprende marketing digital{' '}
+              <span className="text-primary">y haz crecer tu carrera</span>
             </h1>
-            
-            <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-xl mx-auto">
-              Crea, publica y vende cursos, ebooks, talleres y más. 
-              Tus clientes pagan y reciben acceso automático.
+
+            <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+              Cursos y carreras dictados por los mejores profesionales del marketing.
+              Habilidades reales para conseguir mejores trabajos, clientes y resultados.
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" className="text-base px-8 h-12" asChild>
-                <Link to="/signup?role=creator">
-                  Empezar gratis
+                <Link to="/courses">
+                  Ver cursos y carreras
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              
-              <Button size="lg" variant="outline" className="text-base px-8 h-12 group" asChild>
-                <a href="#como-funciona">
-                  <Play className="mr-2 h-4 w-4 group-hover:text-primary transition-colors" />
-                  Ver cómo funciona
-                </a>
+
+              <Button size="lg" variant="outline" className="text-base px-8 h-12" asChild>
+                <a href="#cursos-novu">Cursos destacados</a>
               </Button>
             </div>
 
-            {/* Trust line */}
             <p className="mt-6 text-sm text-muted-foreground">
-              Gratis para empezar · Sin mensualidad · Sin tarjeta de crédito
+              Acceso de por vida · Certificado oficial · Aprende a tu ritmo
             </p>
-          </div>
-
-          {/* Social proof */}
-          <div className="mt-20 text-center">
-            <p className="text-sm text-muted-foreground mb-6">Ya se están sumando creadores</p>
-            <div className="flex justify-center items-center gap-1">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="w-10 h-10 rounded-full bg-muted border-2 border-background -ml-2 first:ml-0 flex items-center justify-center">
-                  <span className="text-xs font-medium text-muted-foreground">
-                    {String.fromCharCode(65 + i)}
-                  </span>
-                </div>
-              ))}
-              <span className="ml-3 text-sm text-muted-foreground">+más próximamente</span>
-            </div>
           </div>
         </div>
       </section>
 
-      {/* What can you sell */}
+      {/* Skills strip */}
+      <section className="py-12 border-y border-border bg-muted/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-sm text-muted-foreground mb-8">
+            Domina las habilidades más buscadas del marketing
+          </p>
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-4 sm:gap-6">
+            {skills.map((s) => (
+              <div
+                key={s.title}
+                className="flex flex-col items-center gap-2 group cursor-default"
+              >
+                <div
+                  className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl ${s.color} flex items-center justify-center group-hover:scale-110 transition-transform`}
+                >
+                  <s.icon className="h-6 w-6 sm:h-7 sm:w-7" />
+                </div>
+                <span className="text-xs sm:text-sm font-medium text-center">{s.title}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* NOVU Official Courses */}
+      <section id="cursos-novu" className="py-20 scroll-mt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-10">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-3">
+                <ShieldCheck className="h-4 w-4" />
+                NOVU Oficial
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+                Cursos y carreras certificadas
+              </h2>
+              <p className="mt-3 text-muted-foreground text-lg max-w-2xl">
+                Producidos por NOVU junto a profesionales del marketing en activo.
+              </p>
+            </div>
+            <Button variant="outline" asChild>
+              <Link to="/courses">
+                Ver todos
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+
+          {novuCourses && novuCourses.length > 0 ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {novuCourses.map((c: any) => (
+                <Link
+                  key={c.id}
+                  to={`/course/${c.slug}`}
+                  className="group bg-card border border-border rounded-xl overflow-hidden hover:border-primary/40 hover:shadow-xl hover:-translate-y-1 transition-all"
+                >
+                  <div className="aspect-video bg-muted relative overflow-hidden">
+                    {c.cover_image_url ? (
+                      <img
+                        src={c.cover_image_url}
+                        alt={c.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
+                        <span className="text-5xl font-bold text-primary/30">
+                          {c.title.charAt(0)}
+                        </span>
+                      </div>
+                    )}
+                    <Badge className="absolute top-3 left-3 bg-primary/95 text-primary-foreground gap-1 backdrop-blur-sm">
+                      <ShieldCheck className="h-3 w-3" />
+                      NOVU Oficial
+                    </Badge>
+                    <div className="absolute bottom-3 right-3 bg-background/95 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-semibold">
+                      {formatPrice(c.price_clp)}
+                    </div>
+                  </div>
+                  <div className="p-5">
+                    <h3 className="font-semibold text-lg line-clamp-2 group-hover:text-primary transition-colors">
+                      {c.title}
+                    </h3>
+                    {c.instructor_name && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Por {c.instructor_name}
+                      </p>
+                    )}
+                    {c.duration_minutes_est > 0 && (
+                      <div className="flex items-center gap-1 mt-3 text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        {Math.round(c.duration_minutes_est / 60)}h de contenido
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-muted/40 border border-dashed border-border rounded-xl p-12 text-center">
+              <ShieldCheck className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-muted-foreground">
+                Pronto encontrarás aquí los cursos oficiales de NOVU.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Why NOVU */}
       <section className="py-20 bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 max-w-2xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-              ¿Qué puedes vender en NOVU?
-            </h2>
-            <p className="mt-4 text-muted-foreground text-lg max-w-2xl mx-auto">
-              Todo tipo de productos digitales. Tú creas, nosotros hacemos que llegue a tus clientes.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-            {productTypes.map((product) => (
-              <div
-                key={product.title}
-                className="bg-card border border-border rounded-xl sm:rounded-2xl p-4 sm:p-6 hover:border-primary/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
-              >
-                <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl ${product.color} flex items-center justify-center mb-3 sm:mb-5 group-hover:scale-110 transition-transform`}>
-                  <product.icon className="h-5 w-5 sm:h-7 sm:w-7" />
-                </div>
-                <h3 className="font-semibold text-sm sm:text-lg">{product.title}</h3>
-                <p className="text-muted-foreground text-xs sm:text-sm mt-1">{product.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section id="como-funciona" className="py-24 scroll-mt-20 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/2 left-0 w-full h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-        </div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-20">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-              Cómo funciona
+              ¿Por qué aprender en NOVU?
             </h2>
             <p className="mt-4 text-muted-foreground text-lg">
-              Tres pasos. Así de simple.
+              Diseñado para que avances rápido y consigas resultados reales.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-12 md:gap-8">
-            {steps.map((step, index) => (
-              <div key={step.number} className="relative">
-                {index < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-16 left-[calc(50%+60px)] w-[calc(100%-60px)] h-0.5 bg-gradient-to-r from-primary/30 to-transparent" />
-                )}
-                <div className="text-center">
-                  <div className="relative inline-flex">
-                    <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center mb-6 group-hover:scale-105 transition-transform">
-                      <step.icon className="h-14 w-14 text-primary" />
-                    </div>
-                    <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
-                      {index + 1}
-                    </div>
-                  </div>
-                  <h3 className="text-xl font-semibold mb-3">{step.title}</h3>
-                  <p className="text-muted-foreground max-w-xs mx-auto">{step.description}</p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {valueProps.map((v) => (
+              <div
+                key={v.title}
+                className="bg-card border border-border rounded-2xl p-6 hover:border-primary/30 hover:shadow-lg transition-all"
+              >
+                <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4">
+                  <v.icon className="h-6 w-6" />
                 </div>
+                <h3 className="font-semibold text-lg mb-2">{v.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{v.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Benefits */}
-      <section className="py-24 bg-gradient-to-b from-background via-muted/20 to-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+      {/* Featured Instructor */}
+      <section className="py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-                Todo lo que necesitas para vender
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+                <Star className="h-4 w-4 fill-current" />
+                Profesor destacado
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Aprende de los mejores del rubro
               </h2>
-              <p className="text-lg text-muted-foreground mb-10">
-                Sin tecnicismos ni complicaciones. Diseñado para que te enfoques en crear contenido increíble.
+              <p className="text-lg text-muted-foreground mb-6">
+                Nuestros profesores son profesionales en activo que comparten contigo las
+                estrategias que usan hoy con clientes y empresas reales.
               </p>
-
-              <div className="space-y-6">
-                {benefits.map((benefit) => (
-                  <div key={benefit.title} className="flex gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors">
-                    <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <benefit.icon className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg mb-1">{benefit.title}</h3>
-                      <p className="text-muted-foreground">{benefit.description}</p>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex items-center gap-4 p-4 bg-card border border-border rounded-xl">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center flex-shrink-0">
+                  <span className="text-2xl font-bold text-primary-foreground">I</span>
+                </div>
+                <div>
+                  <h3 className="font-semibold">Ignacio Muñoz</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Especialista en marketing digital
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* Visual */}
-            <div className="relative hidden lg:block">
-              <div className="aspect-square rounded-3xl bg-gradient-to-br from-primary/5 via-muted to-primary/5 p-8">
-                <div className="w-full h-full rounded-2xl bg-card border border-border shadow-xl p-6 flex flex-col">
-                  <div className="flex items-center justify-between mb-6">
-                    <h4 className="font-semibold">Panel del creador</h4>
-                    <div className="flex gap-1.5">
-                      <div className="w-3 h-3 rounded-full bg-destructive/60" />
-                      <div className="w-3 h-3 rounded-full bg-amber-500/60" />
-                      <div className="w-3 h-3 rounded-full bg-emerald-500/60" />
-                    </div>
+            <div className="relative">
+              <div className="bg-card border border-border rounded-2xl shadow-xl p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
+                    <span className="text-lg font-bold text-primary-foreground">I</span>
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="bg-muted/50 rounded-xl p-4">
-                      <p className="text-xs text-muted-foreground mb-1">Ventas este mes</p>
-                      <p className="text-2xl font-bold">$124.500</p>
-                    </div>
-                    <div className="bg-muted/50 rounded-xl p-4">
-                      <p className="text-xs text-muted-foreground mb-1">Estudiantes</p>
-                      <p className="text-2xl font-bold">47</p>
-                    </div>
+                  <div>
+                    <h4 className="font-semibold">Ignacio Muñoz</h4>
+                    <p className="text-xs text-muted-foreground">3 cursos en NOVU</p>
                   </div>
+                  <Badge className="ml-auto bg-primary/10 text-primary border-0 gap-1">
+                    <ShieldCheck className="h-3 w-3" />
+                    NOVU
+                  </Badge>
+                </div>
 
-                  <div className="flex-1 bg-muted/30 rounded-xl p-4">
-                    <p className="text-xs text-muted-foreground mb-3">Productos activos</p>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <BookOpen className="h-4 w-4 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">Curso de Marketing</p>
-                        </div>
-                        <span className="text-xs text-emerald-600 bg-emerald-500/10 px-2 py-1 rounded-full">Activo</span>
+                <div className="space-y-3">
+                  {[
+                    { title: 'Carrera de Marketing Digital', students: 124 },
+                    { title: 'Estrategia de Contenidos', students: 89 },
+                    { title: 'Performance & Ads', students: 67 },
+                  ].map((c) => (
+                    <div
+                      key={c.title}
+                      className="flex items-center gap-3 p-3 bg-muted/40 rounded-xl"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <PlayCircle className="h-5 w-5 text-primary" />
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                          <FileText className="h-4 w-4 text-emerald-600" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">Guía de Ventas</p>
-                        </div>
-                        <span className="text-xs text-emerald-600 bg-emerald-500/10 px-2 py-1 rounded-full">Activo</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{c.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {c.students} estudiantes
+                        </p>
                       </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -322,22 +375,19 @@ export default function HomePage() {
       </section>
 
       {/* FAQ */}
-      <section className="py-24">
+      <section className="py-20 bg-muted/30">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground">
               Preguntas frecuentes
             </h2>
-            <p className="mt-4 text-muted-foreground">
-              ¿Tienes dudas? Aquí las respuestas más comunes.
-            </p>
           </div>
 
           <Accordion type="single" collapsible className="space-y-4">
-            {faqs.map((faq, index) => (
+            {faqs.map((faq, i) => (
               <AccordionItem
-                key={index}
-                value={`item-${index}`}
+                key={i}
+                value={`item-${i}`}
                 className="bg-card border border-border rounded-xl px-6 data-[state=open]:border-primary/30 transition-colors"
               >
                 <AccordionTrigger className="text-left font-medium hover:no-underline py-5">
@@ -349,106 +399,41 @@ export default function HomePage() {
               </AccordionItem>
             ))}
           </Accordion>
-
-          <div className="mt-8 text-center">
-            <Button variant="link" asChild className="text-muted-foreground hover:text-primary">
-              <Link to="/comisiones">
-                Ver detalles de precios y comisiones
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
         </div>
       </section>
 
       {/* Final CTA */}
-      <section className="py-24 bg-gradient-to-b from-muted/30 to-background">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left: CTA Content */}
-            <div className="text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
-                <Rocket className="h-4 w-4" />
-                Comienza hoy
-              </div>
-              
-              <h2 className="text-3xl md:text-5xl font-bold mb-6">
-                ¿Listo para vender?
-              </h2>
-              <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto lg:mx-0">
-                Crea tu cuenta gratis y sube tu primer producto. 
-                Sin tarjeta de crédito. Sin compromisos.
-              </p>
+      <section className="py-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl md:text-5xl font-bold mb-6">
+            Da el siguiente paso en tu carrera
+          </h2>
+          <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">
+            Únete a la comunidad NOVU y aprende las habilidades que están transformando el
+            marketing digital.
+          </p>
 
-              <Button size="lg" className="text-base px-10 h-14 text-lg" asChild>
-                <Link to="/signup?role=creator">
-                  Crear mi cuenta gratis
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-            </div>
-
-            {/* Right: Creator Profile Preview */}
-            <div className="relative">
-              <div className="bg-card border border-border rounded-2xl shadow-xl p-6">
-                {/* Profile Header */}
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-primary-foreground">M</span>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-lg">María González</h4>
-                    <p className="text-sm text-muted-foreground">Experta en Marketing Digital</p>
-                    <div className="flex items-center gap-1 mt-1">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
-                      ))}
-                      <span className="text-xs text-muted-foreground ml-1">(24 reseñas)</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-3 mb-6">
-                  <div className="bg-muted/50 rounded-xl p-3 text-center">
-                    <p className="text-xl font-bold">3</p>
-                    <p className="text-xs text-muted-foreground">Cursos</p>
-                  </div>
-                  <div className="bg-muted/50 rounded-xl p-3 text-center">
-                    <p className="text-xl font-bold">156</p>
-                    <p className="text-xs text-muted-foreground">Alumnos</p>
-                  </div>
-                  <div className="bg-muted/50 rounded-xl p-3 text-center">
-                    <p className="text-xl font-bold">4.9</p>
-                    <p className="text-xs text-muted-foreground">Rating</p>
-                  </div>
-                </div>
-
-                {/* Products Preview */}
-                <div className="space-y-3">
-                  <p className="text-xs text-muted-foreground font-medium">Productos destacados</p>
-                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
-                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                      <BookOpen className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">Marketing en Redes</p>
-                      <p className="text-xs text-muted-foreground">$29.990</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
-                    <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                      <FileText className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">Guía de Email Marketing</p>
-                      <p className="text-xs text-muted-foreground">$9.990</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" className="text-base px-10 h-14 text-lg" asChild>
+              <Link to="/courses">
+                Explorar cursos
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+            <Button size="lg" variant="outline" className="text-base px-10 h-14 text-lg" asChild>
+              <Link to="/signup">Crear cuenta gratis</Link>
+            </Button>
           </div>
+
+          <p className="mt-8 text-sm text-muted-foreground">
+            ¿Eres experto en marketing y quieres enseñar?{' '}
+            <Link
+              to="/signup?role=creator"
+              className="text-primary font-medium hover:underline"
+            >
+              Conviértete en creador →
+            </Link>
+          </p>
         </div>
       </section>
     </>

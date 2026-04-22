@@ -7,6 +7,11 @@ import { AuthProvider } from "@/lib/auth";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { StudentLayout } from "@/components/layout/StudentLayout";
 import { CreatorLayout } from "@/components/layout/CreatorLayout";
+import { AdminLayout } from "@/components/layout/AdminLayout";
+import AdminDashboard from "@/pages/admin/AdminDashboard";
+import AdminCoursesPage from "@/pages/admin/AdminCoursesPage";
+import AdminCourseEditorPage from "@/pages/admin/AdminCourseEditorPage";
+import AdminInstructorsPage from "@/pages/admin/AdminInstructorsPage";
 import HomePage from "@/pages/HomePage";
 import ComisionesPage from "@/pages/ComisionesPage";
 import CoursesPage from "@/pages/CoursesPage";
@@ -92,6 +97,15 @@ const App = () => (
                 <Route path="finances" element={<CreatorFinancesPage />} />
                 <Route path="reviews" element={<CreatorReviewsPage />} />
                 <Route path="profile" element={<CreatorProfileEdit />} />
+              </Route>
+
+              {/* Admin routes */}
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="courses" element={<AdminCoursesPage />} />
+                <Route path="courses/new" element={<AdminCourseEditorPage />} />
+                <Route path="courses/:id/edit" element={<AdminCourseEditorPage />} />
+                <Route path="instructors" element={<AdminInstructorsPage />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />

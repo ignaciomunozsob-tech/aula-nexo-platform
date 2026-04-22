@@ -89,6 +89,10 @@ export default function CourseDetailPage() {
           status,
           category_id,
           creator_id,
+          is_novu_official,
+          instructor_name,
+          instructor_bio,
+          instructor_avatar_url,
           profiles:creator_id (
             name,
             creator_slug

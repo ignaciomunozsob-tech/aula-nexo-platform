@@ -77,6 +77,10 @@ export type Database = {
           duration_minutes_est: number | null
           format: string
           id: string
+          instructor_avatar_url: string | null
+          instructor_bio: string | null
+          instructor_name: string | null
+          is_novu_official: boolean
           level: string | null
           price_clp: number
           product_type: string
@@ -94,6 +98,10 @@ export type Database = {
           duration_minutes_est?: number | null
           format?: string
           id?: string
+          instructor_avatar_url?: string | null
+          instructor_bio?: string | null
+          instructor_name?: string | null
+          is_novu_official?: boolean
           level?: string | null
           price_clp?: number
           product_type?: string
@@ -111,6 +119,10 @@ export type Database = {
           duration_minutes_est?: number | null
           format?: string
           id?: string
+          instructor_avatar_url?: string | null
+          instructor_bio?: string | null
+          instructor_name?: string | null
+          is_novu_official?: boolean
           level?: string | null
           price_clp?: number
           product_type?: string
@@ -217,6 +229,7 @@ export type Database = {
           description: string | null
           file_url: string | null
           id: string
+          is_novu_official: boolean
           price_clp: number
           slug: string
           status: string
@@ -231,6 +244,7 @@ export type Database = {
           description?: string | null
           file_url?: string | null
           id?: string
+          is_novu_official?: boolean
           price_clp?: number
           slug: string
           status?: string
@@ -245,6 +259,7 @@ export type Database = {
           description?: string | null
           file_url?: string | null
           id?: string
+          is_novu_official?: boolean
           price_clp?: number
           slug?: string
           status?: string
@@ -343,6 +358,7 @@ export type Database = {
           event_date: string
           event_type: string
           id: string
+          is_novu_official: boolean
           max_attendees: number | null
           meeting_url: string | null
           price_clp: number
@@ -361,6 +377,7 @@ export type Database = {
           event_date: string
           event_type?: string
           id?: string
+          is_novu_official?: boolean
           max_attendees?: number | null
           meeting_url?: string | null
           price_clp?: number
@@ -379,6 +396,7 @@ export type Database = {
           event_date?: string
           event_type?: string
           id?: string
+          is_novu_official?: boolean
           max_attendees?: number | null
           meeting_url?: string | null
           price_clp?: number

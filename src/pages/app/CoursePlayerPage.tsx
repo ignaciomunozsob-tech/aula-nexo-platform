@@ -210,88 +210,126 @@ export default function CoursePlayerPage() {
     return progress?.some(p => p.lesson_id === lessonId && p.completed);
   };
 
+  const sidebarContent = (
+    <>
+      <div className="p-4 border-b border-sidebar-border">
+        <Link 
+          to={isPreviewMode ? `/creator-app/courses/${id}/edit` : "/app/my-courses"} 
+          className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mb-3"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          {isPreviewMode ? 'Volver al editor' : 'Volver a mis cursos'}
+        </Link>
+        <h2 className="font-semibold line-clamp-2">{course?.title}</h2>
+        {!isPreviewMode && (
+          <div className="mt-3">
+            <div className="flex justify-between text-xs text-muted-foreground mb-1">
+              <span>{progressPercent}% completado</span>
+              <span>{completedCount}/{totalLessons}</span>
+            </div>
+            <div className="progress-bar">
+              <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        {modules?.map((module, moduleIndex) => (
+          <div key={module.id} className="border-b border-sidebar-border">
+            <div className="px-4 py-3 bg-muted/50 font-medium text-sm">
+              {moduleIndex + 1}. {module.title}
+            </div>
+            <div>
+              {(module.lessons as any[])?.map((lesson) => {
+                const isComplete = isLessonComplete(lesson.id);
+                const isActive = lesson.id === selectedLessonId;
+
+                return (
+                  <button
+                    key={lesson.id}
+                    onClick={() => setSelectedLessonId(lesson.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors ${
+                      isActive ? 'bg-muted border-l-2 border-primary' : ''
+                    }`}
+                  >
+                    {isComplete ? (
+                      <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />
+                    ) : (
+                      <Circle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm truncate ${isActive ? 'font-medium text-primary' : ''}`}>
+                        {lesson.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        {lesson.type === 'video' ? <Play className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
+                        {lesson.duration_minutes > 0 && formatDuration(lesson.duration_minutes)}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Preview Mode Banner */}
       {isPreviewMode && (
-        <div className="bg-amber-100 border-b border-amber-300 px-4 py-3 flex items-center justify-center gap-2 text-amber-800">
-          <Eye className="h-5 w-5" />
-          <span className="font-medium">Estás viendo el curso en formato vista previa</span>
-          <span className="text-sm opacity-75">— Los cambios no guardados no se reflejarán aquí</span>
+        <div className="bg-amber-100 border-b border-amber-300 px-4 py-3 flex items-center justify-center gap-2 text-amber-800 text-center text-sm">
+          <Eye className="h-5 w-5 flex-shrink-0" />
+          <span className="font-medium">Vista previa del curso</span>
         </div>
       )}
 
-      <div className="flex-1 flex">
-      {/* Sidebar - Course content */}
-      <aside className="w-80 bg-sidebar border-r border-sidebar-border flex flex-col">
-        <div className="p-4 border-b border-sidebar-border">
-          <Link 
-            to={isPreviewMode ? `/creator-app/courses/${id}/edit` : "/app/my-courses"} 
-            className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mb-3"
+      {/* Mobile topbar */}
+      <div className="lg:hidden sticky top-0 z-40 flex h-12 items-center justify-between border-b border-border bg-background/95 backdrop-blur px-3">
+        <Link
+          to={isPreviewMode ? `/creator-app/courses/${id}/edit` : "/app/my-courses"}
+          className="flex items-center gap-1 text-sm text-muted-foreground"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Volver
+        </Link>
+        <p className="font-medium text-sm truncate mx-2 flex-1 text-center">
+          {currentLesson?.title || course?.title}
+        </p>
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="Lecciones">
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent
+            side="right"
+            className="p-0 w-80 max-w-[85vw] bg-sidebar flex flex-col"
+            onClick={(e) => {
+              const target = e.target as HTMLElement;
+              if (target.closest('button[data-lesson]') || target.closest('a')) {
+                // allow default
+              }
+            }}
           >
-            <ChevronLeft className="h-4 w-4" />
-            {isPreviewMode ? 'Volver al editor' : 'Volver a mis cursos'}
-          </Link>
-          <h2 className="font-semibold line-clamp-2">{course?.title}</h2>
-          {!isPreviewMode && (
-            <div className="mt-3">
-              <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>{progressPercent}% completado</span>
-                <span>{completedCount}/{totalLessons}</span>
-              </div>
-              <div className="progress-bar">
-                <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
-              </div>
-            </div>
-          )}
-        </div>
+            {sidebarContent}
+          </SheetContent>
+        </Sheet>
+      </div>
 
-        <div className="flex-1 overflow-y-auto">
-          {modules?.map((module, moduleIndex) => (
-            <div key={module.id} className="border-b border-sidebar-border">
-              <div className="px-4 py-3 bg-muted/50 font-medium text-sm">
-                {moduleIndex + 1}. {module.title}
-              </div>
-              <div>
-                {(module.lessons as any[])?.map((lesson) => {
-                  const isComplete = isLessonComplete(lesson.id);
-                  const isActive = lesson.id === selectedLessonId;
-                  
-                  return (
-                    <button
-                      key={lesson.id}
-                      onClick={() => setSelectedLessonId(lesson.id)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors ${
-                        isActive ? 'bg-muted border-l-2 border-primary' : ''
-                      }`}
-                    >
-                      {isComplete ? (
-                        <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />
-                      ) : (
-                        <Circle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm truncate ${isActive ? 'font-medium text-primary' : ''}`}>
-                          {lesson.title}
-                        </p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          {lesson.type === 'video' ? <Play className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
-                          {lesson.duration_minutes > 0 && formatDuration(lesson.duration_minutes)}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      </aside>
+      <div className="flex-1 flex">
+        {/* Sidebar - Course content (desktop) */}
+        <aside className="hidden lg:flex w-80 bg-sidebar border-r border-sidebar-border flex-col">
+          {sidebarContent}
+        </aside>
 
-      {/* Main content */}
-      <main className="flex-1 bg-background">
-        {currentLesson ? (
-          <div className="max-w-4xl mx-auto p-8">
+        {/* Main content */}
+        <main className="flex-1 bg-background min-w-0">
+          {currentLesson ? (
+            <div className="max-w-4xl mx-auto p-4 md:p-8">
             {/* Video or Text content */}
             {currentLesson.type === 'video' && currentLesson.video_url ? (
               <div className="aspect-video bg-black rounded-lg overflow-hidden mb-6">

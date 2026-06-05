@@ -37,6 +37,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMercadoPagoCheckout } from "@/hooks/useMercadoPagoCheckout";
+import { initPixel, trackEvent, trackEventFor } from "@/lib/metaPixel";
+import { useEffect } from "react";
 
 function formatCLP(value: number | null | undefined) {
   const n = Number(value || 0);
@@ -99,7 +101,8 @@ export default function CourseDetailPage() {
             name,
             creator_slug,
             bio,
-            avatar_url
+            avatar_url,
+            meta_pixel_id
           ),
           categories:category_id (
             name,

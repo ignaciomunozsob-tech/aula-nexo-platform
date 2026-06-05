@@ -439,9 +439,9 @@ export default function CourseDetailPage() {
                   className="w-full mb-4" 
                   size="lg"
                   onClick={handleEnrollClick}
-                  disabled={freeEnrollMutation.isPending}
+                  disabled={freeEnrollMutation.isPending || checkoutLoading}
                 >
-                  {freeEnrollMutation.isPending ? (
+                  {(freeEnrollMutation.isPending || checkoutLoading) ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   ) : null}
                   {existingEnrollment?.status === "active" 

@@ -1,5 +1,6 @@
 import { Outlet, Navigate } from 'react-router-dom';
 import { StudentSidebar } from './StudentSidebar';
+import MobileTopbar from './MobileTopbar';
 import { useAuth } from '@/lib/auth';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';

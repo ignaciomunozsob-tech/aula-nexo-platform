@@ -553,7 +553,7 @@ export default function CourseEditorPage() {
     const updated = [...modules];
     updated[mi].lessons = [
       ...(updated[mi].lessons || []),
-      { id: `new-${Date.now()}`, title: "Nueva lección", type: "video", video_url: "", content_text: "" },
+      { id: `new-${Date.now()}`, title: "Nueva lección", type: "video", video_url: "", content_text: "", description: "", resources: [] },
     ];
     setModules(updated);
   };

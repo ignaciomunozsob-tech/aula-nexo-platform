@@ -170,9 +170,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email with the code
     const emailResponse = await resend.emails.send({
-      from: "AulaNexo <onboarding@resend.dev>",
+      from: "NOVU <onboarding@resend.dev>",
       to: [email],
-      subject: "Código de verificación - AulaNexo",
+      subject: "Código de verificación - NOVU",
       html: `
         <!DOCTYPE html>
         <html>
@@ -212,7 +212,7 @@ const handler = async (req: Request): Promise<Response> => {
               <hr style="border: none; border-top: 1px solid #eee; margin: 32px 0;">
               
               <p style="color: #999; font-size: 12px; margin: 0; text-align: center;">
-                Este es un correo automático de AulaNexo
+                Este es un correo automático de NOVU
               </p>
             </div>
           </div>

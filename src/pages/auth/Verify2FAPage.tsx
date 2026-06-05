@@ -86,7 +86,7 @@ export default function Verify2FAPage() {
       toast({ title: "Verificación exitosa ✅" });
       
       // Navigate to creator dashboard
-      navigate("/creator");
+      navigate("/creator-app");
     } catch (error: any) {
       console.error("[2FA] Verification error:", error);
       toast({

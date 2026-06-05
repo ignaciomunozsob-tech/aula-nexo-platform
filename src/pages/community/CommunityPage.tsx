@@ -264,3 +264,20 @@ export default function CommunityPage() {
     </div>
   );
 }
+
+function PaidCommunityCTA({ communityId, priceClp }: { communityId: string; priceClp: number }) {
+  const { startCheckout, loading } = useMercadoPagoCheckout();
+  return (
+    <div>
+      <p className="mb-2">Comunidad de pago.</p>
+      <p className="text-3xl font-bold mb-4">
+        CLP ${priceClp.toLocaleString('es-CL')}
+      </p>
+      <Button onClick={() => startCheckout('community', communityId)} disabled={loading} size="lg">
+        {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+        Comprar acceso
+      </Button>
+    </div>
+  );
+}
+

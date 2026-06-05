@@ -96,7 +96,9 @@ export default function CourseDetailPage() {
           instructor_avatar_url,
           profiles:creator_id (
             name,
-            creator_slug
+            creator_slug,
+            bio,
+            avatar_url
           ),
           categories:category_id (
             name,

@@ -156,7 +156,7 @@ const handler = async (req: Request): Promise<Response> => {
           userId = signUpData.user!.id;
           try {
             await supabaseAdmin.auth.resetPasswordForEmail(email, {
-              redirectTo: `${Deno.env.get("SITE_URL") || "https://novuproject.lovable.app"}/reset-password`,
+              redirectTo: `${Deno.env.get("SITE_URL") || "https://novuproject.lovable.app"}/#/reset-password`,
             });
           } catch (mailErr) {
             console.warn(`reset email failed for ${email}`, mailErr);

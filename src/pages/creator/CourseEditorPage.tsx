@@ -58,12 +58,20 @@ import LessonVideoUploader from "@/components/layout/LessonVideoUploader";
 import StudentManagement from "@/components/creator/StudentManagement";
 import CertificateTemplateUploader from "@/components/creator/CertificateTemplateUploader";
 
+type LessonResourceForm = {
+  id: string;
+  file_url: string;
+  file_name: string;
+};
+
 type LessonForm = {
   id: string;
   title: string;
   type: "video" | "text";
   video_url?: string | null;
   content_text?: string | null;
+  description?: string | null;
+  resources?: LessonResourceForm[];
 };
 
 type ModuleForm = {

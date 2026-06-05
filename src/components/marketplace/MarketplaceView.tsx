@@ -65,7 +65,7 @@ export function MarketplaceView({ showHeader = true }: MarketplaceViewProps) {
       const { data, error } = await supabase
         .from('ebooks')
         .select(`
-          *,
+          id, title, description, price_clp, category_id, status, cover_image_url, creator_id, slug, is_novu_official, created_at, updated_at,
           categories:category_id (name, slug)
         `)
         .eq('status', 'published')

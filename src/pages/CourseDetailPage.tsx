@@ -36,6 +36,7 @@ import {
   Layers
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useMercadoPagoCheckout } from "@/hooks/useMercadoPagoCheckout";
 
 function formatCLP(value: number | null | undefined) {
   const n = Number(value || 0);
@@ -249,23 +250,26 @@ export default function CourseDetailPage() {
     },
   });
 
+  const { startCheckout, loading: checkoutLoading } = useMercadoPagoCheckout();
+
   const handleEnrollClick = () => {
     if (existingEnrollment?.status === "active") {
       navigate(`/app/course/${course?.id}/play`);
       return;
     }
-    
+
     if (isFree) {
       if (user) {
-        // If logged in, enroll directly
         freeEnrollMutation.mutate();
       } else {
-        // Show dialog to collect info
         setShowFreeEnrollDialog(true);
       }
     } else {
-      // TODO: Payment flow
-      toast({ title: "Próximamente", description: "El sistema de pagos estará disponible pronto." });
+      if (!user) {
+        navigate('/login');
+        return;
+      }
+      startCheckout('course', course!.id);
     }
   };
 

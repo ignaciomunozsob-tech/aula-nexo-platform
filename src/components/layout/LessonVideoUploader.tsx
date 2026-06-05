@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { Loader2, Upload, X, Film, Link2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -12,6 +12,8 @@ interface LessonVideoUploaderProps {
   onUrlChange: (url: string) => void;
 }
 
+const BUCKET = "course-assets";
+
 export default function LessonVideoUploader({
   lessonId,
   currentUrl,
@@ -20,17 +22,44 @@ export default function LessonVideoUploader({
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [mode, setMode] = useState<"url" | "upload">(
     currentUrl?.includes("supabase") ? "upload" : "url"
   );
 
-  const isUploadedVideo = currentUrl?.includes("supabase") || currentUrl?.includes("course-assets");
+  const isUploadedVideo =
+    currentUrl?.includes("supabase") || currentUrl?.includes("course-assets");
+
+  const uploadWithProgress = (
+    url: string,
+    token: string,
+    file: File,
+    onProgress: (pct: number) => void
+  ) =>
+    new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("PUT", url, true);
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      xhr.setRequestHeader("x-upsert", "true");
+      xhr.setRequestHeader(
+        "Content-Type",
+        file.type || "application/octet-stream"
+      );
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) resolve();
+        else reject(new Error(`Upload falló (${xhr.status}): ${xhr.responseText}`));
+      };
+      xhr.onerror = () => reject(new Error("Error de red durante la subida"));
+      xhr.send(file);
+    });
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("video/")) {
       toast({
         title: "Archivo no válido",
@@ -40,7 +69,6 @@ export default function LessonVideoUploader({
       return;
     }
 
-    // Validate file size (max 500MB)
     const maxSize = 500 * 1024 * 1024;
     if (file.size > maxSize) {
       toast({
@@ -52,36 +80,40 @@ export default function LessonVideoUploader({
     }
 
     setUploading(true);
+    setProgress(0);
 
     try {
-      // Get current user for namespace
       const { data: authData } = await supabase.auth.getUser();
-      if (!authData.user) {
-        throw new Error("No estás autenticado");
-      }
+      if (!authData.user) throw new Error("No estás autenticado");
 
-      // Validate file extension
       const fileExt = file.name.split(".").pop()?.toLowerCase();
-      const allowedExts = ['mp4', 'mov', 'webm', 'avi', 'mkv'];
+      const allowedExts = ["mp4", "mov", "webm", "avi", "mkv"];
       if (!fileExt || !allowedExts.includes(fileExt)) {
         throw new Error("Formato de video no soportado");
       }
 
       const fileName = `${lessonId}-${Date.now()}.${fileExt}`;
-      // Use user namespace for storage security
       const filePath = `${authData.user.id}/lessons/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("course-assets")
-        .upload(filePath, file, { upsert: true });
+      // Use signed upload URL + XHR so we get real upload progress.
+      const { data: signed, error: signErr } = await supabase.storage
+        .from(BUCKET)
+        .createSignedUploadUrl(filePath);
+      if (signErr || !signed) throw signErr || new Error("No se pudo iniciar la subida");
 
-      if (uploadError) throw uploadError;
+      // signed.signedUrl is a full URL we PUT to. token is included for completeness.
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken =
+        sessionData.session?.access_token ||
+        // fallback to anon key from supabase client (public)
+        (supabase as any).supabaseKey ||
+        "";
 
-      const { data } = supabase.storage
-        .from("course-assets")
-        .getPublicUrl(filePath);
+      await uploadWithProgress(signed.signedUrl, accessToken, file, setProgress);
 
+      const { data } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
       onUrlChange(data.publicUrl);
+      setProgress(100);
       toast({ title: "Video subido correctamente ✅" });
     } catch (err: any) {
       console.error("Upload error:", err);
@@ -98,11 +130,11 @@ export default function LessonVideoUploader({
 
   const handleRemoveVideo = () => {
     onUrlChange("");
+    setProgress(0);
   };
 
   return (
     <div className="space-y-3">
-      {/* Mode toggle */}
       <div className="flex gap-2">
         <Button
           type="button"
@@ -126,13 +158,13 @@ export default function LessonVideoUploader({
 
       {mode === "url" ? (
         <Input
-          value={isUploadedVideo ? "" : (currentUrl || "")}
+          value={isUploadedVideo ? "" : currentUrl || ""}
           onChange={(e) => onUrlChange(e.target.value)}
           placeholder="https://www.youtube.com/watch?v=..."
         />
       ) : (
         <div className="space-y-2">
-          {isUploadedVideo && currentUrl ? (
+          {isUploadedVideo && currentUrl && !uploading ? (
             <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
               <Film className="h-5 w-5 text-primary" />
               <span className="text-sm flex-1 truncate">Video cargado</span>
@@ -146,7 +178,7 @@ export default function LessonVideoUploader({
               </Button>
             </div>
           ) : (
-            <div className="border-2 border-dashed rounded-lg p-4 text-center">
+            <div className="border-2 border-dashed rounded-lg p-4 text-center space-y-3">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -155,27 +187,29 @@ export default function LessonVideoUploader({
                 className="hidden"
                 disabled={uploading}
               />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Subiendo...
-                  </>
-                ) : (
-                  <>
+              {uploading ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Subiendo… {progress}%
+                  </div>
+                  <Progress value={progress} className="h-2" />
+                </div>
+              ) : (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
                     <Upload className="h-4 w-4 mr-2" />
                     Seleccionar video
-                  </>
-                )}
-              </Button>
-              <p className="text-xs text-muted-foreground mt-2">
-                MP4, MOV, WEBM (máx. 500MB)
-              </p>
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    MP4, MOV, WEBM (máx. 500MB)
+                  </p>
+                </>
+              )}
             </div>
           )}
         </div>

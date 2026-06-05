@@ -17,6 +17,8 @@ import {
 } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useMercadoPagoCheckout } from '@/hooks/useMercadoPagoCheckout';
+import { Loader2 } from 'lucide-react';
 
 interface MarketplaceViewProps {
   showHeader?: boolean;
@@ -447,6 +449,7 @@ function EbookCard({ ebook, formatPrice }: { ebook: any; formatPrice: (price: nu
             {ebook.description}
           </p>
         )}
+        <BuyButton productType="ebook" productId={ebook.id} price={ebook.price_clp} className="mt-3 w-full" />
       </div>
     </div>
   );
@@ -519,8 +522,31 @@ function EventCard({ event, formatPrice }: { event: any; formatPrice: (price: nu
             <span>Máx. {event.max_attendees} participantes</span>
           </div>
         )}
+        <BuyButton productType="event" productId={event.id} price={event.price_clp} className="mt-3 w-full" />
       </div>
     </div>
+  );
+}
+
+// Buy button (MercadoPago Checkout Pro)
+function BuyButton({ productType, productId, price, className }: {
+  productType: 'ebook' | 'event';
+  productId: string;
+  price: number;
+  className?: string;
+}) {
+  const { startCheckout, loading } = useMercadoPagoCheckout();
+  if (price <= 0) return null;
+  return (
+    <Button
+      size="sm"
+      className={className}
+      disabled={loading}
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); startCheckout(productType, productId); }}
+    >
+      {loading && <Loader2 className="h-3 w-3 mr-2 animate-spin" />}
+      Comprar
+    </Button>
   );
 }
 

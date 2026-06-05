@@ -5,3 +5,7 @@ verify_jwt = false
 
 [functions.send-2fa-code]
 verify_jwt = false
+
+[functions.mercadopago-webhook]
+verify_jwt = false
+

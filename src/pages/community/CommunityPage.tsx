@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Heart, MessageCircle, Plus, Loader2, Settings } from 'lucide-react';
 import { toast } from 'sonner';
+import { useMercadoPagoCheckout } from '@/hooks/useMercadoPagoCheckout';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -177,16 +178,20 @@ export default function CommunityPage() {
           ) : existingRequest?.status === 'rejected' ? (
             <p className="text-muted-foreground">Tu solicitud fue rechazada.</p>
           ) : (
-            <>
-              <p className="mb-4">Esta es una comunidad privada. Solicita acceso para participar.</p>
-              <Textarea
-                placeholder="Mensaje opcional para el creador"
-                value={requestMessage}
-                onChange={(e) => setRequestMessage(e.target.value)}
-                className="mb-3"
-              />
-              <Button onClick={handleJoinRequest}>Solicitar acceso</Button>
-            </>
+            community.access_mode === 'paid' && community.price_clp > 0 ? (
+              <PaidCommunityCTA communityId={community.id} priceClp={community.price_clp} />
+            ) : (
+              <>
+                <p className="mb-4">Esta es una comunidad privada. Solicita acceso para participar.</p>
+                <Textarea
+                  placeholder="Mensaje opcional para el creador"
+                  value={requestMessage}
+                  onChange={(e) => setRequestMessage(e.target.value)}
+                  className="mb-3"
+                />
+                <Button onClick={handleJoinRequest}>Solicitar acceso</Button>
+              </>
+            )
           )}
         </Card>
       ) : (

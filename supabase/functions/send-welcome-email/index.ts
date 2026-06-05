@@ -87,6 +87,13 @@ const handler = async (req: Request): Promise<Response> => {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
+    // Non-privileged callers can only send the welcome email to themselves
+    if (!isPrivileged && email.toLowerCase() !== callerEmail) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
     if (!isSafeRedirect(resetPasswordUrl, SITE_ORIGIN)) {
       return new Response(JSON.stringify({ error: "Invalid redirect URL" }), {
         status: 400,

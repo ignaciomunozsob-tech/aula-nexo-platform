@@ -56,6 +56,7 @@ import {
 import CourseCoverUploader from "@/components/layout/CourseCoverUploader";
 import LessonVideoUploader from "@/components/layout/LessonVideoUploader";
 import StudentManagement from "@/components/creator/StudentManagement";
+import CertificateTemplateUploader from "@/components/creator/CertificateTemplateUploader";
 
 type LessonForm = {
   id: string;

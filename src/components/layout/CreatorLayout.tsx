@@ -1,5 +1,6 @@
 import { Outlet, Navigate } from 'react-router-dom';
 import { CreatorSidebar } from './CreatorSidebar';
+import MobileTopbar from './MobileTopbar';
 import { useAuth } from '@/lib/auth';
 import { Loader2 } from 'lucide-react';
 

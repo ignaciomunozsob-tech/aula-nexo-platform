@@ -35,6 +35,37 @@ export default function CreatorProfileEdit() {
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(profileData?.avatar_url || '');
 
+  // Password change
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const passwordMutation = useMutation({
+    mutationFn: async () => {
+      if (newPassword.length < 8) throw new Error('La contraseña debe tener al menos 8 caracteres');
+      if (newPassword !== confirmPassword) throw new Error('Las contraseñas no coinciden');
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setNewPassword('');
+      setConfirmPassword('');
+      toast({ title: 'Contraseña actualizada' });
+    },
+    onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
+  });
+
+  const sendResetEmail = async () => {
+    if (!user?.email) return;
+    const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Correo enviado', description: 'Revisa tu bandeja de entrada' });
+    }
+  };
+
   // Keep local form state in sync if profile refreshes
   useEffect(() => {
     setName(profileData?.name || '');

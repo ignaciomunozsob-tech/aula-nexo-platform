@@ -64,7 +64,7 @@ export default function CreatorProductsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('events')
-        .select('*')
+        .select('id, title, description, price_clp, category_id, status, cover_image_url, duration_minutes, max_attendees, event_date, event_type, creator_id, slug, is_novu_official, created_at, updated_at')
         .eq('creator_id', user!.id)
         .order('event_date', { ascending: true });
       if (error) throw error;

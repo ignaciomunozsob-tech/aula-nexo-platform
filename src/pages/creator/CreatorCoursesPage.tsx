@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Plus, Edit, Eye, Users } from 'lucide-react';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, getCourseUrl } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,

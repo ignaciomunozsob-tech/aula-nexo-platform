@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation } from '@tanstack/react-query';
-import { Loader2, ExternalLink, Upload, User, Instagram, Linkedin, Globe, Youtube, Twitter } from 'lucide-react';
+import { Loader2, ExternalLink, Upload, User, Instagram, Linkedin, Globe, Youtube, Twitter, Mail, KeyRound } from 'lucide-react';
 import { generateSlug } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,7 +21,7 @@ interface SocialLinks {
 }
 
 export default function CreatorProfileEdit() {
-  const { profile, refreshProfile } = useAuth();
+  const { profile, user, refreshProfile } = useAuth();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -34,6 +34,37 @@ export default function CreatorProfileEdit() {
   const [introVideoUrl, setIntroVideoUrl] = useState(profileData?.intro_video_url || '');
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(profileData?.avatar_url || '');
+
+  // Password change
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const passwordMutation = useMutation({
+    mutationFn: async () => {
+      if (newPassword.length < 8) throw new Error('La contraseña debe tener al menos 8 caracteres');
+      if (newPassword !== confirmPassword) throw new Error('Las contraseñas no coinciden');
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setNewPassword('');
+      setConfirmPassword('');
+      toast({ title: 'Contraseña actualizada' });
+    },
+    onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
+  });
+
+  const sendResetEmail = async () => {
+    if (!user?.email) return;
+    const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Correo enviado', description: 'Revisa tu bandeja de entrada' });
+    }
+  };
 
   // Keep local form state in sync if profile refreshes
   useEffect(() => {
@@ -155,6 +186,48 @@ export default function CreatorProfileEdit() {
       <h1 className="text-2xl font-bold mb-6">Mi Perfil Público</h1>
 
       <form onSubmit={(e) => { e.preventDefault(); updateMutation.mutate(); }} className="space-y-6">
+        {/* Account / Login Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Cuenta e inicio de sesión</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label className="flex items-center gap-2"><Mail className="h-4 w-4" /> Correo electrónico</Label>
+              <Input value={user?.email || ''} disabled className="mt-1 bg-muted" />
+              <p className="text-xs text-muted-foreground mt-1">El correo de inicio de sesión no se puede modificar desde aquí.</p>
+            </div>
+            <div className="border-t pt-4 space-y-3">
+              <Label className="flex items-center gap-2"><KeyRound className="h-4 w-4" /> Cambiar contraseña</Label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Nueva contraseña (mín. 8 caracteres)"
+              />
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirmar nueva contraseña"
+              />
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  type="button"
+                  onClick={() => passwordMutation.mutate()}
+                  disabled={passwordMutation.isPending || !newPassword || !confirmPassword}
+                >
+                  {passwordMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Actualizar contraseña
+                </Button>
+                <Button type="button" variant="outline" onClick={sendResetEmail}>
+                  Enviarme un enlace de recuperación
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Avatar Section */}
         <Card>
           <CardHeader>

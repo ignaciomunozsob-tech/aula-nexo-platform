@@ -193,7 +193,7 @@ function formatDate(date: string) {
 export default function CourseEditorPage() {
   const { id } = useParams();
   const isNew = !id;
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();

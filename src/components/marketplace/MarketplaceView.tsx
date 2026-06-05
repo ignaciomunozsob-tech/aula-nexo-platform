@@ -522,8 +522,31 @@ function EventCard({ event, formatPrice }: { event: any; formatPrice: (price: nu
             <span>Máx. {event.max_attendees} participantes</span>
           </div>
         )}
+        <BuyButton productType="event" productId={event.id} price={event.price_clp} className="mt-3 w-full" />
       </div>
     </div>
+  );
+}
+
+// Buy button (MercadoPago Checkout Pro)
+function BuyButton({ productType, productId, price, className }: {
+  productType: 'ebook' | 'event';
+  productId: string;
+  price: number;
+  className?: string;
+}) {
+  const { startCheckout, loading } = useMercadoPagoCheckout();
+  if (price <= 0) return null;
+  return (
+    <Button
+      size="sm"
+      className={className}
+      disabled={loading}
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); startCheckout(productType, productId); }}
+    >
+      {loading && <Loader2 className="h-3 w-3 mr-2 animate-spin" />}
+      Comprar
+    </Button>
   );
 }
 

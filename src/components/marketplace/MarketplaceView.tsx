@@ -17,6 +17,8 @@ import {
 } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useMercadoPagoCheckout } from '@/hooks/useMercadoPagoCheckout';
+import { Loader2 } from 'lucide-react';
 
 interface MarketplaceViewProps {
   showHeader?: boolean;
@@ -447,6 +449,7 @@ function EbookCard({ ebook, formatPrice }: { ebook: any; formatPrice: (price: nu
             {ebook.description}
           </p>
         )}
+        <BuyButton productType="ebook" productId={ebook.id} price={ebook.price_clp} className="mt-3 w-full" />
       </div>
     </div>
   );

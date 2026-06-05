@@ -59,9 +59,14 @@ export function StudentLayout() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      <StudentSidebar />
-      <main className="flex-1 bg-muted/30">
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      <div className="hidden lg:flex">
+        <StudentSidebar />
+      </div>
+      <MobileTopbar label="Estudiante">
+        <StudentSidebar />
+      </MobileTopbar>
+      <main className="flex-1 bg-muted/30 min-w-0">
         <Outlet />
       </main>
     </div>

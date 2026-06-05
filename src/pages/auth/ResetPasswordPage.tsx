@@ -17,19 +17,30 @@ export default function ResetPasswordPage() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    // Check if user has a valid session (came from password reset email or temp password login)
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        // Valid session from password reset email or needs_password_change flag
-        const needsPasswordChange = session.user.user_metadata?.needs_password_change;
-        // If user came from reset email, they have a valid session
-        // If user has needs_password_change flag, they also need to change password
         setIsValidSession(true);
+        setChecking(false);
       }
-      setChecking(false);
     };
     checkSession();
+
+    // Listen for auth changes in case PKCE exchange resolves after mount
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setIsValidSession(true);
+        setChecking(false);
+      }
+    });
+
+    // Grace period for the recovery exchange to complete
+    const timeout = setTimeout(() => setChecking(false), 1500);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -16,8 +16,10 @@ import {
   ChevronRight,
   Loader2,
   BookOpen,
-  Eye
+  Eye,
+  Menu,
 } from 'lucide-react';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 
 export default function CoursePlayerPage() {

@@ -26,7 +26,16 @@ export default function DebugPage() {
       try {
         const { data: s, error: sErr } = await supabase.auth.getSession();
         if (sErr) throw sErr;
-        setSessionInfo(s);
+        // Redact tokens before exposing in the DOM
+        const redacted = s?.session
+          ? {
+              user: { id: s.session.user?.id, email: s.session.user?.email },
+              expires_at: s.session.expires_at,
+              access_token: "[redacted]",
+              refresh_token: "[redacted]",
+            }
+          : null;
+        setSessionInfo({ session: redacted });
 
         const { data, error } = await supabase.from("courses").select("id").limit(1);
         if (error) throw error;

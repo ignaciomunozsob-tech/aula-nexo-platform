@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { generateSlug } from "@/lib/utils";
+import { generateSlug, getCourseUrl } from "@/lib/utils";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +56,7 @@ import {
 import CourseCoverUploader from "@/components/layout/CourseCoverUploader";
 import LessonVideoUploader from "@/components/layout/LessonVideoUploader";
 import StudentManagement from "@/components/creator/StudentManagement";
+import CertificateTemplateUploader from "@/components/creator/CertificateTemplateUploader";
 
 type LessonForm = {
   id: string;
@@ -81,26 +82,28 @@ type ModuleForm = {
 function RichTextEditor({ value, onChange }: { value: string; onChange: (html: string) => void }) {
   const ref = useRef<HTMLDivElement | null>(null);
 
-  // sincroniza contenido cuando se carga el curso
+  // Sync external value ONLY when the editor is not focused.
+  // Setting innerHTML while typing would reset caret and break Enter.
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    if (document.activeElement === el) return;
     if ((el.innerHTML || "") !== (value || "")) el.innerHTML = value || "";
   }, [value]);
+
+  const emit = () => {
+    onChange(ref.current?.innerHTML || "");
+  };
 
   const exec = (cmd: string, arg?: string) => {
     ref.current?.focus();
     document.execCommand(cmd, false, arg);
-    // Sanitize HTML before passing to onChange to prevent XSS
-    const rawHtml = ref.current?.innerHTML || "";
-    onChange(sanitizeHtml(rawHtml));
+    emit();
   };
 
-  // Validate URL to only allow safe protocols
   const isValidUrl = (url: string): boolean => {
     try {
       const parsed = new URL(url);
-      // Only allow http and https protocols
       return parsed.protocol === 'http:' || parsed.protocol === 'https:';
     } catch {
       return false;
@@ -110,20 +113,28 @@ function RichTextEditor({ value, onChange }: { value: string; onChange: (html: s
   const addLink = () => {
     const url = window.prompt("Pega el link (https://...)");
     if (!url) return;
-    
-    // Validate URL before creating link
     if (!isValidUrl(url)) {
       alert("URL inválida. Solo se permiten enlaces http:// o https://");
       return;
     }
-    
     exec("createLink", url);
   };
 
-  const handleContentChange = () => {
-    const rawHtml = ref.current?.innerHTML || "";
-    // Sanitize HTML before saving
-    onChange(sanitizeHtml(rawHtml));
+  const handleBlur = () => {
+    // Sanitize only on blur so caret/cursor isn't disturbed while typing.
+    const raw = ref.current?.innerHTML || "";
+    const clean = sanitizeHtml(raw);
+    if (ref.current && clean !== raw) ref.current.innerHTML = clean;
+    onChange(clean);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Ensure Enter inserts a line break inside the editor (not submits/leaves it).
+    if (e.key === "Enter" && !e.shiftKey) {
+      // Browser default behavior creates <div>/<p>; we keep default to allow paragraphs.
+      // Stop bubbling so any parent form/listener doesn't intercept it.
+      e.stopPropagation();
+    }
   };
 
   return (
@@ -158,13 +169,14 @@ function RichTextEditor({ value, onChange }: { value: string; onChange: (html: s
       <div
         ref={ref}
         contentEditable
-        className="min-h-[180px] rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        onInput={handleContentChange}
-        onBlur={handleContentChange}
+        className="min-h-[180px] rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6"
+        onInput={emit}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
         suppressContentEditableWarning
       />
 
-      <p className="text-xs text-muted-foreground">Tip: pega texto normal y luego aplica formato con los botones.</p>
+      <p className="text-xs text-muted-foreground">Tip: pega texto normal y luego aplica formato con los botones. Enter crea un nuevo párrafo.</p>
     </div>
   );
 }
@@ -182,7 +194,7 @@ function formatDate(date: string) {
 export default function CourseEditorPage() {
   const { id } = useParams();
   const isNew = !id;
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -199,6 +211,8 @@ export default function CourseEditorPage() {
     category_id: "",
     status: "draft",
     format: "recorded",
+    certificate_enabled: false,
+    certificate_template_url: "",
   });
 
   const [modules, setModules] = useState<ModuleForm[]>([]);
@@ -310,6 +324,8 @@ export default function CourseEditorPage() {
       category_id: course.category_id ?? "",
       status: course.status ?? "draft",
       format: (course as any).format ?? "recorded",
+      certificate_enabled: !!(course as any).certificate_enabled,
+      certificate_template_url: (course as any).certificate_template_url ?? "",
     };
     
     setForm(initialForm);
@@ -352,6 +368,10 @@ export default function CourseEditorPage() {
         category_id: form.category_id || null,
         status: form.status,
         format: form.format,
+        certificate_enabled: form.certificate_enabled,
+        certificate_template_url: form.certificate_enabled
+          ? form.certificate_template_url || null
+          : null,
         updated_at: nowIso,
       };
 
@@ -538,7 +558,7 @@ export default function CourseEditorPage() {
           {course?.id && (
             <>
               <Button variant="outline" asChild>
-                <a href={`${window.location.origin}/#/course/${course.slug}`} target="_blank" rel="noreferrer">
+                <a href={`${window.location.origin}/#${getCourseUrl(profile?.creator_slug, course.slug)}`} target="_blank" rel="noreferrer">
                   <Link2 className="h-4 w-4 mr-2" />
                   Ver página pública
                 </a>
@@ -714,6 +734,47 @@ export default function CourseEditorPage() {
                 </Select>
               </div>
             </div>
+          </div>
+
+          {/* Certificado (opcional) */}
+          <div className="bg-card border rounded-lg p-6 space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="font-semibold">Certificado al finalizar</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Opcional. Si lo activas, el alumno recibirá un certificado al
+                  completar el curso. Puedes subir una plantilla editable.
+                </p>
+              </div>
+              <label className="inline-flex items-center gap-2 cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-primary"
+                  checked={form.certificate_enabled}
+                  onChange={(e) =>
+                    setForm({ ...form, certificate_enabled: e.target.checked })
+                  }
+                />
+                <span className="text-sm font-medium">
+                  {form.certificate_enabled ? "Activado" : "Desactivado"}
+                </span>
+              </label>
+            </div>
+
+            {form.certificate_enabled && id && (
+              <div className="pt-2">
+                <Label>Plantilla del certificado</Label>
+                <div className="mt-1">
+                  <CertificateTemplateUploader
+                    courseId={id}
+                    currentUrl={form.certificate_template_url || null}
+                    onUrlChange={(url) =>
+                      setForm({ ...form, certificate_template_url: url })
+                    }
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <Button 

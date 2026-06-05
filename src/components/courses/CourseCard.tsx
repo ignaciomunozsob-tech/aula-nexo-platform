@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Clock, Users, Star } from 'lucide-react';
-import { formatPrice, formatDuration } from '@/lib/utils';
+import { formatPrice, formatDuration, getCourseUrl } from '@/lib/utils';
 
 interface CourseCardProps {
   id: string;
@@ -35,7 +35,7 @@ export function CourseCard({
 
   return (
     <Link
-      to={`/course/${slug}`}
+      to={getCourseUrl(creatorSlug, slug)}
       className="group bg-card rounded-lg border border-border overflow-hidden card-hover"
     >
       {/* Cover Image */}

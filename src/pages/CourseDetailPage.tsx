@@ -59,7 +59,8 @@ function formatLabel(format?: string | null) {
 }
 
 export default function CourseDetailPage() {
-  const { slug } = useParams();
+  const params = useParams();
+  const slug = params.courseSlug || params.slug;
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();

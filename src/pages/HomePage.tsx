@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { getCourseUrl } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -98,7 +99,7 @@ export default function HomePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('courses')
-        .select('id, slug, title, description, cover_image_url, price_clp, level, duration_minutes_est, instructor_name, instructor_avatar_url')
+        .select('id, slug, title, description, cover_image_url, price_clp, level, duration_minutes_est, instructor_name, instructor_avatar_url, profiles:creator_id (creator_slug)')
         .eq('is_novu_official', true)
         .eq('status', 'published')
         .order('created_at', { ascending: false })
@@ -217,7 +218,7 @@ export default function HomePage() {
               {novuCourses.map((c: any) => (
                 <Link
                   key={c.id}
-                  to={`/course/${c.slug}`}
+                  to={getCourseUrl(c.profiles?.creator_slug, c.slug)}
                   className="group bg-card border border-border rounded-xl overflow-hidden hover:border-primary/40 hover:shadow-xl hover:-translate-y-1 transition-all"
                 >
                   <div className="aspect-video bg-muted relative overflow-hidden">

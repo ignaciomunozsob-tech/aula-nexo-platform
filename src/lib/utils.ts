@@ -44,3 +44,15 @@ export function getSessionId(): string {
   }
   return sessionId;
 }
+
+/**
+ * Public URL for a course landing page.
+ * Prefer the creator-namespaced URL (/:creatorSlug/:courseSlug); fall back to /course/:slug.
+ */
+export function getCourseUrl(
+  creatorSlug: string | null | undefined,
+  courseSlug: string | null | undefined,
+): string {
+  if (creatorSlug && courseSlug) return `/${creatorSlug}/${courseSlug}`;
+  return `/course/${courseSlug ?? ''}`;
+}

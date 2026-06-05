@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Plus, Edit, Eye, Users, BookOpen, FileText, Calendar } from 'lucide-react';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, getCourseUrl } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NewProductDialog } from '@/components/creator/NewProductDialog';
 import {
@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/table';
 
 export default function CreatorProductsPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [newProductOpen, setNewProductOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<{ id: string; title: string } | null>(null);
 
@@ -216,7 +216,7 @@ export default function CreatorProductsPage() {
                         </Button>
                         {course.status === 'published' && (
                           <Button variant="ghost" size="sm" asChild>
-                            <Link to={`/course/${course.slug}`} target="_blank"><Eye className="h-4 w-4" /></Link>
+                            <Link to={getCourseUrl(profile?.creator_slug, course.slug)} target="_blank"><Eye className="h-4 w-4" /></Link>
                           </Button>
                         )}
                       </td>

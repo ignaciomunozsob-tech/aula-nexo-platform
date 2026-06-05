@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Plus, Edit, Eye, Users } from 'lucide-react';
-import { formatPrice } from '@/lib/utils';
+import { formatPrice, getCourseUrl } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/table';
 
 export default function CreatorCoursesPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [selectedCourse, setSelectedCourse] = useState<{ id: string; title: string } | null>(null);
 
   const { data: courses, isLoading } = useQuery({
@@ -130,7 +130,7 @@ export default function CreatorCoursesPage() {
                     </Button>
                     {course.status === 'published' && (
                       <Button variant="ghost" size="sm" asChild>
-                        <Link to={`/course/${course.slug}`} target="_blank"><Eye className="h-4 w-4" /></Link>
+                        <Link to={getCourseUrl(profile?.creator_slug, course.slug)} target="_blank"><Eye className="h-4 w-4" /></Link>
                       </Button>
                     )}
                   </td>

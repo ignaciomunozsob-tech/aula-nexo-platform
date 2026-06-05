@@ -70,6 +70,8 @@ export type Database = {
       courses: {
         Row: {
           category_id: string | null
+          certificate_enabled: boolean
+          certificate_template_url: string | null
           cover_image_url: string | null
           created_at: string
           creator_id: string
@@ -91,6 +93,8 @@ export type Database = {
         }
         Insert: {
           category_id?: string | null
+          certificate_enabled?: boolean
+          certificate_template_url?: string | null
           cover_image_url?: string | null
           created_at?: string
           creator_id: string
@@ -112,6 +116,8 @@ export type Database = {
         }
         Update: {
           category_id?: string | null
+          certificate_enabled?: boolean
+          certificate_template_url?: string | null
           cover_image_url?: string | null
           created_at?: string
           creator_id?: string

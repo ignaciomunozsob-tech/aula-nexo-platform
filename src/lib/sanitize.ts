@@ -2,7 +2,7 @@ import DOMPurify from 'dompurify';
 
 // Configure DOMPurify to allow only safe HTML tags
 const SANITIZE_CONFIG = {
-  ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre'],
+  ALLOWED_TAGS: ['p', 'br', 'div', 'span', 'strong', 'b', 'em', 'i', 'u', 'a', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'code', 'pre'],
   ALLOWED_ATTR: ['href', 'target', 'rel'],
   ALLOW_DATA_ATTR: false,
   ADD_ATTR: ['target'],

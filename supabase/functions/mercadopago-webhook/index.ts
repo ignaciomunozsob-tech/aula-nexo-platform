@@ -1,22 +1,59 @@
 // supabase/functions/mercadopago-webhook/index.ts
-// Receives MercadoPago notifications, verifies payment, fulfills order
+// Receives MercadoPago notifications, verifies signature, fulfills order
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
 const MP_ACCESS_TOKEN = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN')!;
+const MP_WEBHOOK_SECRET = Deno.env.get('MERCADOPAGO_WEBHOOK_SECRET') ?? '';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+async function hmacSha256Hex(secret: string, message: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message));
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function parseSignatureHeader(header: string | null): { ts?: string; v1?: string } {
+  if (!header) return {};
+  const parts = header.split(',').map(p => p.trim());
+  const out: Record<string, string> = {};
+  for (const p of parts) {
+    const [k, v] = p.split('=');
+    if (k && v) out[k.trim()] = v.trim();
+  }
+  return { ts: out.ts, v1: out.v1 };
+}
+
+async function verifyMpSignature(req: Request, paymentId: string): Promise<boolean> {
+  if (!MP_WEBHOOK_SECRET) return false;
+  const sigHeader = req.headers.get('x-signature');
+  const reqId = req.headers.get('x-request-id') ?? '';
+  const { ts, v1 } = parseSignatureHeader(sigHeader);
+  if (!ts || !v1 || !reqId) return false;
+  // Manifest per MP docs: id:<data.id>;request-id:<x-request-id>;ts:<ts>;
+  const manifest = `id:${paymentId};request-id:${reqId};ts:${ts};`;
+  const expected = await hmacSha256Hex(MP_WEBHOOK_SECRET, manifest);
+  if (expected.length !== v1.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ v1.charCodeAt(i);
+  return diff === 0;
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
     const url = new URL(req.url);
-    // MP sends notifications with ?type=payment&data.id=123 (or topic)
     const type = url.searchParams.get('type') ?? url.searchParams.get('topic');
     let paymentId = url.searchParams.get('data.id') ?? url.searchParams.get('id');
 
-    // Body may also contain { type, data: { id } }
     if (!paymentId || !type) {
       try {
         const bodyJson = await req.clone().json();
@@ -29,19 +66,24 @@ Deno.serve(async (req) => {
       return new Response('ok', { status: 200, headers: corsHeaders });
     }
 
-    // Always acknowledge MP quickly (any non-2xx triggers retries)
-    // Fetch payment details from MP
+    // Verify MercadoPago HMAC signature
+    const valid = await verifyMpSignature(req, String(paymentId));
+    if (!valid) {
+      console.warn('Invalid MercadoPago signature');
+      return new Response('forbidden', { status: 403, headers: corsHeaders });
+    }
+
     const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
       headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
     });
     if (!mpRes.ok) {
-      console.error('MP fetch payment failed', mpRes.status, await mpRes.text());
+      console.error('MP fetch payment failed', mpRes.status);
       return new Response('ok', { status: 200, headers: corsHeaders });
     }
     const payment = await mpRes.json();
     const orderId: string | undefined = payment?.external_reference || payment?.metadata?.order_id;
     if (!orderId) {
-      console.error('Payment without order reference', payment?.id);
+      console.error('Payment without order reference');
       return new Response('ok', { status: 200, headers: corsHeaders });
     }
 
@@ -49,11 +91,11 @@ Deno.serve(async (req) => {
     const { data: order, error: orderErr } = await admin
       .from('orders').select('*').eq('id', orderId).maybeSingle();
     if (orderErr || !order) {
-      console.error('Order not found', orderId);
+      console.error('Order not found');
       return new Response('ok', { status: 200, headers: corsHeaders });
     }
 
-    const mpStatus: string = payment.status; // approved | rejected | pending | refunded | cancelled
+    const mpStatus: string = payment.status;
     let newStatus: 'pending' | 'paid' | 'failed' | 'refunded' = 'pending';
     if (mpStatus === 'approved') newStatus = 'paid';
     else if (mpStatus === 'refunded') newStatus = 'refunded';
@@ -67,7 +109,6 @@ Deno.serve(async (req) => {
       paid_at: newStatus === 'paid' ? new Date().toISOString() : order.paid_at,
     }).eq('id', order.id);
 
-    // Fulfill ONLY on first paid transition
     if (newStatus === 'paid' && !wasPaidBefore) {
       await fulfillOrder(admin, order);
     }
@@ -75,7 +116,6 @@ Deno.serve(async (req) => {
     return new Response('ok', { status: 200, headers: corsHeaders });
   } catch (e) {
     console.error('webhook error', e);
-    // Still return 200 to avoid endless retries on unexpected errors
     return new Response('ok', { status: 200, headers: corsHeaders });
   }
 });
@@ -101,7 +141,6 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, order: any) 
       await admin.from('community_join_requests').update({ status: 'approved' })
         .eq('user_id', user_id).eq('community_id', product_id);
     }
-    // For ebooks, access is granted via get_ebook_file_url checking orders.status='paid'
   } catch (e) {
     console.error('fulfill error', product_type, e);
   }

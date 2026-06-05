@@ -25,9 +25,14 @@ export function CreatorLayout() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      <CreatorSidebar />
-      <main className="flex-1 bg-muted/30">
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      <div className="hidden lg:flex">
+        <CreatorSidebar />
+      </div>
+      <MobileTopbar label="Creador">
+        <CreatorSidebar />
+      </MobileTopbar>
+      <main className="flex-1 bg-muted/30 min-w-0">
         <Outlet />
       </main>
     </div>

@@ -323,6 +323,8 @@ export default function CourseEditorPage() {
       category_id: course.category_id ?? "",
       status: course.status ?? "draft",
       format: (course as any).format ?? "recorded",
+      certificate_enabled: !!(course as any).certificate_enabled,
+      certificate_template_url: (course as any).certificate_template_url ?? "",
     };
     
     setForm(initialForm);

@@ -186,6 +186,48 @@ export default function CreatorProfileEdit() {
       <h1 className="text-2xl font-bold mb-6">Mi Perfil Público</h1>
 
       <form onSubmit={(e) => { e.preventDefault(); updateMutation.mutate(); }} className="space-y-6">
+        {/* Account / Login Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Cuenta e inicio de sesión</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label className="flex items-center gap-2"><Mail className="h-4 w-4" /> Correo electrónico</Label>
+              <Input value={user?.email || ''} disabled className="mt-1 bg-muted" />
+              <p className="text-xs text-muted-foreground mt-1">El correo de inicio de sesión no se puede modificar desde aquí.</p>
+            </div>
+            <div className="border-t pt-4 space-y-3">
+              <Label className="flex items-center gap-2"><KeyRound className="h-4 w-4" /> Cambiar contraseña</Label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Nueva contraseña (mín. 8 caracteres)"
+              />
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirmar nueva contraseña"
+              />
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  type="button"
+                  onClick={() => passwordMutation.mutate()}
+                  disabled={passwordMutation.isPending || !newPassword || !confirmPassword}
+                >
+                  {passwordMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  Actualizar contraseña
+                </Button>
+                <Button type="button" variant="outline" onClick={sendResetEmail}>
+                  Enviarme un enlace de recuperación
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Avatar Section */}
         <Card>
           <CardHeader>

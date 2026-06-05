@@ -35,7 +35,7 @@ export function CourseCard({
 
   return (
     <Link
-      to={`/course/${slug}`}
+      to={getCourseUrl(creatorSlug, slug)}
       className="group bg-card rounded-lg border border-border overflow-hidden card-hover"
     >
       {/* Cover Image */}

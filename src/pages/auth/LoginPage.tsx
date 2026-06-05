@@ -2,10 +2,20 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+async function handleGoogleSignIn(toast: ReturnType<typeof useToast>["toast"]) {
+  const result = await lovable.auth.signInWithOAuth("google", {
+    redirect_uri: window.location.origin,
+  });
+  if (result.error) {
+    toast({ title: "Error con Google", description: result.error.message, variant: "destructive" });
+  }
+}
 
 function friendlyAuthError(message?: string) {
   const msg = (message || "").toLowerCase();

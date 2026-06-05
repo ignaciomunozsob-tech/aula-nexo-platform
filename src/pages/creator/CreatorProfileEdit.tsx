@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation } from '@tanstack/react-query';
-import { Loader2, ExternalLink, Upload, User, Instagram, Linkedin, Globe, Youtube, Twitter } from 'lucide-react';
+import { Loader2, ExternalLink, Upload, User, Instagram, Linkedin, Globe, Youtube, Twitter, Mail, KeyRound } from 'lucide-react';
 import { generateSlug } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

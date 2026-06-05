@@ -735,6 +735,47 @@ export default function CourseEditorPage() {
             </div>
           </div>
 
+          {/* Certificado (opcional) */}
+          <div className="bg-card border rounded-lg p-6 space-y-4">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="font-semibold">Certificado al finalizar</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Opcional. Si lo activas, el alumno recibirá un certificado al
+                  completar el curso. Puedes subir una plantilla editable.
+                </p>
+              </div>
+              <label className="inline-flex items-center gap-2 cursor-pointer shrink-0">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-primary"
+                  checked={form.certificate_enabled}
+                  onChange={(e) =>
+                    setForm({ ...form, certificate_enabled: e.target.checked })
+                  }
+                />
+                <span className="text-sm font-medium">
+                  {form.certificate_enabled ? "Activado" : "Desactivado"}
+                </span>
+              </label>
+            </div>
+
+            {form.certificate_enabled && id && (
+              <div className="pt-2">
+                <Label>Plantilla del certificado</Label>
+                <div className="mt-1">
+                  <CertificateTemplateUploader
+                    courseId={id}
+                    currentUrl={form.certificate_template_url || null}
+                    onUrlChange={(url) =>
+                      setForm({ ...form, certificate_template_url: url })
+                    }
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           <Button 
             onClick={() => saveMutation.mutate()} 
             disabled={saveMutation.isPending || !hasChanges} 

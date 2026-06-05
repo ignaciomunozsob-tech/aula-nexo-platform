@@ -210,6 +210,8 @@ export default function CourseEditorPage() {
     category_id: "",
     status: "draft",
     format: "recorded",
+    certificate_enabled: false,
+    certificate_template_url: "",
   });
 
   const [modules, setModules] = useState<ModuleForm[]>([]);

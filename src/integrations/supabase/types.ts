@@ -875,6 +875,7 @@ export type Database = {
           interests: string[] | null
           intro_video_url: string | null
           links: Json | null
+          meta_pixel_id: string | null
           name: string | null
           onboarding_completed: boolean | null
           role: Database["public"]["Enums"]["app_role"]
@@ -889,6 +890,7 @@ export type Database = {
           interests?: string[] | null
           intro_video_url?: string | null
           links?: Json | null
+          meta_pixel_id?: string | null
           name?: string | null
           onboarding_completed?: boolean | null
           role?: Database["public"]["Enums"]["app_role"]
@@ -903,6 +905,7 @@ export type Database = {
           interests?: string[] | null
           intro_video_url?: string | null
           links?: Json | null
+          meta_pixel_id?: string | null
           name?: string | null
           onboarding_completed?: boolean | null
           role?: Database["public"]["Enums"]["app_role"]

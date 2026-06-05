@@ -108,6 +108,11 @@ const App = () => (
                 <Route path="instructors" element={<AdminInstructorsPage />} />
               </Route>
 
+              {/* Public course URL using creator slug: /:creatorSlug/:courseSlug */}
+              <Route element={<PublicLayout />}>
+                <Route path="/:creatorSlug/:courseSlug" element={<CourseDetailPage />} />
+              </Route>
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </HashRouter>

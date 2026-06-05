@@ -81,18 +81,39 @@ type ModuleForm = {
  */
 function RichTextEditor({ value, onChange }: { value: string; onChange: (html: string) => void }) {
   const ref = useRef<HTMLDivElement | null>(null);
+  const initializedRef = useRef(false);
+  const lastEmittedRef = useRef<string>("");
 
-  // Sync external value ONLY when the editor is not focused.
-  // Setting innerHTML while typing would reset caret and break Enter.
+  // Initialize content once; only re-sync from prop if we did NOT cause the change
+  // and the editor is not focused. This prevents Enter/typing from wiping content.
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    if (!initializedRef.current) {
+      el.innerHTML = value || "";
+      initializedRef.current = true;
+      lastEmittedRef.current = value || "";
+      return;
+    }
     if (document.activeElement === el) return;
-    if ((el.innerHTML || "") !== (value || "")) el.innerHTML = value || "";
+    if (value === lastEmittedRef.current) return;
+    if ((el.innerHTML || "") !== (value || "")) {
+      el.innerHTML = value || "";
+      lastEmittedRef.current = value || "";
+    }
   }, [value]);
 
+  // Use <p> as the default block element on Enter (cleaner than nested <div>s)
+  useEffect(() => {
+    try {
+      document.execCommand("defaultParagraphSeparator", false, "p");
+    } catch {}
+  }, []);
+
   const emit = () => {
-    onChange(ref.current?.innerHTML || "");
+    const html = ref.current?.innerHTML || "";
+    lastEmittedRef.current = html;
+    onChange(html);
   };
 
   const exec = (cmd: string, arg?: string) => {
@@ -104,7 +125,7 @@ function RichTextEditor({ value, onChange }: { value: string; onChange: (html: s
   const isValidUrl = (url: string): boolean => {
     try {
       const parsed = new URL(url);
-      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      return parsed.protocol === "http:" || parsed.protocol === "https:";
     } catch {
       return false;
     }
@@ -121,18 +142,15 @@ function RichTextEditor({ value, onChange }: { value: string; onChange: (html: s
   };
 
   const handleBlur = () => {
-    // Sanitize only on blur so caret/cursor isn't disturbed while typing.
     const raw = ref.current?.innerHTML || "";
     const clean = sanitizeHtml(raw);
     if (ref.current && clean !== raw) ref.current.innerHTML = clean;
+    lastEmittedRef.current = clean;
     onChange(clean);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    // Ensure Enter inserts a line break inside the editor (not submits/leaves it).
-    if (e.key === "Enter" && !e.shiftKey) {
-      // Browser default behavior creates <div>/<p>; we keep default to allow paragraphs.
-      // Stop bubbling so any parent form/listener doesn't intercept it.
+    if (e.key === "Enter") {
       e.stopPropagation();
     }
   };

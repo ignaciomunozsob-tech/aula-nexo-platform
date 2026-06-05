@@ -35,6 +35,10 @@ import EventEditorPage from "@/pages/creator/EventEditorPage";
 import CreatorProfileEdit from "@/pages/creator/CreatorProfileEdit";
 import CreatorFinancesPage from "@/pages/creator/CreatorFinancesPage";
 import CreatorReviewsPage from "@/pages/creator/CreatorReviewsPage";
+import CreatorCommunitiesPage from "@/pages/creator/CreatorCommunitiesPage";
+import CommunityManagePage from "@/pages/creator/CommunityManagePage";
+import CommunityPage from "@/pages/community/CommunityPage";
+import CommunityPostPage from "@/pages/community/CommunityPostPage";
 import NotFound from "@/pages/NotFound";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import DebugPage from "@/pages/DebugPage";
@@ -96,6 +100,8 @@ const App = () => (
                 <Route path="events/:id/edit" element={<EventEditorPage />} />
                 <Route path="finances" element={<CreatorFinancesPage />} />
                 <Route path="reviews" element={<CreatorReviewsPage />} />
+                <Route path="communities" element={<CreatorCommunitiesPage />} />
+                <Route path="communities/:id/manage" element={<CommunityManagePage />} />
                 <Route path="profile" element={<CreatorProfileEdit />} />
               </Route>
 
@@ -107,6 +113,10 @@ const App = () => (
                 <Route path="courses/:id/edit" element={<AdminCourseEditorPage />} />
                 <Route path="instructors" element={<AdminInstructorsPage />} />
               </Route>
+
+              {/* Community routes */}
+              <Route path="/c/:slug" element={<CommunityPage />} />
+              <Route path="/c/:slug/p/:postId" element={<CommunityPostPage />} />
 
               {/* Public course URL using creator slug: /:creatorSlug/:courseSlug */}
               <Route element={<PublicLayout />}>

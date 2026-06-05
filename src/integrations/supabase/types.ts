@@ -35,6 +35,240 @@ export type Database = {
         }
         Relationships: []
       }
+      communities: {
+        Row: {
+          access_mode: Database["public"]["Enums"]["community_access_mode"]
+          cover_url: string | null
+          created_at: string
+          creator_id: string
+          description: string | null
+          id: string
+          is_published: boolean
+          name: string
+          price_clp: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          access_mode?: Database["public"]["Enums"]["community_access_mode"]
+          cover_url?: string | null
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          name: string
+          price_clp?: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          access_mode?: Database["public"]["Enums"]["community_access_mode"]
+          cover_url?: string | null
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          id?: string
+          is_published?: boolean
+          name?: string
+          price_clp?: number
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      community_join_requests: {
+        Row: {
+          community_id: string
+          created_at: string
+          id: string
+          message: string | null
+          status: Database["public"]["Enums"]["community_join_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          community_id: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          status?: Database["public"]["Enums"]["community_join_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          community_id?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          status?: Database["public"]["Enums"]["community_join_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_join_requests_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_members: {
+        Row: {
+          community_id: string
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["community_member_role"]
+          user_id: string
+        }
+        Insert: {
+          community_id: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["community_member_role"]
+          user_id: string
+        }
+        Update: {
+          community_id?: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["community_member_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_members_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_post_comments: {
+        Row: {
+          author_id: string
+          community_id: string
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+        }
+        Insert: {
+          author_id: string
+          community_id: string
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+        }
+        Update: {
+          author_id?: string
+          community_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_post_comments_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_post_likes: {
+        Row: {
+          community_id: string
+          created_at: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          community_id: string
+          created_at?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          community_id?: string
+          created_at?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_post_likes_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_posts: {
+        Row: {
+          author_id: string
+          category: string | null
+          community_id: string
+          content: string
+          created_at: string
+          id: string
+          is_pinned: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          category?: string | null
+          community_id: string
+          content: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          category?: string | null
+          community_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_posts_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_modules: {
         Row: {
           course_id: string
@@ -680,6 +914,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_community_member: {
+        Args: { _community_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_community_owner: {
+        Args: { _community_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_course_creator: {
         Args: { _course_id: string; _user_id: string }
         Returns: boolean
@@ -687,6 +929,9 @@ export type Database = {
     }
     Enums: {
       app_role: "student" | "creator" | "admin"
+      community_access_mode: "invite" | "paid"
+      community_join_status: "pending" | "approved" | "rejected"
+      community_member_role: "owner" | "moderator" | "member"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -815,6 +1060,9 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["student", "creator", "admin"],
+      community_access_mode: ["invite", "paid"],
+      community_join_status: ["pending", "approved", "rejected"],
+      community_member_role: ["owner", "moderator", "member"],
     },
   },
 } as const

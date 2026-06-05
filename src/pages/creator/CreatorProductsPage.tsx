@@ -49,7 +49,7 @@ export default function CreatorProductsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('ebooks')
-        .select('*')
+        .select('id, title, description, price_clp, category_id, status, cover_image_url, creator_id, slug, is_novu_official, created_at, updated_at')
         .eq('creator_id', user!.id)
         .order('created_at', { ascending: false });
       if (error) throw error;

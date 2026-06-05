@@ -522,7 +522,84 @@ export default function CourseDetailPage() {
                 )}
               </div>
             </div>
-            
+
+            {/* SOBRE EL INSTRUCTOR / CREADOR */}
+            {(() => {
+              const isNovu = (course as any).is_novu_official;
+              const name = isNovu
+                ? (course as any).instructor_name || course.profiles?.name
+                : course.profiles?.name;
+              const bio = isNovu
+                ? (course as any).instructor_bio
+                : (course.profiles as any)?.bio;
+              const avatar = isNovu
+                ? (course as any).instructor_avatar_url
+                : (course.profiles as any)?.avatar_url;
+              const slug = !isNovu ? course.profiles?.creator_slug : null;
+
+              if (!name && !bio) return null;
+
+              return (
+                <div>
+                  <h2 className="text-xl font-bold mb-4">
+                    {isNovu ? "Sobre el instructor" : "Sobre el creador"}
+                  </h2>
+                  <div className="bg-card border rounded-xl p-5 flex gap-4">
+                    <div className="shrink-0">
+                      {avatar ? (
+                        <img
+                          src={avatar}
+                          alt={name || "Instructor"}
+                          className="h-16 w-16 rounded-full object-cover border"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">
+                          {(name || "?").charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {slug ? (
+                          <Link
+                            to={`/creator/${slug}`}
+                            className="font-semibold text-foreground hover:text-primary hover:underline"
+                          >
+                            {name}
+                          </Link>
+                        ) : (
+                          <span className="font-semibold text-foreground">{name}</span>
+                        )}
+                        {course.categories?.name && (
+                          <Badge variant="secondary" className="text-xs">
+                            {course.categories.name}
+                          </Badge>
+                        )}
+                        {isNovu && (
+                          <Badge className="bg-primary text-primary-foreground gap-1 text-xs">
+                            <Shield className="h-3 w-3" />
+                            Instructor oficial NOVU
+                          </Badge>
+                        )}
+                      </div>
+                      {bio ? (
+                        <p className="text-sm text-muted-foreground mt-2 whitespace-pre-line">
+                          {bio}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground mt-2 italic">
+                          {isNovu
+                            ? "Instructor del programa oficial de NOVU."
+                            : "Este creador aún no ha agregado una descripción."}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
           </div>
         </div>
       </section>

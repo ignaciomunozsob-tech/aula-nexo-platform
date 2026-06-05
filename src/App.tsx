@@ -42,6 +42,7 @@ import CommunityPostPage from "@/pages/community/CommunityPostPage";
 import NotFound from "@/pages/NotFound";
 import PaymentResultPage from "@/pages/PaymentResultPage";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { MetaPixelTracker } from "@/components/MetaPixelTracker";
 import DebugPage from "@/pages/DebugPage";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const App = () => (
         <Sonner />
         <ErrorBoundary>
           <HashRouter>
+            <MetaPixelTracker />
             <Routes>
               {/* Public routes */}
               <Route element={<PublicLayout />}>

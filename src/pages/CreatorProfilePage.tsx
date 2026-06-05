@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { initPixel, trackEventFor } from '@/lib/metaPixel';
 
 function getEmbedUrl(url: string): string | null {
   if (!url) return null;
@@ -77,6 +78,14 @@ export default function CreatorProfilePage() {
   });
 
   usePageView('creator_profile', creator?.id);
+
+  // Initialize creator's Meta Pixel and fire a PageView under their pixel
+  const creatorPixelId = (creator as any)?.meta_pixel_id as string | null | undefined;
+  useEffect(() => {
+    if (!creatorPixelId) return;
+    initPixel(creatorPixelId);
+    trackEventFor(creatorPixelId, 'PageView');
+  }, [creatorPixelId]);
 
   const { data: courses } = useQuery({
     queryKey: ['creator-courses', creator?.id],

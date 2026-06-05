@@ -37,6 +37,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMercadoPagoCheckout } from "@/hooks/useMercadoPagoCheckout";
+import { initPixel, trackEvent, trackEventFor } from "@/lib/metaPixel";
+import { useEffect } from "react";
 
 function formatCLP(value: number | null | undefined) {
   const n = Number(value || 0);
@@ -99,7 +101,8 @@ export default function CourseDetailPage() {
             name,
             creator_slug,
             bio,
-            avatar_url
+            avatar_url,
+            meta_pixel_id
           ),
           categories:category_id (
             name,
@@ -252,6 +255,23 @@ export default function CourseDetailPage() {
 
   const { startCheckout, loading: checkoutLoading } = useMercadoPagoCheckout();
 
+  const creatorPixelId = (course?.profiles as any)?.meta_pixel_id as string | null | undefined;
+
+  // Initialize creator pixel + fire ViewContent when the course loads
+  useEffect(() => {
+    if (!course) return;
+    if (creatorPixelId) initPixel(creatorPixelId);
+    const params = {
+      content_type: 'course',
+      content_ids: [course.id],
+      content_name: course.title,
+      value: course.price_clp ?? 0,
+      currency: 'CLP',
+    };
+    trackEvent('ViewContent', params);
+    if (creatorPixelId) trackEventFor(creatorPixelId, 'ViewContent', params);
+  }, [course?.id, creatorPixelId]);
+
   const handleEnrollClick = () => {
     if (existingEnrollment?.status === "active") {
       navigate(`/app/course/${course?.id}/play`);
@@ -269,7 +289,11 @@ export default function CourseDetailPage() {
         navigate('/login');
         return;
       }
-      startCheckout('course', course!.id);
+      startCheckout('course', course!.id, {
+        value: course!.price_clp ?? 0,
+        creatorPixelId,
+        contentName: course!.title,
+      });
     }
   };
 

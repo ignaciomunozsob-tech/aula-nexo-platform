@@ -38,17 +38,20 @@ export default function EventEditorPage() {
   const [maxAttendees, setMaxAttendees] = useState<number | null>(null);
   const [meetingUrl, setMeetingUrl] = useState('');
 
-  // Fetch existing event if editing
+  // Fetch existing event if editing (meeting_url is column-restricted, fetched via RPC)
   const { data: event, isLoading } = useQuery({
     queryKey: ['event', id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('events')
-        .select('*')
+        .select('id, title, description, price_clp, category_id, status, cover_image_url, duration_minutes, max_attendees, event_date, event_type, creator_id, slug, is_novu_official')
         .eq('id', id!)
         .single();
       if (error) throw error;
-      return data;
+
+      // meeting_url is hidden from regular SELECT; fetch via SECURITY DEFINER RPC
+      const { data: mUrl } = await supabase.rpc('get_event_meeting_url', { _event_id: id! });
+      return { ...data, meeting_url: (mUrl as string) ?? '' };
     },
     enabled: isEditing,
   });

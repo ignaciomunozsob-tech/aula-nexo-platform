@@ -34,17 +34,19 @@ export default function EbookEditorPage() {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
 
-  // Fetch existing ebook if editing
+  // Fetch existing ebook if editing (file_url is column-restricted, fetched via RPC)
   const { data: ebook, isLoading } = useQuery({
     queryKey: ['ebook', id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('ebooks')
-        .select('*')
+        .select('id, title, description, price_clp, category_id, status, cover_image_url, creator_id, slug, is_novu_official')
         .eq('id', id!)
         .single();
       if (error) throw error;
-      return data;
+
+      const { data: fUrl } = await supabase.rpc('get_ebook_file_url', { _ebook_id: id! });
+      return { ...data, file_url: (fUrl as string) ?? '' };
     },
     enabled: isEditing,
   });

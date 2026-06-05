@@ -367,6 +367,10 @@ export default function CourseEditorPage() {
         category_id: form.category_id || null,
         status: form.status,
         format: form.format,
+        certificate_enabled: form.certificate_enabled,
+        certificate_template_url: form.certificate_enabled
+          ? form.certificate_template_url || null
+          : null,
         updated_at: nowIso,
       };
 

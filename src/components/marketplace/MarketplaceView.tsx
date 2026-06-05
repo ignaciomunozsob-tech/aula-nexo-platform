@@ -82,7 +82,7 @@ export function MarketplaceView({ showHeader = true }: MarketplaceViewProps) {
       const { data, error } = await supabase
         .from('events')
         .select(`
-          *,
+          id, title, description, price_clp, category_id, status, cover_image_url, duration_minutes, max_attendees, event_date, event_type, creator_id, slug, is_novu_official, created_at, updated_at,
           profiles:creator_id (name, avatar_url, creator_slug),
           categories:category_id (name, slug)
         `)

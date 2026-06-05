@@ -1,5 +1,6 @@
 import { Outlet, Navigate } from 'react-router-dom';
 import { AdminSidebar } from './AdminSidebar';
+import MobileTopbar from './MobileTopbar';
 import { useAuth } from '@/lib/auth';
 import { Loader2 } from 'lucide-react';
 
@@ -23,9 +24,14 @@ export function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      <AdminSidebar />
-      <main className="flex-1 bg-muted/30">
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      <div className="hidden lg:flex">
+        <AdminSidebar />
+      </div>
+      <MobileTopbar label="Admin">
+        <AdminSidebar />
+      </MobileTopbar>
+      <main className="flex-1 bg-muted/30 min-w-0">
         <Outlet />
       </main>
     </div>

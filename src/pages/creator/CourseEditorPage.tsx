@@ -55,6 +55,7 @@ import {
 } from "@/components/ui/table";
 import CourseCoverUploader from "@/components/layout/CourseCoverUploader";
 import LessonVideoUploader from "@/components/layout/LessonVideoUploader";
+import LessonResourcesEditor from "@/components/layout/LessonResourcesEditor";
 import StudentManagement from "@/components/creator/StudentManagement";
 import CertificateTemplateUploader from "@/components/creator/CertificateTemplateUploader";
 

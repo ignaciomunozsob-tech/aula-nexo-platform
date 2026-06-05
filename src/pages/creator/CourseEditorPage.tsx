@@ -1063,6 +1063,38 @@ export default function CourseEditorPage() {
                                           className="min-h-[200px]"
                                         />
                                       )}
+
+                                      {/* Descripción de la lección */}
+                                      <div className="space-y-1">
+                                        <Label className="text-xs text-muted-foreground">
+                                          Descripción (opcional)
+                                        </Label>
+                                        <Textarea
+                                          value={les.description || ""}
+                                          onChange={(e) => {
+                                            const u = [...modules];
+                                            if (u[mi]?.lessons?.[li]) {
+                                              u[mi].lessons[li].description = e.target.value;
+                                              setModules(u);
+                                            }
+                                          }}
+                                          placeholder="Breve descripción que verán los estudiantes..."
+                                          className="min-h-[80px]"
+                                        />
+                                      </div>
+
+                                      {/* Recursos: archivos o enlaces */}
+                                      <LessonResourcesEditor
+                                        lessonId={les.id}
+                                        resources={les.resources || []}
+                                        onChange={(next) => {
+                                          const u = [...modules];
+                                          if (u[mi]?.lessons?.[li]) {
+                                            u[mi].lessons[li].resources = next;
+                                            setModules(u);
+                                          }
+                                        }}
+                                      />
                                     </div>
                                   </CollapsibleContent>
                                 </div>

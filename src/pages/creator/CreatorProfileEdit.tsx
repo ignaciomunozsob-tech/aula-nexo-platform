@@ -21,7 +21,7 @@ interface SocialLinks {
 }
 
 export default function CreatorProfileEdit() {
-  const { profile, refreshProfile } = useAuth();
+  const { profile, user, refreshProfile } = useAuth();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 

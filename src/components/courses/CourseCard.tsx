@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Clock, Users, Star } from 'lucide-react';
-import { formatPrice, formatDuration } from '@/lib/utils';
+import { formatPrice, formatDuration, getCourseUrl } from '@/lib/utils';
 
 interface CourseCardProps {
   id: string;

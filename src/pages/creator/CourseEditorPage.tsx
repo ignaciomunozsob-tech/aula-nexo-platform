@@ -55,8 +55,15 @@ import {
 } from "@/components/ui/table";
 import CourseCoverUploader from "@/components/layout/CourseCoverUploader";
 import LessonVideoUploader from "@/components/layout/LessonVideoUploader";
+import LessonResourcesEditor from "@/components/layout/LessonResourcesEditor";
 import StudentManagement from "@/components/creator/StudentManagement";
 import CertificateTemplateUploader from "@/components/creator/CertificateTemplateUploader";
+
+type LessonResourceForm = {
+  id: string;
+  file_url: string;
+  file_name: string;
+};
 
 type LessonForm = {
   id: string;
@@ -64,6 +71,8 @@ type LessonForm = {
   type: "video" | "text";
   video_url?: string | null;
   content_text?: string | null;
+  description?: string | null;
+  resources?: LessonResourceForm[];
 };
 
 type ModuleForm = {
@@ -315,7 +324,7 @@ export default function CourseEditorPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("course_modules")
-        .select("*, lessons(*)")
+        .select("*, lessons(*, lesson_resources(*))")
         .eq("course_id", id)
         .order("order_index");
       if (error) throw error;
@@ -323,7 +332,12 @@ export default function CourseEditorPage() {
       return (
         data?.map((m: any) => ({
           ...m,
-          lessons: ((m.lessons as any[]) || []).sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)),
+          lessons: ((m.lessons as any[]) || [])
+            .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
+            .map((l: any) => ({
+              ...l,
+              resources: (l.lesson_resources as any[]) || [],
+            })),
         })) || []
       );
     },
@@ -441,24 +455,52 @@ export default function CourseEditorPage() {
 
         for (let li = 0; li < (mod.lessons || []).length; li++) {
           const les = mod.lessons[li];
-          const lessonPayload = {
+          const lessonPayload: any = {
             title: les.title,
             type: les.type,
             video_url: les.type === "video" ? (les.video_url || null) : null,
             content_text: les.type === "text" ? (les.content_text || null) : null,
+            description: les.description || null,
             order_index: li,
             module_id: moduleId,
           };
 
+          let lessonId = les.id;
           if (les.id?.startsWith("new-")) {
-            const { error } = await supabase.from("lessons").insert(lessonPayload);
+            const { data: newLes, error } = await supabase
+              .from("lessons")
+              .insert(lessonPayload)
+              .select()
+              .single();
             if (error) throw error;
+            lessonId = newLes.id;
           } else {
             const { error } = await supabase
               .from("lessons")
               .update(lessonPayload)
               .eq("id", les.id);
             if (error) throw error;
+          }
+
+          // Sincronizar recursos: borra todos y reinserta los actuales
+          const { error: delResErr } = await supabase
+            .from("lesson_resources")
+            .delete()
+            .eq("lesson_id", lessonId);
+          if (delResErr) throw delResErr;
+
+          const validResources = (les.resources || []).filter(
+            (r) => r.file_url && r.file_url.trim() !== ""
+          );
+          if (validResources.length > 0) {
+            const { error: insResErr } = await supabase.from("lesson_resources").insert(
+              validResources.map((r) => ({
+                lesson_id: lessonId,
+                file_url: r.file_url,
+                file_name: r.file_name || r.file_url,
+              }))
+            );
+            if (insResErr) throw insResErr;
           }
         }
       }
@@ -512,7 +554,7 @@ export default function CourseEditorPage() {
     const updated = [...modules];
     updated[mi].lessons = [
       ...(updated[mi].lessons || []),
-      { id: `new-${Date.now()}`, title: "Nueva lección", type: "video", video_url: "", content_text: "" },
+      { id: `new-${Date.now()}`, title: "Nueva lección", type: "video", video_url: "", content_text: "", description: "", resources: [] },
     ];
     setModules(updated);
   };
@@ -1022,6 +1064,38 @@ export default function CourseEditorPage() {
                                           className="min-h-[200px]"
                                         />
                                       )}
+
+                                      {/* Descripción de la lección */}
+                                      <div className="space-y-1">
+                                        <Label className="text-xs text-muted-foreground">
+                                          Descripción (opcional)
+                                        </Label>
+                                        <Textarea
+                                          value={les.description || ""}
+                                          onChange={(e) => {
+                                            const u = [...modules];
+                                            if (u[mi]?.lessons?.[li]) {
+                                              u[mi].lessons[li].description = e.target.value;
+                                              setModules(u);
+                                            }
+                                          }}
+                                          placeholder="Breve descripción que verán los estudiantes..."
+                                          className="min-h-[80px]"
+                                        />
+                                      </div>
+
+                                      {/* Recursos: archivos o enlaces */}
+                                      <LessonResourcesEditor
+                                        lessonId={les.id}
+                                        resources={les.resources || []}
+                                        onChange={(next) => {
+                                          const u = [...modules];
+                                          if (u[mi]?.lessons?.[li]) {
+                                            u[mi].lessons[li].resources = next;
+                                            setModules(u);
+                                          }
+                                        }}
+                                      />
                                     </div>
                                   </CollapsibleContent>
                                 </div>

@@ -496,6 +496,7 @@ export type Database = {
         Row: {
           content_text: string | null
           created_at: string
+          description: string | null
           duration_minutes: number | null
           id: string
           module_id: string
@@ -507,6 +508,7 @@ export type Database = {
         Insert: {
           content_text?: string | null
           created_at?: string
+          description?: string | null
           duration_minutes?: number | null
           id?: string
           module_id: string
@@ -518,6 +520,7 @@ export type Database = {
         Update: {
           content_text?: string | null
           created_at?: string
+          description?: string | null
           duration_minutes?: number | null
           id?: string
           module_id?: string

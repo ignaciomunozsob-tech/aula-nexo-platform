@@ -323,7 +323,7 @@ export default function CourseEditorPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("course_modules")
-        .select("*, lessons(*)")
+        .select("*, lessons(*, lesson_resources(*))")
         .eq("course_id", id)
         .order("order_index");
       if (error) throw error;
@@ -331,7 +331,12 @@ export default function CourseEditorPage() {
       return (
         data?.map((m: any) => ({
           ...m,
-          lessons: ((m.lessons as any[]) || []).sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)),
+          lessons: ((m.lessons as any[]) || [])
+            .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
+            .map((l: any) => ({
+              ...l,
+              resources: (l.lesson_resources as any[]) || [],
+            })),
         })) || []
       );
     },

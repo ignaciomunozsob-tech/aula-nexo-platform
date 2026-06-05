@@ -36,6 +36,36 @@ export default function PaymentResultPage() {
   const isPaid = order?.status === 'paid' || result === 'success';
   const isFailed = order?.status === 'failed' || result === 'failure';
 
+  // Fire Meta Pixel Purchase event once when payment is confirmed
+  const firedPurchaseRef = useRef(false);
+  useEffect(() => {
+    if (!isPaid || firedPurchaseRef.current || !order) return;
+    firedPurchaseRef.current = true;
+    const params = {
+      value: order.amount_clp ?? 0,
+      currency: 'CLP',
+      content_type: order.product_type,
+      content_ids: [order.product_id],
+      order_id: order.id,
+    };
+    trackEvent('Purchase', params);
+
+    // Fire on creator's pixel as well (if configured)
+    (async () => {
+      if (!order.creator_id) return;
+      const { data: creator } = await supabase
+        .from('profiles')
+        .select('meta_pixel_id')
+        .eq('id', order.creator_id)
+        .maybeSingle();
+      const pid = (creator as any)?.meta_pixel_id as string | null | undefined;
+      if (pid) {
+        initPixel(pid);
+        trackEventFor(pid, 'Purchase', params);
+      }
+    })();
+  }, [isPaid, order]);
+
   const productLink = order ? linkFor(order.product_type, order.product_id) : '/';
 
   return (

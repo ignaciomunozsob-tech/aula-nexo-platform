@@ -454,24 +454,52 @@ export default function CourseEditorPage() {
 
         for (let li = 0; li < (mod.lessons || []).length; li++) {
           const les = mod.lessons[li];
-          const lessonPayload = {
+          const lessonPayload: any = {
             title: les.title,
             type: les.type,
             video_url: les.type === "video" ? (les.video_url || null) : null,
             content_text: les.type === "text" ? (les.content_text || null) : null,
+            description: les.description || null,
             order_index: li,
             module_id: moduleId,
           };
 
+          let lessonId = les.id;
           if (les.id?.startsWith("new-")) {
-            const { error } = await supabase.from("lessons").insert(lessonPayload);
+            const { data: newLes, error } = await supabase
+              .from("lessons")
+              .insert(lessonPayload)
+              .select()
+              .single();
             if (error) throw error;
+            lessonId = newLes.id;
           } else {
             const { error } = await supabase
               .from("lessons")
               .update(lessonPayload)
               .eq("id", les.id);
             if (error) throw error;
+          }
+
+          // Sincronizar recursos: borra todos y reinserta los actuales
+          const { error: delResErr } = await supabase
+            .from("lesson_resources")
+            .delete()
+            .eq("lesson_id", lessonId);
+          if (delResErr) throw delResErr;
+
+          const validResources = (les.resources || []).filter(
+            (r) => r.file_url && r.file_url.trim() !== ""
+          );
+          if (validResources.length > 0) {
+            const { error: insResErr } = await supabase.from("lesson_resources").insert(
+              validResources.map((r) => ({
+                lesson_id: lessonId,
+                file_url: r.file_url,
+                file_name: r.file_name || r.file_url,
+              }))
+            );
+            if (insResErr) throw insResErr;
           }
         }
       }

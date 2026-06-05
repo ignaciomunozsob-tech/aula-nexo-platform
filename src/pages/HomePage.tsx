@@ -98,7 +98,7 @@ export default function HomePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('courses')
-        .select('id, slug, title, description, cover_image_url, price_clp, level, duration_minutes_est, instructor_name, instructor_avatar_url')
+        .select('id, slug, title, description, cover_image_url, price_clp, level, duration_minutes_est, instructor_name, instructor_avatar_url, profiles:creator_id (creator_slug)')
         .eq('is_novu_official', true)
         .eq('status', 'published')
         .order('created_at', { ascending: false })

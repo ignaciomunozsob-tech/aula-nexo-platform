@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { getCourseUrl } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { BookOpen, Video, Calendar, FileText, Clock, Users, Search, X, ShieldCheck } from 'lucide-react';

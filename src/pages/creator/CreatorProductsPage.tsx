@@ -216,7 +216,7 @@ export default function CreatorProductsPage() {
                         </Button>
                         {course.status === 'published' && (
                           <Button variant="ghost" size="sm" asChild>
-                            <Link to={`/course/${course.slug}`} target="_blank"><Eye className="h-4 w-4" /></Link>
+                            <Link to={getCourseUrl(profile?.creator_slug, course.slug)} target="_blank"><Eye className="h-4 w-4" /></Link>
                           </Button>
                         )}
                       </td>

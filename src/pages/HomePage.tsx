@@ -217,7 +217,7 @@ export default function HomePage() {
               {novuCourses.map((c: any) => (
                 <Link
                   key={c.id}
-                  to={`/course/${c.slug}`}
+                  to={getCourseUrl(c.profiles?.creator_slug, c.slug)}
                   className="group bg-card border border-border rounded-xl overflow-hidden hover:border-primary/40 hover:shadow-xl hover:-translate-y-1 transition-all"
                 >
                   <div className="aspect-video bg-muted relative overflow-hidden">

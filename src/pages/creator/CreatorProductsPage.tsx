@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/table';
 
 export default function CreatorProductsPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [newProductOpen, setNewProductOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<{ id: string; title: string } | null>(null);
 

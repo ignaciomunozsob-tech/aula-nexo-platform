@@ -65,19 +65,14 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
     const userId = claimsData.claims.sub as string;
+    const callerEmail = (claimsData.claims.email as string | undefined)?.toLowerCase();
 
-    // Only creators or admins can send welcome emails
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", userId)
       .maybeSingle();
-    if (!profile || (profile.role !== "creator" && profile.role !== "admin")) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
+    const isPrivileged = profile?.role === "creator" || profile?.role === "admin";
 
     const body: WelcomeEmailRequest = await req.json();
     const { email, name, courseName, resetPasswordUrl } = body || ({} as WelcomeEmailRequest);

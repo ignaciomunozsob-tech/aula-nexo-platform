@@ -5,18 +5,44 @@ import "./index.css";
 import { supabase } from "./integrations/supabase/client";
 
 /**
- * HashRouter + Supabase recovery email fix.
+ * Handle Supabase password recovery links before mounting the app.
  *
- * Supabase appends auth tokens as `#access_token=...&type=recovery` to the
- * redirect URL. With HashRouter, the URL becomes
- * `/#access_token=...&type=recovery`, which the router treats as an unknown
- * route. We intercept that case, set the session manually from the tokens,
- * then rewrite the hash to `#/reset-password` so the user lands on the right
- * page with a valid recovery session.
+ * Supabase may deliver recovery sessions in two ways:
+ * 1. PKCE flow (current): `?code=...` appended to the redirect URL search.
+ *    We must call `exchangeCodeForSession(code)`.
+ * 2. Implicit/legacy flow: `#access_token=...&refresh_token=...&type=recovery`
+ *    in the URL hash. We call `setSession({...})`.
+ *
+ * Because the app uses HashRouter, after handling the tokens we rewrite the
+ * URL to `#/reset-password` so the router lands on the right page.
  */
-async function handleRecoveryHash() {
+async function handleRecoveryLink() {
+  const url = new URL(window.location.href);
+  const search = url.searchParams;
   const hash = window.location.hash || "";
-  // Only handle when hash is the auth-tokens hash (not a router hash starting with #/)
+
+  // --- PKCE flow: ?code=... in the query string ---
+  const code = search.get("code");
+  const errorDesc = search.get("error_description") || search.get("error");
+
+  if (code) {
+    try {
+      await supabase.auth.exchangeCodeForSession(code);
+    } catch (e) {
+      console.error("[RECOVERY] exchangeCodeForSession failed", e);
+    }
+    // Clean ?code from URL and route to reset page
+    window.history.replaceState(null, "", url.pathname + "#/reset-password");
+    return;
+  }
+
+  if (errorDesc) {
+    console.warn("[RECOVERY] error from provider:", errorDesc);
+    window.history.replaceState(null, "", url.pathname + "#/forgot-password");
+    return;
+  }
+
+  // --- Implicit/legacy flow: tokens in hash, not a router hash (#/...) ---
   if (!hash.startsWith("#") || hash.startsWith("#/")) return;
 
   const params = new URLSearchParams(hash.slice(1));
@@ -35,12 +61,11 @@ async function handleRecoveryHash() {
     console.error("[RECOVERY] setSession failed", e);
   }
 
-  // Route into the app
   const target = type === "recovery" ? "#/reset-password" : "#/";
-  window.history.replaceState(null, "", window.location.pathname + window.location.search + target);
+  window.history.replaceState(null, "", url.pathname + url.search + target);
 }
 
-handleRecoveryHash().finally(() => {
+handleRecoveryLink().finally(() => {
   createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
       <App />

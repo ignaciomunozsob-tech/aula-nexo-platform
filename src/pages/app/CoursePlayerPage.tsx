@@ -387,7 +387,7 @@ export default function CoursePlayerPage() {
             )}
 
             {/* Actions */}
-            <div className="flex items-center justify-between border-t border-border pt-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
               <div>
                 {prevLesson && (
                   <Button variant="ghost" onClick={() => setSelectedLessonId(prevLesson.id)}>

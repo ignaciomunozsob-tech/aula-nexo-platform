@@ -773,6 +773,63 @@ export type Database = {
           },
         ]
       }
+      orders: {
+        Row: {
+          amount_clp: number
+          created_at: string
+          creator_amount_clp: number
+          creator_id: string | null
+          id: string
+          metadata: Json | null
+          mp_payment_id: string | null
+          mp_payment_status: string | null
+          mp_preference_id: string | null
+          paid_at: string | null
+          platform_amount_clp: number
+          product_id: string
+          product_type: Database["public"]["Enums"]["order_product_type"]
+          status: Database["public"]["Enums"]["order_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_clp: number
+          created_at?: string
+          creator_amount_clp?: number
+          creator_id?: string | null
+          id?: string
+          metadata?: Json | null
+          mp_payment_id?: string | null
+          mp_payment_status?: string | null
+          mp_preference_id?: string | null
+          paid_at?: string | null
+          platform_amount_clp?: number
+          product_id: string
+          product_type: Database["public"]["Enums"]["order_product_type"]
+          status?: Database["public"]["Enums"]["order_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_clp?: number
+          created_at?: string
+          creator_amount_clp?: number
+          creator_id?: string | null
+          id?: string
+          metadata?: Json | null
+          mp_payment_id?: string | null
+          mp_payment_status?: string | null
+          mp_preference_id?: string | null
+          paid_at?: string | null
+          platform_amount_clp?: number
+          product_id?: string
+          product_type?: Database["public"]["Enums"]["order_product_type"]
+          status?: Database["public"]["Enums"]["order_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       page_views: {
         Row: {
           created_at: string
@@ -932,6 +989,8 @@ export type Database = {
       community_access_mode: "invite" | "paid"
       community_join_status: "pending" | "approved" | "rejected"
       community_member_role: "owner" | "moderator" | "member"
+      order_product_type: "course" | "ebook" | "event" | "community"
+      order_status: "pending" | "paid" | "failed" | "refunded"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1063,6 +1122,8 @@ export const Constants = {
       community_access_mode: ["invite", "paid"],
       community_join_status: ["pending", "approved", "rejected"],
       community_member_role: ["owner", "moderator", "member"],
+      order_product_type: ["course", "ebook", "event", "community"],
+      order_status: ["pending", "paid", "failed", "refunded"],
     },
   },
 } as const

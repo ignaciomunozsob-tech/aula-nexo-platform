@@ -40,6 +40,7 @@ import CommunityManagePage from "@/pages/creator/CommunityManagePage";
 import CommunityPage from "@/pages/community/CommunityPage";
 import CommunityPostPage from "@/pages/community/CommunityPostPage";
 import NotFound from "@/pages/NotFound";
+import PaymentResultPage from "@/pages/PaymentResultPage";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import DebugPage from "@/pages/DebugPage";
 
@@ -117,6 +118,10 @@ const App = () => (
               {/* Community routes */}
               <Route path="/c/:slug" element={<CommunityPage />} />
               <Route path="/c/:slug/p/:postId" element={<CommunityPostPage />} />
+
+              {/* Payment result */}
+              <Route path="/payment/:result" element={<PaymentResultPage />} />
+
 
               {/* Public course URL using creator slug: /:creatorSlug/:courseSlug */}
               <Route element={<PublicLayout />}>

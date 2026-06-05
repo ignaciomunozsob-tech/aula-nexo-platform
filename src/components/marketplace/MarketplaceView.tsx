@@ -345,7 +345,7 @@ function CourseCard({ course, formatPrice }: { course: any; formatPrice: (price:
 
   return (
     <Link
-      to={`/course/${course.slug}`}
+      to={getCourseUrl(creator?.creator_slug, course.slug)}
       className="bg-card border border-border rounded-lg overflow-hidden card-hover group"
     >
       <div className="aspect-video bg-muted relative overflow-hidden">

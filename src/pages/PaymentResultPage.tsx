@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
+import { initPixel, trackEvent, trackEventFor } from '@/lib/metaPixel';
 
 export default function PaymentResultPage() {
   const { result } = useParams<{ result: 'success' | 'failure' | 'pending' }>();

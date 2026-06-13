@@ -38,7 +38,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useMercadoPagoCheckout } from "@/hooks/useMercadoPagoCheckout";
 import { initPixel, trackEvent, trackEventFor } from "@/lib/metaPixel";
-import { useEffect } from "react";
+
 
 function formatCLP(value: number | null | undefined) {
   const n = Number(value || 0);

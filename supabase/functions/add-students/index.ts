@@ -112,6 +112,14 @@ const handler = async (req: Request): Promise<Response> => {
         if (eventError || !event || event.creator_id !== user.id) {
           throw new Error("Unauthorized: You don't own this event");
         }
+      } else if (productType === "ebook") {
+        const { data: ebook, error: ebookError } = await supabaseAdmin
+          .from("ebooks").select("creator_id").eq("id", productId).single();
+        if (ebookError || !ebook || ebook.creator_id !== user.id) {
+          throw new Error("Unauthorized: You don't own this ebook");
+        }
+      } else {
+        throw new Error("Invalid product type");
       }
     }
 

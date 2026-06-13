@@ -74,27 +74,57 @@ Deno.serve(async (req) => {
       return new Response('forbidden', { status: 403, headers: corsHeaders });
     }
 
-    const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-      headers: { Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
-    });
-    if (!mpRes.ok) {
-      console.error('MP fetch payment failed', mpRes.status);
+    // To fetch payment details we need an MP token. With marketplace, every payment belongs
+    // to a connected seller, so we look up the order → creator → seller access token.
+    // We try to resolve via external_reference (no token needed for that lookup — we just
+    // peek the order via service role using the paymentId may not be possible without a token).
+    // MP allows fetching a payment with the platform token too, so we try the connected sellers in turn.
+    const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // Optimistic approach: try each known MP access token from connected sellers until one works.
+    // For volume this should be replaced with a token cache keyed by mp_user_id from the webhook payload.
+    let payment: any = null;
+    const tokensToTry: string[] = [];
+    if (MP_ACCESS_TOKEN) tokensToTry.push(MP_ACCESS_TOKEN);
+
+    // First, try with the platform token (works for app-level webhooks). If not, fall back to sellers.
+    for (const tok of tokensToTry) {
+      const r = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+        headers: { Authorization: `Bearer ${tok}` },
+      });
+      if (r.ok) { payment = await r.json(); break; }
+    }
+
+    if (!payment) {
+      // Iterate connected sellers
+      const { data: sellers } = await admin
+        .from('creator_mercadopago_accounts').select('access_token').limit(500);
+      for (const s of sellers ?? []) {
+        const r = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+          headers: { Authorization: `Bearer ${s.access_token}` },
+        });
+        if (r.ok) { payment = await r.json(); break; }
+      }
+    }
+
+    if (!payment) {
+      console.error('MP fetch payment failed for all tokens');
       return new Response('ok', { status: 200, headers: corsHeaders });
     }
-    const payment = await mpRes.json();
+
     const orderId: string | undefined = payment?.external_reference || payment?.metadata?.order_id;
     if (!orderId) {
       console.error('Payment without order reference');
       return new Response('ok', { status: 200, headers: corsHeaders });
     }
 
-    const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const { data: order, error: orderErr } = await admin
       .from('orders').select('*').eq('id', orderId).maybeSingle();
     if (orderErr || !order) {
       console.error('Order not found');
       return new Response('ok', { status: 200, headers: corsHeaders });
     }
+
 
     const mpStatus: string = payment.status;
     let newStatus: 'pending' | 'paid' | 'failed' | 'refunded' = 'pending';

@@ -40,24 +40,58 @@ Deno.serve(async (req) => {
   try {
     if (!MP_ACCESS_TOKEN) return json({ error: 'MERCADOPAGO_ACCESS_TOKEN not configured' }, 500);
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) return json({ error: 'Unauthorized' }, 401);
-
-    const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claims, error: claimsErr } = await userClient.auth.getClaims(token);
-    if (claimsErr || !claims?.claims) return json({ error: 'Unauthorized' }, 401);
-    const userId = claims.claims.sub as string;
-    const userEmail = (claims.claims.email as string) ?? null;
-
     const body = await req.json().catch(() => null) as
-      | { product_type: ProductType; product_id: string; checkout_page_id?: string; include_bump?: boolean; return_url?: string }
+      | { product_type: ProductType; product_id: string; checkout_page_id?: string; include_bump?: boolean; return_url?: string; guest_email?: string }
       | null;
     if (!body?.product_type || !body?.product_id) return json({ error: 'product_type and product_id required' }, 400);
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // Resolve user: authenticated, or guest by email
+    let userId: string | null = null;
+    let userEmail: string | null = null;
+    let isNewUser = false;
+
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '');
+      if (token && token !== SUPABASE_ANON_KEY) {
+        const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const { data: claims } = await userClient.auth.getClaims(token);
+        if (claims?.claims?.sub) {
+          userId = claims.claims.sub as string;
+          userEmail = (claims.claims.email as string) ?? null;
+        }
+      }
+    }
+
+    if (!userId) {
+      // Guest flow
+      const guestEmail = (body.guest_email ?? '').trim().toLowerCase();
+      const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail) && guestEmail.length <= 254;
+      if (!emailOk) return json({ error: 'Email inválido o no proporcionado' }, 400);
+
+      const { data: existingId } = await admin.rpc('find_user_id_by_email', { _email: guestEmail });
+      if (existingId) {
+        userId = existingId as string;
+        userEmail = guestEmail;
+      } else {
+        const randomPwd = crypto.randomUUID() + crypto.randomUUID();
+        const { data: created, error: createErr } = await admin.auth.admin.createUser({
+          email: guestEmail,
+          password: randomPwd,
+          email_confirm: true,
+          user_metadata: { name: guestEmail.split('@')[0], created_via: 'guest_checkout' },
+        });
+        if (createErr || !created?.user) return json({ error: 'No se pudo crear el usuario', detail: createErr?.message }, 500);
+        userId = created.user.id;
+        userEmail = guestEmail;
+        isNewUser = true;
+      }
+    }
+
 
     const main = await fetchProduct(admin, body.product_type, body.product_id);
     if (!main) return json({ error: 'Product not found' }, 404);
@@ -92,11 +126,12 @@ Deno.serve(async (req) => {
       creator_amount_clp: creatorAmount,
       platform_amount_clp: platformAmount,
       status: 'pending',
-      metadata: { title: main.title, has_bump: !!bumpInfo },
+      metadata: { title: main.title, has_bump: !!bumpInfo, is_new_user: isNewUser },
       checkout_page_id: body.checkout_page_id ?? null,
       bump_product_type: bumpInfo?.type ?? null,
       bump_product_id: bumpInfo?.id ?? null,
       bump_amount_clp: bumpInfo?.amount ?? 0,
+      guest_email: userEmail,
     } as any).select().single();
     if (orderErr || !order) return json({ error: 'No se pudo crear la orden', detail: orderErr?.message }, 500);
 

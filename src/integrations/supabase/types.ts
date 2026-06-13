@@ -925,6 +925,7 @@ export type Database = {
           created_at: string
           creator_amount_clp: number
           creator_id: string | null
+          guest_email: string | null
           id: string
           metadata: Json | null
           mp_payment_id: string | null
@@ -947,6 +948,7 @@ export type Database = {
           created_at?: string
           creator_amount_clp?: number
           creator_id?: string | null
+          guest_email?: string | null
           id?: string
           metadata?: Json | null
           mp_payment_id?: string | null
@@ -969,6 +971,7 @@ export type Database = {
           created_at?: string
           creator_amount_clp?: number
           creator_id?: string | null
+          guest_email?: string | null
           id?: string
           metadata?: Json | null
           mp_payment_id?: string | null
@@ -1119,6 +1122,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      find_user_id_by_email: { Args: { _email: string }; Returns: string }
       get_course_students: {
         Args: { _course_id: string }
         Returns: {
@@ -1147,6 +1151,19 @@ export type Database = {
         }[]
       }
       get_my_meta_pixel_id: { Args: never; Returns: string }
+      get_order_public: {
+        Args: { _order_id: string }
+        Returns: {
+          amount_clp: number
+          creator_id: string
+          guest_email: string
+          id: string
+          is_new_user: boolean
+          product_id: string
+          product_type: string
+          status: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]

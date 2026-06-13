@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Heart, MessageCircle, Plus, Loader2, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMercadoPagoCheckout } from '@/hooks/useMercadoPagoCheckout';
+import { GuestCheckoutDialog } from '@/components/checkout/GuestCheckoutDialog';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -266,7 +267,7 @@ export default function CommunityPage() {
 }
 
 function PaidCommunityCTA({ communityId, priceClp }: { communityId: string; priceClp: number }) {
-  const { startCheckout, loading } = useMercadoPagoCheckout();
+  const { startCheckout, loading, guestDialogOpen, setGuestDialogOpen, submitGuestEmail } = useMercadoPagoCheckout();
   return (
     <div>
       <p className="mb-2">Comunidad de pago.</p>
@@ -277,6 +278,12 @@ function PaidCommunityCTA({ communityId, priceClp }: { communityId: string; pric
         {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
         Comprar acceso
       </Button>
+      <GuestCheckoutDialog
+        open={guestDialogOpen}
+        onOpenChange={setGuestDialogOpen}
+        onSubmit={submitGuestEmail}
+        loading={loading}
+      />
     </div>
   );
 }

@@ -19,10 +19,21 @@ export default function PaymentResultPage() {
     const poll = async () => {
       if (!orderId) { setLoading(false); return; }
       while (active && attempts < 6) {
-        const { data } = await supabase.from('orders').select('*').eq('id', orderId).maybeSingle();
-        if (data) {
-          setOrder(data);
-          if (data.status !== 'pending') break;
+        const { data } = await supabase.rpc('get_order_public', { _order_id: orderId });
+        const row = Array.isArray(data) ? data[0] : null;
+        if (row) {
+          // Adapt RPC shape to match previous order shape
+          setOrder({
+            id: row.id,
+            status: row.status,
+            product_type: row.product_type,
+            product_id: row.product_id,
+            amount_clp: row.amount_clp,
+            creator_id: row.creator_id,
+            guest_email: row.guest_email,
+            metadata: { is_new_user: row.is_new_user },
+          });
+          if (row.status !== 'pending') break;
         }
         attempts++;
         await new Promise((r) => setTimeout(r, 1500));
@@ -80,6 +91,14 @@ export default function PaymentResultPage() {
             <p className="text-muted-foreground mb-6">
               Tu compra fue procesada con éxito. Ya tienes acceso al contenido.
             </p>
+            {order?.metadata?.is_new_user && order?.guest_email && (
+              <div className="mb-6 p-4 rounded-lg bg-primary/10 border border-primary/20 text-left">
+                <p className="text-sm font-medium mb-1">📩 Configura tu contraseña</p>
+                <p className="text-sm text-muted-foreground">
+                  Te enviamos un correo a <span className="font-medium">{order.guest_email}</span> con un enlace para crear tu contraseña y acceder a tu cuenta en NOVU.
+                </p>
+              </div>
+            )}
             <Button asChild className="w-full">
               <Link to={productLink}>Ir al contenido</Link>
             </Button>

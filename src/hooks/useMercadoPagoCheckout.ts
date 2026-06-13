@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 import { trackEvent, trackEventFor } from '@/lib/metaPixel';
 
 type ProductType = 'course' | 'ebook' | 'event' | 'community';
@@ -15,21 +14,24 @@ interface CheckoutMeta {
   includeBump?: boolean;
 }
 
+interface PendingCheckout {
+  productType: ProductType;
+  productId: string;
+  meta: CheckoutMeta;
+}
+
 export function useMercadoPagoCheckout() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [guestDialogOpen, setGuestDialogOpen] = useState(false);
+  const [pending, setPending] = useState<PendingCheckout | null>(null);
 
-  const startCheckout = async (
+  const doCheckout = async (
     productType: ProductType,
     productId: string,
-    meta: CheckoutMeta = {}
+    meta: CheckoutMeta,
+    guestEmail?: string,
   ) => {
-    if (!user) {
-      toast.error('Inicia sesión para continuar');
-      navigate('/login');
-      return;
-    }
     setLoading(true);
 
     const params = {
@@ -51,12 +53,12 @@ export function useMercadoPagoCheckout() {
           product_id: productId,
           checkout_page_id: meta.checkoutPageId,
           include_bump: !!meta.includeBump,
+          guest_email: guestEmail,
         },
       });
       if (error) throw error;
       const url = data?.sandbox_init_point || data?.init_point;
       if (!url) throw new Error('No se obtuvo el link de pago');
-      // If we're inside an iframe (embed), break out to top window
       if (window.top && window.top !== window.self) {
         window.top.location.href = url;
       } else {
@@ -69,5 +71,32 @@ export function useMercadoPagoCheckout() {
     }
   };
 
-  return { startCheckout, loading };
+  const startCheckout = async (
+    productType: ProductType,
+    productId: string,
+    meta: CheckoutMeta = {},
+  ) => {
+    if (user) {
+      await doCheckout(productType, productId, meta);
+      return;
+    }
+    // Guest flow: open dialog to collect email
+    setPending({ productType, productId, meta });
+    setGuestDialogOpen(true);
+  };
+
+  const submitGuestEmail = async (email: string) => {
+    if (!pending) return;
+    setGuestDialogOpen(false);
+    await doCheckout(pending.productType, pending.productId, pending.meta, email);
+    setPending(null);
+  };
+
+  return {
+    startCheckout,
+    loading,
+    guestDialogOpen,
+    setGuestDialogOpen,
+    submitGuestEmail,
+  };
 }

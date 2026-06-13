@@ -15,6 +15,7 @@ export interface ProductInfo {
   title: string;
   price_clp: number;
   cover_image_url?: string | null;
+  description?: string | null;
 }
 
 export interface BumpInfo {

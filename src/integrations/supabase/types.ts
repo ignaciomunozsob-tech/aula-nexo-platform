@@ -1180,6 +1180,63 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_requests: {
+        Row: {
+          amount_neto_clp: number
+          amount_total_clp: number
+          ciclo: string
+          created_at: string
+          creator_id: string
+          direccion: string | null
+          documento: string
+          giro: string | null
+          id: string
+          metodo: string
+          notes: string | null
+          plan: string
+          razon_social: string | null
+          rut_empresa: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount_neto_clp: number
+          amount_total_clp: number
+          ciclo: string
+          created_at?: string
+          creator_id: string
+          direccion?: string | null
+          documento: string
+          giro?: string | null
+          id?: string
+          metodo: string
+          notes?: string | null
+          plan: string
+          razon_social?: string | null
+          rut_empresa?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_neto_clp?: number
+          amount_total_clp?: number
+          ciclo?: string
+          created_at?: string
+          creator_id?: string
+          direccion?: string | null
+          documento?: string
+          giro?: string | null
+          id?: string
+          metodo?: string
+          notes?: string | null
+          plan?: string
+          razon_social?: string | null
+          rut_empresa?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string

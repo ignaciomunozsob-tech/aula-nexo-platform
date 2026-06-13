@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
       bump_amount_clp: bumpInfo?.amount ?? 0,
       guest_email: userEmail,
     } as any).select().single();
-    if (orderErr || !order) return json({ error: 'No se pudo crear la orden', detail: orderErr?.message }, 500);
+    if (orderErr || !order) { console.error('create-payment order error', orderErr); return json({ error: 'No se pudo crear la orden' }, 500); }
 
     const origin = req.headers.get('origin') ?? body.return_url ?? '';
     const returnBase = `${origin}/#/payment`;

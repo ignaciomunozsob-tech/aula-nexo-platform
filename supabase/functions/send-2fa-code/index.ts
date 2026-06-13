@@ -112,28 +112,36 @@ const handler = async (req: Request): Promise<Response> => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // 6. Verify the user is a creator (only creators need 2FA)
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .select("role, name")
-      .eq("id", userId)
-      .single();
+    // 6. Verify the user is a creator/admin (only creators need 2FA) using canonical user_roles
+    const { data: roleRows, error: rolesError } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
 
-    if (profileError || !profile) {
-      console.error("[send-2fa-code] Profile not found:", profileError?.message);
+    if (rolesError) {
+      console.error("[send-2fa-code] Roles lookup failed:", rolesError.message);
       return new Response(
-        JSON.stringify({ error: "User profile not found" }),
-        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ error: "Unable to verify user role" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    if (profile.role !== "creator" && profile.role !== "admin") {
-      console.warn("[send-2fa-code] Non-creator attempting 2FA:", userId, profile.role);
+    const roles = (roleRows ?? []).map((r: { role: string }) => r.role);
+    const isPrivileged = roles.includes("creator") || roles.includes("admin");
+    if (!isPrivileged) {
+      console.warn("[send-2fa-code] Non-creator attempting 2FA:", userId, roles);
       return new Response(
         JSON.stringify({ error: "2FA is only required for creators" }),
         { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    // Fetch display name for the email greeting (non-authoritative)
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("name")
+      .eq("id", userId)
+      .maybeSingle();
 
     // Generate 6-digit code
     const code = generateCode();

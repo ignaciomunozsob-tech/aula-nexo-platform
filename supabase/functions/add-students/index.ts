@@ -53,15 +53,15 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from("profiles")
+    const { data: roleRows, error: roleError } = await supabaseAdmin
+      .from("user_roles")
       .select("role")
-      .eq("id", user.id)
-      .single();
-    if (profileError || !profile) throw new Error("Unable to verify user role");
-
-    const isAdmin = profile.role === "admin";
-    if (!isAdmin && profile.role !== "creator") {
+      .eq("user_id", user.id);
+    if (roleError) throw new Error("Unable to verify user role");
+    const roles = (roleRows ?? []).map((r: { role: string }) => r.role);
+    const isAdmin = roles.includes("admin");
+    const isCreator = roles.includes("creator");
+    if (!isAdmin && !isCreator) {
       throw new Error("Unauthorized: Only creators can add students");
     }
 

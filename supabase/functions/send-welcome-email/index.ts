@@ -67,12 +67,12 @@ const handler = async (req: Request): Promise<Response> => {
     const userId = claimsData.claims.sub as string;
     const callerEmail = (claimsData.claims.email as string | undefined)?.toLowerCase();
 
-    const { data: profile } = await supabase
-      .from("profiles")
+    const { data: roleRows } = await supabase
+      .from("user_roles")
       .select("role")
-      .eq("id", userId)
-      .maybeSingle();
-    const isPrivileged = profile?.role === "creator" || profile?.role === "admin";
+      .eq("user_id", userId);
+    const roles = (roleRows ?? []).map((r: { role: string }) => r.role);
+    const isPrivileged = roles.includes("creator") || roles.includes("admin");
 
     const body: WelcomeEmailRequest = await req.json();
     const { email, name, courseName, resetPasswordUrl } = body || ({} as WelcomeEmailRequest);

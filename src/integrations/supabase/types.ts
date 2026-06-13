@@ -886,6 +886,7 @@ export type Database = {
           created_at: string
           file_name: string
           file_url: string
+          has_file: boolean | null
           id: string
           lesson_id: string
         }
@@ -893,6 +894,7 @@ export type Database = {
           created_at?: string
           file_name: string
           file_url: string
+          has_file?: boolean | null
           id?: string
           lesson_id: string
         }
@@ -900,6 +902,7 @@ export type Database = {
           created_at?: string
           file_name?: string
           file_url?: string
+          has_file?: boolean | null
           id?: string
           lesson_id?: string
         }
@@ -919,6 +922,7 @@ export type Database = {
           created_at: string
           description: string | null
           duration_minutes: number | null
+          has_video: boolean | null
           id: string
           module_id: string
           order_index: number
@@ -931,6 +935,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           duration_minutes?: number | null
+          has_video?: boolean | null
           id?: string
           module_id: string
           order_index?: number
@@ -943,6 +948,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           duration_minutes?: number | null
+          has_video?: boolean | null
           id?: string
           module_id?: string
           order_index?: number

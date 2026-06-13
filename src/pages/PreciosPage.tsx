@@ -129,7 +129,7 @@ const compareRows: Array<{ label: string; gratis: React.ReactNode; creador: Reac
   { label: 'Comisión por venta', gratis: '10%', creador: '5%', pro: 'Por definir' },
   { label: 'Videos propios', gratis: <NoCell />, creador: <YesCell />, pro: <YesCell /> },
   { label: 'Videos YouTube/Vimeo', gratis: <YesCell />, creador: <YesCell />, pro: <YesCell /> },
-  { label: 'Archivos descargables', gratis: '10MB', creador: '50MB', pro: '200MB' },
+  { label: 'Archivos descargables', gratis: '10MB', creador: 'Ilimitados', pro: 'Ilimitados' },
   { label: 'Alumnos manuales', gratis: '10', creador: '10', pro: 'Ilimitados' },
   { label: 'Agenda 1:1', gratis: <NoCell />, creador: <SoonCell />, pro: <SoonCell /> },
   { label: 'Comunidad por curso', gratis: <NoCell />, creador: <NoCell />, pro: <SoonCell /> },

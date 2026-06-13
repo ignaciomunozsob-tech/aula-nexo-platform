@@ -2,93 +2,108 @@
 @tailwind components;
 @tailwind utilities;
 
-/* NOVU Design System - Poppins + #004aad Primary */
+/* NOVU Design System — Inter + #fcc70e accent · light & dark */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 10%;
+    /* Brand palette (raw) — for any HSL-friendly token use */
+    --bg-primary: 36 67% 96%;        /* #fcf6ef */
+    --bg-card-raw: 0 0% 100%;        /* #ffffff */
+    --bg-card-alt-raw: 36 36% 90%;   /* #f0e8dc */
+    --novu-accent: 47 97% 52%;       /* #fcc70e */
+    --novu-text: 0 0% 0%;
+    --novu-text-secondary: 0 0% 33%;
+    --novu-text-support: 0 0% 53%;
+    --novu-text-on-accent: 0 0% 20%;
+    --novu-border: 36 24% 84%;       /* #e2d9cc */
+    --novu-border-alt: 33 27% 82%;   /* #e0d4c4 */
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    /* shadcn tokens mapped to brand */
+    --background: var(--bg-primary);
+    --foreground: var(--novu-text);
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
+    --card: var(--bg-card-raw);
+    --card-foreground: var(--novu-text);
 
-    --primary: 214 100% 34%;
-    --primary-foreground: 0 0% 100%;
+    --popover: var(--bg-card-raw);
+    --popover-foreground: var(--novu-text);
 
-    --secondary: 210 20% 96%;
-    --secondary-foreground: 0 0% 10%;
+    --primary: var(--novu-accent);
+    --primary-foreground: var(--novu-text-on-accent);
 
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 16% 47%;
+    --secondary: var(--bg-card-alt-raw);
+    --secondary-foreground: var(--novu-text);
 
-    --accent: 214 100% 34%;
-    --accent-foreground: 0 0% 100%;
+    --muted: var(--bg-card-alt-raw);
+    --muted-foreground: var(--novu-text-secondary);
+
+    --accent: var(--novu-accent);
+    --accent-foreground: var(--novu-text-on-accent);
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 214 100% 34%;
+    --border: var(--novu-border);
+    --input: var(--novu-border);
+    --ring: var(--novu-accent);
 
-    --radius: 0.5rem;
+    --radius: 0.875rem; /* 14px cards */
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 0 0% 20%;
-    --sidebar-primary: 214 100% 34%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 20% 96%;
-    --sidebar-accent-foreground: 0 0% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 214 100% 34%;
+    --sidebar-background: var(--bg-card-raw);
+    --sidebar-foreground: var(--novu-text);
+    --sidebar-primary: var(--novu-accent);
+    --sidebar-primary-foreground: var(--novu-text-on-accent);
+    --sidebar-accent: var(--bg-card-alt-raw);
+    --sidebar-accent-foreground: var(--novu-text);
+    --sidebar-border: var(--novu-border);
+    --sidebar-ring: var(--novu-accent);
 
-    /* Custom tokens */
-    --success: 142 76% 36%;
+    --success: 142 60% 38%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 10%;
+    --warning: var(--novu-accent);
+    --warning-foreground: var(--novu-text-on-accent);
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    --bg-primary: 24 11% 7%;         /* #141210 */
+    --bg-card-raw: 30 13% 10%;       /* #1e1b17 */
+    --bg-card-alt-raw: 33 21% 12%;   /* #252018 */
+    --novu-accent: 47 97% 52%;       /* #fcc70e (sin cambios) */
+    --novu-text: 35 41% 93%;         /* #f5f0e8 */
+    --novu-text-secondary: 30 11% 62%; /* #a89f94 */
+    --novu-text-support: 33 5% 39%;    /* #6b6560 */
+    --novu-text-on-accent: 50 100% 5%; /* #1a1600 */
+    --novu-border: 30 13% 16%;       /* #2e2a24 */
+    --novu-border-alt: 33 12% 19%;   /* #35302a */
 
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
+    --background: var(--bg-primary);
+    --foreground: var(--novu-text);
+    --card: var(--bg-card-raw);
+    --card-foreground: var(--novu-text);
+    --popover: var(--bg-card-raw);
+    --popover-foreground: var(--novu-text);
+    --primary: var(--novu-accent);
+    --primary-foreground: var(--novu-text-on-accent);
+    --secondary: var(--bg-card-alt-raw);
+    --secondary-foreground: var(--novu-text);
+    --muted: var(--bg-card-alt-raw);
+    --muted-foreground: var(--novu-text-secondary);
+    --accent: var(--novu-accent);
+    --accent-foreground: var(--novu-text-on-accent);
+    --destructive: 0 63% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: var(--novu-border);
+    --input: var(--novu-border);
+    --ring: var(--novu-accent);
 
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 214 100% 50%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 214 100% 50%;
-
-    --sidebar-background: 222 47% 8%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 214 100% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 33% 17%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 17%;
-    --sidebar-ring: 214 100% 50%;
+    --sidebar-background: var(--bg-card-raw);
+    --sidebar-foreground: var(--novu-text);
+    --sidebar-primary: var(--novu-accent);
+    --sidebar-primary-foreground: var(--novu-text-on-accent);
+    --sidebar-accent: var(--bg-card-alt-raw);
+    --sidebar-accent-foreground: var(--novu-text);
+    --sidebar-border: var(--novu-border);
+    --sidebar-ring: var(--novu-accent);
   }
 }
 
@@ -97,103 +112,159 @@
     @apply border-border;
   }
 
+  html {
+    color-scheme: light dark;
+  }
+
   body {
-    @apply bg-background text-foreground font-sans;
-    font-family: 'Poppins', sans-serif;
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-bold text-foreground;
-    font-family: 'Poppins', sans-serif;
+    @apply text-foreground;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.02em;
   }
+
+  h1 { font-weight: 900; }
 }
 
 @layer components {
+  /* Pills / badges */
+  .novu-pill {
+    @apply inline-flex items-center gap-1.5;
+    background: hsl(var(--novu-accent));
+    color: hsl(var(--novu-text-on-accent));
+    border-radius: 999px;
+    padding: 6px 18px;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+
+  /* Cards */
+  .novu-card {
+    @apply bg-card;
+    border: 1px solid hsl(var(--novu-border));
+    border-radius: 14px;
+    padding: 24px;
+  }
+
+  .novu-card-alt {
+    background: hsl(var(--bg-card-alt-raw));
+    border: 1px solid hsl(var(--novu-border-alt));
+    border-radius: 12px;
+    padding: 20px 24px;
+  }
+
+  /* Buttons */
+  .novu-btn-primary {
+    @apply inline-flex items-center justify-center gap-2;
+    background: hsl(var(--novu-accent));
+    color: hsl(var(--novu-text-on-accent));
+    font-weight: 800;
+    border-radius: 100px;
+    padding: 16px 32px;
+    border: none;
+    transition: transform 0.15s ease, filter 0.15s ease;
+  }
+  .novu-btn-primary:hover { filter: brightness(0.95); transform: translateY(-1px); }
+
+  .novu-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2;
+    background: transparent;
+    border: 1.5px solid hsl(var(--foreground));
+    color: hsl(var(--foreground));
+    font-weight: 700;
+    border-radius: 100px;
+    padding: 16px 32px;
+    transition: background 0.15s ease;
+  }
+  .novu-btn-secondary:hover { background: hsl(var(--foreground) / 0.06); }
+
+  /* Step number */
+  .novu-step {
+    width: 48px;
+    height: 48px;
+    background: hsl(var(--novu-accent));
+    color: hsl(var(--novu-text-on-accent));
+    border-radius: 50%;
+    font-weight: 800;
+    font-size: 18px;
+    @apply inline-flex items-center justify-center;
+  }
+
+  /* NOVU Certified badge */
+  .novu-certified {
+    @apply inline-flex items-center gap-1.5;
+    background: hsl(var(--novu-accent));
+    color: hsl(var(--novu-text-on-accent));
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+  }
+
+  /* Legacy helpers retained */
   .btn-primary {
     @apply bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium;
   }
-
   .btn-secondary {
     @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors font-medium;
   }
-
   .btn-outline {
     @apply border border-border bg-transparent hover:bg-muted transition-colors font-medium;
   }
-
   .card-hover {
     @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-1;
   }
-
   .sidebar-item {
     @apply flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-sidebar-accent text-sidebar-foreground;
   }
-
   .sidebar-item-active {
     @apply bg-sidebar-accent text-sidebar-primary font-medium;
   }
-
   .page-container {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8;
   }
-
   .section-title {
     @apply text-2xl md:text-3xl font-bold text-foreground mb-6;
   }
-
   .input-field {
     @apply w-full px-4 py-2 border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring transition-all;
   }
-
   .badge-draft {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning;
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning/20 text-foreground;
   }
-
   .badge-published {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success/10 text-success;
   }
-
   .progress-bar {
     @apply h-2 bg-muted rounded-full overflow-hidden;
   }
-
   .progress-fill {
     @apply h-full bg-primary transition-all duration-300;
   }
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-
-  .animate-fade-in {
-    animation: fadeIn 0.3s ease-out;
-  }
-
+  .text-balance { text-wrap: balance; }
+  .animate-fade-in { animation: fadeIn 0.4s ease-out; }
   @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
-
-  .animate-slide-in {
-    animation: slideIn 0.3s ease-out;
-  }
-
+  .animate-slide-in { animation: slideIn 0.3s ease-out; }
   @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateX(-20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
   }
 }

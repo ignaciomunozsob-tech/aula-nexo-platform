@@ -152,7 +152,9 @@ handleMercadoPagoCallback().then((handled) => {
   next.finally(() => {
     createRoot(document.getElementById("root")!).render(
       <React.StrictMode>
-        <App />
+        <HelmetProvider>
+          <App />
+        </HelmetProvider>
       </React.StrictMode>
     );
   });

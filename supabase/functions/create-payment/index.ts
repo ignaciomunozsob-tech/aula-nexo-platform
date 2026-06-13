@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    if (!MP_ACCESS_TOKEN) return json({ error: 'MERCADOPAGO_ACCESS_TOKEN not configured' }, 500);
+    // MP access token now comes from the creator's connected MercadoPago account (marketplace).
 
     const body = await req.json().catch(() => null) as
       | { product_type: ProductType; product_id: string; checkout_page_id?: string; include_bump?: boolean; return_url?: string; guest_email?: string }

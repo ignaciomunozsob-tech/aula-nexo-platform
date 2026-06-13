@@ -165,7 +165,14 @@ export default function EbookEditorPage() {
       navigate('/creator-app/products');
     },
     onError: (error: any) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      const raw = (error?.message || '') as string;
+      let title = 'Error';
+      let description = raw;
+      if (raw.includes('mercadopago_not_connected')) {
+        title = 'Conecta MercadoPago';
+        description = 'Para publicar un producto con precio debes conectar tu cuenta de MercadoPago primero.';
+      }
+      toast({ title, description, variant: 'destructive' });
     },
   });
 

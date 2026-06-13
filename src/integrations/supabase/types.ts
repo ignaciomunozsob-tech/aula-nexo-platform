@@ -1084,6 +1084,7 @@ export type Database = {
           id: string
           interests: string[] | null
           intro_video_url: string | null
+          last_2fa_verified_at: string | null
           links: Json | null
           meta_pixel_id: string | null
           name: string | null
@@ -1099,6 +1100,7 @@ export type Database = {
           id: string
           interests?: string[] | null
           intro_video_url?: string | null
+          last_2fa_verified_at?: string | null
           links?: Json | null
           meta_pixel_id?: string | null
           name?: string | null
@@ -1114,6 +1116,7 @@ export type Database = {
           id?: string
           interests?: string[] | null
           intro_video_url?: string | null
+          last_2fa_verified_at?: string | null
           links?: Json | null
           meta_pixel_id?: string | null
           name?: string | null
@@ -1240,6 +1243,7 @@ export type Database = {
         Args: { _course_id: string; _user_id: string }
         Returns: boolean
       }
+      is_creator_2fa_valid: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "student" | "creator" | "admin"

@@ -33,6 +33,7 @@ export function MarketplaceView({ showHeader = true }: MarketplaceViewProps) {
   // Fetch categories
   const { data: categories } = useQuery({
     queryKey: ['categories'],
+    staleTime: 5 * 60_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categories')
@@ -55,6 +56,7 @@ export function MarketplaceView({ showHeader = true }: MarketplaceViewProps) {
   // Fetch published courses with creator info
   const { data: courses, isLoading: loadingCourses } = useQuery({
     queryKey: ['marketplace-courses'],
+    staleTime: 60_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('courses')
@@ -72,6 +74,7 @@ export function MarketplaceView({ showHeader = true }: MarketplaceViewProps) {
   // Fetch published ebooks
   const { data: ebooks, isLoading: loadingEbooks } = useQuery({
     queryKey: ['marketplace-ebooks'],
+    staleTime: 60_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('ebooks')
@@ -89,6 +92,7 @@ export function MarketplaceView({ showHeader = true }: MarketplaceViewProps) {
   // Fetch published events
   const { data: events, isLoading: loadingEvents } = useQuery({
     queryKey: ['marketplace-events'],
+    staleTime: 60_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('events')

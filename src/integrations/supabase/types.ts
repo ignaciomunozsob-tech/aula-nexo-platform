@@ -602,6 +602,39 @@ export type Database = {
         }
         Relationships: []
       }
+      creator_plans: {
+        Row: {
+          comision: number
+          created_at: string
+          creator_id: string
+          id: string
+          plan: string
+          plan_inicio: string
+          plan_vence: string | null
+          updated_at: string
+        }
+        Insert: {
+          comision?: number
+          created_at?: string
+          creator_id: string
+          id?: string
+          plan?: string
+          plan_inicio?: string
+          plan_vence?: string | null
+          updated_at?: string
+        }
+        Update: {
+          comision?: number
+          created_at?: string
+          creator_id?: string
+          id?: string
+          plan?: string
+          plan_inicio?: string
+          plan_vence?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       creator_reviews: {
         Row: {
           comment: string | null
@@ -1165,6 +1198,27 @@ export type Database = {
         }
         Relationships: []
       }
+      waitlist_pro: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          source: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          source?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          source?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1214,6 +1268,14 @@ export type Database = {
         }[]
       }
       get_my_meta_pixel_id: { Args: never; Returns: string }
+      get_my_plan: {
+        Args: never
+        Returns: {
+          comision: number
+          plan: string
+          plan_vence: string
+        }[]
+      }
       get_my_review_for_creator: {
         Args: { _creator_id: string }
         Returns: {

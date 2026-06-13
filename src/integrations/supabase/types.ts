@@ -1190,6 +1190,17 @@ export type Database = {
         Args: { _creator_id: string }
         Returns: string
       }
+      get_creator_reviews: {
+        Args: { _creator_id: string }
+        Returns: {
+          comment: string
+          created_at: string
+          id: string
+          rating: number
+          reviewer_avatar_url: string
+          reviewer_name: string
+        }[]
+      }
       get_ebook_file_url: { Args: { _ebook_id: string }; Returns: string }
       get_event_meeting_url: { Args: { _event_id: string }; Returns: string }
       get_event_students: {
@@ -1203,6 +1214,15 @@ export type Database = {
         }[]
       }
       get_my_meta_pixel_id: { Args: never; Returns: string }
+      get_my_review_for_creator: {
+        Args: { _creator_id: string }
+        Returns: {
+          comment: string
+          created_at: string
+          id: string
+          rating: number
+        }[]
+      }
       get_order_public: {
         Args: { _order_id: string }
         Returns: {

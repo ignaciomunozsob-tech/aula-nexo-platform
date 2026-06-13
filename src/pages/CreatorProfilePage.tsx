@@ -112,14 +112,15 @@ export default function CreatorProfilePage() {
   const { data: reviews } = useQuery({
     queryKey: ['creator-reviews', creator?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('creator_reviews')
-        .select('*, reviewer:reviewer_id(name, avatar_url)')
-        .eq('creator_id', creator!.id)
-        .order('created_at', { ascending: false });
-      
+      const { data, error } = await supabase.rpc('get_creator_reviews', { _creator_id: creator!.id });
       if (error) throw error;
-      return data;
+      return (data || []).map((r: any) => ({
+        id: r.id,
+        rating: r.rating,
+        comment: r.comment,
+        created_at: r.created_at,
+        reviewer: { name: r.reviewer_name, avatar_url: r.reviewer_avatar_url },
+      }));
     },
     enabled: !!creator?.id,
   });
@@ -127,15 +128,9 @@ export default function CreatorProfilePage() {
   const { data: userReview } = useQuery({
     queryKey: ['user-review', creator?.id, user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('creator_reviews')
-        .select('*')
-        .eq('creator_id', creator!.id)
-        .eq('reviewer_id', user!.id)
-        .maybeSingle();
-      
+      const { data, error } = await supabase.rpc('get_my_review_for_creator', { _creator_id: creator!.id });
       if (error) throw error;
-      return data;
+      return data && data.length > 0 ? data[0] : null;
     },
     enabled: !!creator?.id && !!user?.id,
   });

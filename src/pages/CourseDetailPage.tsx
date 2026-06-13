@@ -293,10 +293,7 @@ export default function CourseDetailPage() {
         setShowFreeEnrollDialog(true);
       }
     } else {
-      if (!user) {
-        navigate('/login');
-        return;
-      }
+      // Paid course: works for both logged-in and guest (the hook opens a dialog if no session)
       startCheckout('course', course!.id, {
         value: course!.price_clp ?? 0,
         creatorPixelId,

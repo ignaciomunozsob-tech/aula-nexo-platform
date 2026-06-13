@@ -33,8 +33,10 @@ function isRateLimited(userId: string): boolean {
 }
 
 function generateCode(): string {
-  // Generate a 6-digit code
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  // Cryptographically secure 6-digit code
+  const arr = new Uint32Array(1);
+  crypto.getRandomValues(arr);
+  return String((arr[0] % 900000) + 100000);
 }
 
 const handler = async (req: Request): Promise<Response> => {

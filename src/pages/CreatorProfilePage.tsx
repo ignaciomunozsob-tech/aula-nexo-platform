@@ -80,12 +80,18 @@ export default function CreatorProfilePage() {
   usePageView('creator_profile', creator?.id);
 
   // Initialize creator's Meta Pixel and fire a PageView under their pixel
-  const creatorPixelId = (creator as any)?.meta_pixel_id as string | null | undefined;
+  const [creatorPixelId, setCreatorPixelId] = useState<string | null>(null);
   useEffect(() => {
-    if (!creatorPixelId) return;
-    initPixel(creatorPixelId);
-    trackEventFor(creatorPixelId, 'PageView');
-  }, [creatorPixelId]);
+    if (!slug) return;
+    supabase.rpc('get_creator_pixel_id', { _creator_slug: slug }).then(({ data }) => {
+      const pid = (data as string | null) ?? null;
+      setCreatorPixelId(pid);
+      if (pid) {
+        initPixel(pid);
+        trackEventFor(pid, 'PageView');
+      }
+    });
+  }, [slug]);
 
   const { data: courses } = useQuery({
     queryKey: ['creator-courses', creator?.id],

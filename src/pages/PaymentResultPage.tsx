@@ -53,15 +53,11 @@ export default function PaymentResultPage() {
     // Fire on creator's pixel as well (if configured)
     (async () => {
       if (!order.creator_id) return;
-      const { data: creator } = await supabase
-        .from('profiles')
-        .select('meta_pixel_id')
-        .eq('id', order.creator_id)
-        .maybeSingle();
-      const pid = (creator as any)?.meta_pixel_id as string | null | undefined;
-      if (pid) {
-        initPixel(pid);
-        trackEventFor(pid, 'Purchase', params);
+      const { data: pid } = await supabase.rpc('get_creator_pixel_id_by_id', { _creator_id: order.creator_id });
+      const pixelId = pid as string | null;
+      if (pixelId) {
+        initPixel(pixelId);
+        trackEventFor(pixelId, 'Purchase', params);
       }
     })();
   }, [isPaid, order]);

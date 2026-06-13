@@ -16,12 +16,15 @@ export default function CheckoutPage({ embed = false }: Props) {
   const { startCheckout, loading } = useMercadoPagoCheckout();
 
   // Get creator by slug
+  // Get creator by slug (meta_pixel_id is fetched separately via secure RPC)
   const { data: creator } = useQuery({
     queryKey: ['creator-by-slug', creatorSlug],
     queryFn: async () => {
       const { data } = await supabase.from('profiles')
-        .select('id, name, meta_pixel_id').eq('creator_slug', creatorSlug!).maybeSingle();
-      return data;
+        .select('id, name').eq('creator_slug', creatorSlug!).maybeSingle();
+      if (!data) return null;
+      const { data: pixel } = await supabase.rpc('get_creator_pixel_id', { _creator_slug: creatorSlug! });
+      return { ...data, meta_pixel_id: (pixel as string | null) ?? null };
     },
     enabled: !!creatorSlug,
   });

@@ -57,6 +57,9 @@ export function PublicNavbar() {
             <Link to="/courses" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Marketplace
             </Link>
+            <Link to="/precios" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Precios
+            </Link>
             <Link to="/comisiones" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Comisiones
             </Link>
@@ -125,6 +128,9 @@ export function PublicNavbar() {
             <div className="flex flex-col gap-3">
               <Link to="/courses" className="text-muted-foreground hover:text-foreground px-2 py-2" onClick={() => setMobileMenuOpen(false)}>
                 Marketplace
+              </Link>
+              <Link to="/precios" className="text-muted-foreground hover:text-foreground px-2 py-2" onClick={() => setMobileMenuOpen(false)}>
+                Precios
               </Link>
               <Link to="/comisiones" className="text-muted-foreground hover:text-foreground px-2 py-2" onClick={() => setMobileMenuOpen(false)}>
                 Comisiones

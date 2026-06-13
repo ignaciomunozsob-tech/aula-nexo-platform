@@ -78,6 +78,8 @@ const App = () => (
 
               {/* Comisiones route - standalone */}
               <Route path="/comisiones" element={<ComisionesPage />} />
+              <Route path="/terminos" element={<TerminosPage />} />
+              <Route path="/privacidad" element={<PrivacidadPage />} />
 
               {/* Debug route - dev only */}
               {import.meta.env.DEV && <Route path="/debug" element={<DebugPage />} />}

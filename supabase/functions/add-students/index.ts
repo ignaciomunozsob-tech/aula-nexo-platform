@@ -213,10 +213,11 @@ const handler = async (req: Request): Promise<Response> => {
     });
   } catch (error: any) {
     console.error("Error in add-students function:", error);
+    const isAuth = error.message?.includes("Unauthorized");
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: isAuth ? "Unauthorized" : "No se pudo procesar la solicitud" }),
       {
-        status: error.message?.includes("Unauthorized") ? 401 : 400,
+        status: isAuth ? 401 : 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       },
     );

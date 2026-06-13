@@ -101,8 +101,7 @@ export default function CourseDetailPage() {
             name,
             creator_slug,
             bio,
-            avatar_url,
-            meta_pixel_id
+            avatar_url
           ),
           categories:category_id (
             name,

@@ -61,28 +61,35 @@ export default function StudentManagement({ productId, productType }: StudentMan
   const tableName = productType === "event" ? "event_registrations" : "enrollments";
 
   const { data: enrollments, isLoading } = useQuery({
-    queryKey: [tableName, productId],
+    queryKey: [tableName, productId, "with-email"],
     queryFn: async () => {
       if (productType === "event") {
-        const { data, error } = await supabase
-          .from("event_registrations")
-          .select("id, user_id, registered_at, status, profiles:user_id(name)")
-          .eq("event_id", productId)
-          .order("registered_at", { ascending: false });
+        const { data, error } = await (supabase as any).rpc("get_event_students", { _event_id: productId });
         if (error) throw error;
-        return data || [];
+        return (data || []).map((r: any) => ({
+          id: r.user_id,
+          user_id: r.user_id,
+          status: r.status,
+          registered_at: r.registered_at,
+          profiles: { name: r.name },
+          email: r.email,
+        }));
       } else {
-        const { data, error } = await supabase
-          .from("enrollments")
-          .select("id, user_id, purchased_at, status, profiles:user_id(name)")
-          .eq("course_id", productId)
-          .order("purchased_at", { ascending: false });
+        const { data, error } = await (supabase as any).rpc("get_course_students", { _course_id: productId });
         if (error) throw error;
-        return data || [];
+        return (data || []).map((r: any) => ({
+          id: r.user_id,
+          user_id: r.user_id,
+          status: r.status,
+          purchased_at: r.purchased_at,
+          profiles: { name: r.name },
+          email: r.email,
+        }));
       }
     },
     enabled: !!productId,
   });
+
 
   const addStudentsMutation = useMutation({
     mutationFn: async (validStudents: StudentEntry[]) => {
@@ -339,6 +346,7 @@ export default function StudentManagement({ productId, productType }: StudentMan
               <TableHeader>
                 <TableRow>
                   <TableHead>Alumno</TableHead>
+                  <TableHead>Correo</TableHead>
                   <TableHead>Fecha de inscripción</TableHead>
                   <TableHead>Estado</TableHead>
                 </TableRow>
@@ -348,6 +356,9 @@ export default function StudentManagement({ productId, productType }: StudentMan
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">
                       {item.profiles?.name || "Usuario"}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {item.email || "—"}
                     </TableCell>
                     <TableCell>
                       {formatDate(item.purchased_at || item.registered_at)}
@@ -361,6 +372,7 @@ export default function StudentManagement({ productId, productType }: StudentMan
                 ))}
               </TableBody>
             </Table>
+
           )}
         </TabsContent>
       </Tabs>

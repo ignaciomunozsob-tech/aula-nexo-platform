@@ -122,6 +122,7 @@ const App = () => (
                 <Route path="checkout-pages/new" element={<CheckoutPageEditorPage />} />
                 <Route path="checkout-pages/:id/edit" element={<CheckoutPageEditorPage />} />
                 <Route path="profile" element={<CreatorProfileEdit />} />
+                <Route path="plan" element={<CreatorPlanPage />} />
                 <Route path="billing" element={<CreatorBillingPage />} />
               </Route>
 

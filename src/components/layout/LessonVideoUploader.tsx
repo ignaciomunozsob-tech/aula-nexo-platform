@@ -73,11 +73,11 @@ export default function LessonVideoUploader({
       return;
     }
 
-    const maxSize = 500 * 1024 * 1024;
+    const maxSize = maxFileMB * 1024 * 1024;
     if (file.size > maxSize) {
       toast({
         title: "Archivo muy grande",
-        description: "El tamaño máximo es 500MB",
+        description: `El tamaño máximo de tu plan es ${maxFileMB}MB`,
         variant: "destructive",
       });
       return;

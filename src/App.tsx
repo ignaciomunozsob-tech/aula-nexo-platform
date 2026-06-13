@@ -33,6 +33,7 @@ import CourseEditorPage from "@/pages/creator/CourseEditorPage";
 import EbookEditorPage from "@/pages/creator/EbookEditorPage";
 import EventEditorPage from "@/pages/creator/EventEditorPage";
 import CreatorProfileEdit from "@/pages/creator/CreatorProfileEdit";
+import CreatorBillingPage from "@/pages/creator/CreatorBillingPage";
 import CreatorFinancesPage from "@/pages/creator/CreatorFinancesPage";
 import CreatorReviewsPage from "@/pages/creator/CreatorReviewsPage";
 import CreatorCommunitiesPage from "@/pages/creator/CreatorCommunitiesPage";

@@ -127,6 +127,23 @@ export default function CoursePlayerPage() {
     enabled: !!enrollment?.id && !isPreviewMode,
   });
 
+  // Compute current lesson early so we can sign protected URLs as a hook (must be top-level).
+  const allLessonsPre = modules?.flatMap((m: any) => (m.lessons as any[]) || []) || [];
+  const currentLessonForUrl = allLessonsPre.find((l: any) => l.id === selectedLessonId);
+  const protectedVideoPath =
+    currentLessonForUrl?.type === 'video' &&
+    currentLessonForUrl?.video_url &&
+    !/^https?:\/\//i.test(currentLessonForUrl.video_url)
+      ? (currentLessonForUrl.video_url as string)
+      : null;
+
+  const { data: signedVideoUrl } = useQuery({
+    queryKey: ['signed-video', protectedVideoPath],
+    queryFn: () => resolveProtectedUrl(protectedVideoPath!),
+    enabled: !!protectedVideoPath && (!!enrollment || isPreviewMode),
+    staleTime: 50 * 60 * 1000, // refresh before the 60-min TTL
+  });
+
   // Select first lesson by default
   useEffect(() => {
     if (modules && modules.length > 0 && !selectedLessonId) {

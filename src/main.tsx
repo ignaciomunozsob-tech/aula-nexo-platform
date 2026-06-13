@@ -99,10 +99,61 @@ async function handleRecoveryLink() {
   window.history.replaceState(null, "", url.pathname + target);
 }
 
-handleRecoveryLink().finally(() => {
-  createRoot(document.getElementById("root")!).render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
+/**
+ * Handle MercadoPago OAuth callback before the recovery handler (both use ?code=).
+ * Path is /mercadopago/callback so we can detect it without interfering with recovery.
+ */
+async function handleMercadoPagoCallback() {
+  const url = new URL(window.location.href);
+  if (url.pathname !== "/mercadopago/callback") return false;
+
+  const code = url.searchParams.get("code");
+  const state = url.searchParams.get("state");
+  const error = url.searchParams.get("error");
+
+  if (error || !code) {
+    window.history.replaceState(null, "", "/#/creator/billing?mp=error");
+    return true;
+  }
+
+  try {
+    const redirectUri = `${url.origin}/mercadopago/callback`;
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess.session?.access_token;
+    if (!token) {
+      window.history.replaceState(null, "", "/#/login?next=/creator/billing");
+      return true;
+    }
+    const res = await fetch(
+      `https://oahdxazzbqsdgfwwqbaj.supabase.co/functions/v1/mercadopago-oauth-callback`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ code, state, redirect_uri: redirectUri }),
+      }
+    );
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      console.error("MP OAuth callback failed", body);
+      window.history.replaceState(null, "", "/#/creator/billing?mp=error");
+      return true;
+    }
+    window.history.replaceState(null, "", "/#/creator/billing?mp=connected");
+  } catch (e) {
+    console.error("MP OAuth callback exception", e);
+    window.history.replaceState(null, "", "/#/creator/billing?mp=error");
+  }
+  return true;
+}
+
+handleMercadoPagoCallback().then((handled) => {
+  const next = handled ? Promise.resolve() : handleRecoveryLink();
+  next.finally(() => {
+    createRoot(document.getElementById("root")!).render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
+    );
+  });
 });
+

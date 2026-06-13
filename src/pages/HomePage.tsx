@@ -171,20 +171,32 @@ export default function HomePage() {
     queryFn: async () => {
       const { data } = await supabase
         .from('courses')
-        .select('id, slug, title, cover_image_url, price_clp, format, is_novu_official, creator:creator_id(name, creator_slug)')
+        .select('id, slug, title, cover_image_url, price_clp, format, is_novu_official, creator_id')
         .eq('status', 'published')
         .order('is_novu_official', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(8);
 
       const now = Date.now();
-      const list = ((data as unknown as (FeaturedCourse & { event_start_at?: string | null })[]) || []).filter((c) => {
-        if (c.format === 'live' && (c as any).event_start_at) {
-          return new Date((c as any).event_start_at).getTime() >= now;
+      const list = ((data as any[]) || []).filter((c) => {
+        if (c.format === 'live' && c.event_start_at) {
+          return new Date(c.event_start_at).getTime() >= now;
         }
         return true;
-      });
-      return list.slice(0, 4);
+      }).slice(0, 4);
+
+      // Fetch creators via secure RPC
+      const creatorIds = Array.from(new Set(list.map((c) => c.creator_id).filter(Boolean)));
+      let creatorsById: Record<string, { name: string | null; creator_slug: string | null }> = {};
+      if (creatorIds.length > 0) {
+        const { data: creators } = await supabase.rpc('get_public_creators_by_ids', { _ids: creatorIds });
+        creatorsById = Object.fromEntries((creators || []).map((c: any) => [c.id, { name: c.name, creator_slug: c.creator_slug }]));
+      }
+
+      return list.map((c) => ({
+        ...c,
+        creator: creatorsById[c.creator_id] ?? null,
+      })) as FeaturedCourse[];
     },
   });
 

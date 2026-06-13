@@ -1236,6 +1236,45 @@ export type Database = {
           status: string
         }[]
       }
+      get_public_checkout_page: {
+        Args: { _creator_slug: string; _page_slug: string }
+        Returns: {
+          blocks: Json
+          bump_description: string
+          bump_discount_pct: number
+          bump_enabled: boolean
+          bump_headline: string
+          bump_product_id: string
+          bump_product_type: string
+          creator_id: string
+          id: string
+          name: string
+          product_id: string
+          product_type: string
+          slug: string
+          theme: Json
+        }[]
+      }
+      get_public_creator_profile: {
+        Args: { _slug: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          creator_slug: string
+          id: string
+          name: string
+        }[]
+      }
+      get_public_creators_by_ids: {
+        Args: { _ids: string[] }
+        Returns: {
+          avatar_url: string
+          bio: string
+          creator_slug: string
+          id: string
+          name: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]

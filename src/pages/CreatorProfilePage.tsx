@@ -67,13 +67,9 @@ export default function CreatorProfilePage() {
     queryKey: ['creator', slug],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('id, name, avatar_url, role, creator_slug, bio, links, created_at, updated_at, intro_video_url, interests, onboarding_completed')
-        .eq('creator_slug', slug)
-        .maybeSingle();
-      
+        .rpc('get_public_creator_profile', { _slug: slug! });
       if (error) throw error;
-      return data;
+      return (data && data.length > 0) ? data[0] : null;
     },
   });
 
@@ -183,9 +179,8 @@ export default function CreatorProfilePage() {
     );
   }
 
-  const links = Array.isArray(creator.links) ? creator.links : [];
-  const introVideoUrl = (creator as any).intro_video_url;
-  const embedUrl = getEmbedUrl(introVideoUrl);
+  const links: any[] = [];
+  const embedUrl: string | null = null;
 
   const avgRating = reviews && reviews.length > 0
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)

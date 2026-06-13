@@ -43,6 +43,15 @@ export function MarketplaceView({ showHeader = true }: MarketplaceViewProps) {
     },
   });
 
+  // Helper: hydrate creator info via secure RPC
+  const hydrateCreators = async (rows: any[]) => {
+    const ids = Array.from(new Set(rows.map((r) => r.creator_id).filter(Boolean)));
+    if (ids.length === 0) return rows;
+    const { data: creators } = await supabase.rpc('get_public_creators_by_ids', { _ids: ids });
+    const byId: Record<string, any> = Object.fromEntries((creators || []).map((c: any) => [c.id, c]));
+    return rows.map((r) => ({ ...r, profiles: byId[r.creator_id] ?? null }));
+  };
+
   // Fetch published courses with creator info
   const { data: courses, isLoading: loadingCourses } = useQuery({
     queryKey: ['marketplace-courses'],
@@ -51,13 +60,12 @@ export function MarketplaceView({ showHeader = true }: MarketplaceViewProps) {
         .from('courses')
         .select(`
           *,
-          profiles:creator_id (name, avatar_url, creator_slug),
           categories:category_id (name, slug)
         `)
         .eq('status', 'published')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data;
+      return hydrateCreators(data || []);
     },
   });
 
@@ -74,7 +82,7 @@ export function MarketplaceView({ showHeader = true }: MarketplaceViewProps) {
         .eq('status', 'published')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data;
+      return hydrateCreators(data || []);
     },
   });
 
@@ -86,14 +94,13 @@ export function MarketplaceView({ showHeader = true }: MarketplaceViewProps) {
         .from('events')
         .select(`
           id, title, description, price_clp, category_id, status, cover_image_url, duration_minutes, max_attendees, event_date, event_type, creator_id, slug, is_novu_official, created_at, updated_at,
-          profiles:creator_id (name, avatar_url, creator_slug),
           categories:category_id (name, slug)
         `)
         .eq('status', 'published')
         .gte('event_date', new Date().toISOString())
         .order('event_date', { ascending: true });
       if (error) throw error;
-      return data;
+      return hydrateCreators(data || []);
     },
   });
 

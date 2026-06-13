@@ -14,6 +14,7 @@ import AdminCourseEditorPage from "@/pages/admin/AdminCourseEditorPage";
 import AdminInstructorsPage from "@/pages/admin/AdminInstructorsPage";
 import HomePage from "@/pages/HomePage";
 import ComisionesPage from "@/pages/ComisionesPage";
+import PreciosPage from "@/pages/PreciosPage";
 import CoursesPage from "@/pages/CoursesPage";
 import CourseDetailPage from "@/pages/CourseDetailPage";
 import CreatorProfilePage from "@/pages/CreatorProfilePage";
@@ -67,6 +68,7 @@ const App = () => (
               <Route element={<PublicLayout />}>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/courses" element={<CoursesPage />} />
+                <Route path="/precios" element={<PreciosPage />} />
                 <Route path="/course/:slug" element={<CourseDetailPage />} />
                 <Route path="/creator/:slug" element={<CreatorProfilePage />} />
               </Route>

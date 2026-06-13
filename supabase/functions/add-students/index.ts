@@ -153,11 +153,13 @@ const handler = async (req: Request): Promise<Response> => {
           if (alreadyExists) {
             userId = await findUserIdByEmail(supabaseAdmin, email);
             if (!userId) {
-              results.push({ email, success: false, message: `Usuario ya existe pero no se pudo encontrar (${msg})` });
+              console.error(`[add-students] user exists but not found ${email}`, msg);
+              results.push({ email, success: false, message: "No se pudo crear el usuario" });
               continue;
             }
           } else {
-            results.push({ email, success: false, message: msg });
+            console.error(`[add-students] signup error ${email}`, msg);
+            results.push({ email, success: false, message: "No se pudo crear el usuario" });
             continue;
           }
         } else {
@@ -176,21 +178,23 @@ const handler = async (req: Request): Promise<Response> => {
             event_id: productId, user_id: userId, status: "registered",
           });
           if (regError && !regError.message?.toLowerCase().includes("duplicate")) {
-            results.push({ email, success: false, message: regError.message }); continue;
+            console.error(`[add-students] event reg error ${email}`, regError);
+            results.push({ email, success: false, message: "No se pudo inscribir al estudiante" }); continue;
           }
         } else {
           const { error: enrollError } = await supabaseAdmin.from("enrollments").insert({
             course_id: productId, user_id: userId, status: "active",
           });
           if (enrollError && !enrollError.message?.toLowerCase().includes("duplicate")) {
-            results.push({ email, success: false, message: enrollError.message }); continue;
+            console.error(`[add-students] enroll error ${email}`, enrollError);
+            results.push({ email, success: false, message: "No se pudo inscribir al estudiante" }); continue;
           }
         }
 
         results.push({ email, success: true, message: "Added successfully" });
       } catch (studentError: any) {
         console.error(`Error adding student ${email}:`, studentError);
-        results.push({ email, success: false, message: studentError.message || "Unknown error" });
+        results.push({ email, success: false, message: "Error al procesar estudiante" });
       }
     }
 

@@ -129,7 +129,7 @@ const compareRows: Array<{ label: string; gratis: React.ReactNode; creador: Reac
   { label: 'Comisión por venta', gratis: '10%', creador: '5%', pro: 'Por definir' },
   { label: 'Videos propios', gratis: <NoCell />, creador: <YesCell />, pro: <YesCell /> },
   { label: 'Videos YouTube/Vimeo', gratis: <YesCell />, creador: <YesCell />, pro: <YesCell /> },
-  { label: 'Archivos descargables', gratis: '10MB', creador: '50MB', pro: '200MB' },
+  { label: 'Archivos descargables', gratis: '10MB', creador: 'Ilimitados', pro: 'Ilimitados' },
   { label: 'Alumnos manuales', gratis: '10', creador: '10', pro: 'Ilimitados' },
   { label: 'Agenda 1:1', gratis: <NoCell />, creador: <SoonCell />, pro: <SoonCell /> },
   { label: 'Comunidad por curso', gratis: <NoCell />, creador: <NoCell />, pro: <SoonCell /> },
@@ -201,7 +201,7 @@ export default function PreciosPage() {
               <li className="flex items-start gap-2 text-sm"><Check className="h-4 w-4 mt-0.5 shrink-0" style={{ color: '#fcc70e' }} strokeWidth={3} /><span>Cursos ilimitados</span></li>
               <li className="flex items-start gap-2 text-sm"><Check className="h-4 w-4 mt-0.5 shrink-0" style={{ color: '#fcc70e' }} strokeWidth={3} /><span>5% de comisión por venta</span></li>
               <li className="flex items-start gap-2 text-sm"><Check className="h-4 w-4 mt-0.5 shrink-0" style={{ color: '#fcc70e' }} strokeWidth={3} /><span>Sube tus propios videos</span></li>
-              <li className="flex items-start gap-2 text-sm"><Check className="h-4 w-4 mt-0.5 shrink-0" style={{ color: '#fcc70e' }} strokeWidth={3} /><span>Archivos hasta 50MB</span></li>
+              <li className="flex items-start gap-2 text-sm"><Check className="h-4 w-4 mt-0.5 shrink-0" style={{ color: '#fcc70e' }} strokeWidth={3} /><span>Archivos ilimitados</span></li>
               <li className="flex items-start gap-2 text-sm"><Check className="h-4 w-4 mt-0.5 shrink-0" style={{ color: '#fcc70e' }} strokeWidth={3} /><span>Hasta 10 alumnos manuales</span></li>
               <li className="flex items-start gap-2 text-sm"><Check className="h-4 w-4 mt-0.5 shrink-0" style={{ color: '#fcc70e' }} strokeWidth={3} /><span>Soporte vía WhatsApp directo</span></li>
               <li className="flex items-start gap-2 text-sm">

@@ -32,7 +32,7 @@ export default function CreatorProfileEdit() {
   const [bio, setBio] = useState(profileData?.bio || '');
   const [creatorSlug, setCreatorSlug] = useState(profileData?.creator_slug || '');
   const [introVideoUrl, setIntroVideoUrl] = useState(profileData?.intro_video_url || '');
-  const [metaPixelId, setMetaPixelId] = useState(profileData?.meta_pixel_id || '');
+  const [metaPixelId, setMetaPixelId] = useState('');
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(profileData?.avatar_url || '');
 
@@ -73,8 +73,11 @@ export default function CreatorProfileEdit() {
     setBio(profileData?.bio || '');
     setCreatorSlug(profileData?.creator_slug || '');
     setIntroVideoUrl(profileData?.intro_video_url || '');
-    setMetaPixelId(profileData?.meta_pixel_id || '');
     setAvatarUrl(profileData?.avatar_url || '');
+    // meta_pixel_id is column-restricted; fetch via secure RPC
+    supabase.rpc('get_my_meta_pixel_id').then(({ data }) => {
+      setMetaPixelId((data as string | null) ?? '');
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileData?.id, profileData?.updated_at]);
 

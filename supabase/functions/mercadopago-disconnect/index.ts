@@ -22,10 +22,10 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const { error: delErr } = await admin
       .from('creator_mercadopago_accounts').delete().eq('creator_id', userId);
-    if (delErr) return json({ error: delErr.message }, 500);
+    if (delErr) console.error('mp disconnect error', delErr); return json({ error: 'No se pudo desconectar' }, 500);
     return json({ ok: true });
   } catch (e) {
-    return json({ error: 'Unexpected', detail: String(e) }, 500);
+    return json({ error: 'Unexpected' }, 500);
   }
 });
 

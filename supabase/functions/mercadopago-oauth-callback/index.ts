@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     const tokenJson = await tokenRes.json();
     if (!tokenRes.ok) {
       console.error('MP oauth error', tokenRes.status, tokenJson);
-      return json({ error: 'MercadoPago rechazó la conexión', detail: tokenJson }, 400);
+      console.error('mp oauth rejected', tokenJson); return json({ error: 'MercadoPago rechazó la conexión' }, 400);
     }
 
     const { access_token, refresh_token, user_id: mp_user_id, public_key, live_mode, expires_in, scope } = tokenJson;
@@ -83,13 +83,13 @@ Deno.serve(async (req) => {
     }, { onConflict: 'creator_id' });
     if (upErr) {
       console.error('upsert mp account error', upErr);
-      return json({ error: 'No se pudo guardar la conexión', detail: upErr.message }, 500);
+      console.error('mp oauth save error', upErr); return json({ error: 'No se pudo guardar la conexión' }, 500);
     }
 
     return json({ ok: true, nickname, mp_user_id: String(mp_user_id), live_mode: !!live_mode });
   } catch (e) {
     console.error('oauth-callback unexpected', e);
-    return json({ error: 'Unexpected', detail: String(e) }, 500);
+    return json({ error: 'Unexpected' }, 500);
   }
 });
 

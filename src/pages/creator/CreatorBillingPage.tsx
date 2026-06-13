@@ -67,6 +67,83 @@ export default function CreatorBillingPage() {
   const [verified, setVerified] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [mp, setMp] = useState<{ connected: boolean; nickname?: string | null; email?: string | null; live_mode?: boolean } | null>(null);
+  const [mpBusy, setMpBusy] = useState(false);
+  const [params, setParams] = useSearchParams();
+
+  // Show toast on return from MP OAuth
+  useEffect(() => {
+    const status = params.get('mp');
+    if (status === 'connected') {
+      toast.success('MercadoPago conectado correctamente');
+      params.delete('mp'); setParams(params, { replace: true });
+    } else if (status === 'error') {
+      toast.error('No se pudo conectar MercadoPago. Intenta de nuevo.');
+      params.delete('mp'); setParams(params, { replace: true });
+    }
+  }, [params, setParams]);
+
+  // Load MP connection state
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from('creator_mercadopago_accounts')
+        .select('nickname, email, live_mode')
+        .eq('creator_id', user.id)
+        .maybeSingle();
+      setMp(data ? { connected: true, ...data } : { connected: false });
+    })();
+  }, [user, params]);
+
+  const connectMp = async () => {
+    setMpBusy(true);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      if (!token) { toast.error('Inicia sesión nuevamente'); return; }
+      const redirectUri = `${window.location.origin}/mercadopago/callback`;
+      const res = await fetch(
+        `https://oahdxazzbqsdgfwwqbaj.supabase.co/functions/v1/mercadopago-oauth-start`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ redirect_uri: redirectUri }),
+        }
+      );
+      const body = await res.json();
+      if (!res.ok || !body?.authorize_url) {
+        toast.error(body?.error ?? 'No se pudo iniciar la conexión');
+        return;
+      }
+      window.location.href = body.authorize_url;
+    } finally {
+      setMpBusy(false);
+    }
+  };
+
+  const disconnectMp = async () => {
+    if (!confirm('¿Desconectar tu cuenta de MercadoPago? Los pagos se pausarán hasta reconectar.')) return;
+    setMpBusy(true);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      if (!token) return;
+      const res = await fetch(
+        `https://oahdxazzbqsdgfwwqbaj.supabase.co/functions/v1/mercadopago-disconnect`,
+        { method: 'POST', headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.ok) {
+        toast.success('MercadoPago desconectado');
+        setMp({ connected: false });
+      } else {
+        toast.error('No se pudo desconectar');
+      }
+    } finally {
+      setMpBusy(false);
+    }
+  };
+
 
   useEffect(() => {
     if (!user) return;

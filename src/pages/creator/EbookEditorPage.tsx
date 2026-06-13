@@ -307,9 +307,21 @@ export default function EbookEditorPage() {
                 <FileText className="h-8 w-8 text-primary" />
                 <div className="flex-1">
                   <p className="font-medium">Archivo cargado</p>
-                  <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                  <button
+                    type="button"
+                    className="text-sm text-primary hover:underline"
+                    onClick={async () => {
+                      try {
+                        const { resolveProtectedUrl } = await import('@/lib/protectedMedia');
+                        const url = await resolveProtectedUrl(fileUrl);
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                      } catch (err: any) {
+                        toast({ title: 'No se pudo abrir el archivo', description: err?.message, variant: 'destructive' });
+                      }
+                    }}
+                  >
                     Ver archivo
-                  </a>
+                  </button>
                 </div>
                 <Button
                   type="button"

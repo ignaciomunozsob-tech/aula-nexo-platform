@@ -87,7 +87,7 @@ export default function HomePage() {
     queryFn: async () => {
       const { data } = await supabase
         .from('courses')
-        .select('id, slug, title, cover_url, price_clp, creator:creator_id(name, creator_slug)')
+        .select('id, slug, title, cover_image_url, price_clp, creator:creator_id(name, creator_slug)')
         .eq('status', 'published')
         .ilike('title', '%manychat%')
         .limit(1)
@@ -174,8 +174,8 @@ export default function HomePage() {
           <div className="max-w-md mx-auto">
             <div className="novu-card flex flex-col gap-5">
               <div className="aspect-[16/10] rounded-xl overflow-hidden bg-muted">
-                {certifiedCourse?.cover_url ? (
-                  <img src={certifiedCourse.cover_url} alt={certifiedCourse.title} className="w-full h-full object-cover" />
+                {certifiedCourse?.cover_image_url ? (
+                  <img src={certifiedCourse.cover_image_url} alt={certifiedCourse.title} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
                     Manychat desde cero

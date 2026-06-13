@@ -7,7 +7,6 @@ import { useAuth } from '@/lib/auth';
 import { formatDuration } from '@/lib/utils';
 import { resolveProtectedUrl } from '@/lib/protectedMedia';
 import { Button } from '@/components/ui/button';
-import { Button } from '@/components/ui/button';
 import { 
   Play, 
   FileText, 

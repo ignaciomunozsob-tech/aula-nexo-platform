@@ -244,7 +244,7 @@ export default function CreatorProfileEdit() {
               <div className="relative">
                 <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center overflow-hidden">
                   {avatarUrl ? (
-                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                    <img src={avatarUrl} alt={`Foto de perfil de ${name || 'creador'}`} className="w-full h-full object-cover" />
                   ) : (
                     <User className="h-12 w-12 text-muted-foreground" />
                   )}

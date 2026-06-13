@@ -17,6 +17,7 @@ import {
 export function CreatorSidebar() {
   const { profile, user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { data: plan } = useMyPlan();
 
   // Check if user has any enrollments (purchased courses)
   const { data: hasEnrollments } = useQuery({
@@ -126,6 +127,9 @@ export function CreatorSidebar() {
               </NavLink>
             </li>
           ))}
+          <LockedSidebarItem icon={BarChart3} label="Estadísticas avanzadas" requires="pro" allow={!!plan?.allowAdvancedStats} />
+          <LockedSidebarItem icon={Share2} label="Afiliados" requires="pro" allow={!!plan?.allowAffiliates} />
+          <LockedSidebarItem icon={CreditCard} label="Carritos abandonados" requires="pro" allow={!!plan?.allowAbandonedCart} />
         </ul>
       </nav>
 

@@ -196,6 +196,7 @@ export function MarketplaceView({ showHeader = true }: MarketplaceViewProps) {
             size="icon"
             className="absolute right-2 top-1/2 -translate-y-1/2"
             onClick={() => setSearchQuery('')}
+            aria-label="Limpiar búsqueda"
           >
             <X className="h-4 w-4" />
           </Button>

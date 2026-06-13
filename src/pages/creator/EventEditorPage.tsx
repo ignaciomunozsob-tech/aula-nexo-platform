@@ -269,7 +269,7 @@ export default function EventEditorPage() {
             />
             {coverImageUrl ? (
               <div className="relative w-64">
-                <img src={coverImageUrl} alt="Portada" className="w-full rounded-lg aspect-video object-cover" />
+                <img src={coverImageUrl} alt={`Portada del evento ${title || ''}`.trim()} className="w-full rounded-lg aspect-video object-cover" />
                 <Button
                   type="button"
                   variant="destructive"

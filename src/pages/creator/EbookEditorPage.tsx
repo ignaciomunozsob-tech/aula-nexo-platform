@@ -271,7 +271,7 @@ export default function EbookEditorPage() {
             />
             {coverImageUrl ? (
               <div className="relative w-48">
-                <img src={coverImageUrl} alt="Portada" className="w-full rounded-lg" />
+                <img src={coverImageUrl} alt={`Portada del ebook ${title || ''}`.trim()} className="w-full rounded-lg" />
                 <Button
                   type="button"
                   variant="destructive"

@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SEO } from '@/components/SEO';
 import {
   Accordion,
   AccordionContent,
@@ -142,6 +143,11 @@ export default function PreciosPage() {
 
   return (
     <>
+      <SEO
+        title="Precios y planes — NOVU"
+        description="Compara los planes de NOVU: Gratis (10% por venta), Creador (5%) y Pro. Sin contratos. Sin sorpresas."
+        path="/precios"
+      />
       {/* HEADER */}
       <section className="max-w-5xl mx-auto px-4 pt-16 pb-10 text-center">
         <div className="flex justify-center mb-5">

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { SEO } from "@/components/SEO";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -314,6 +315,24 @@ export default function CourseDetailPage() {
 
   return (
     <>
+      <SEO
+        title={`${course.title} — NOVU`}
+        description={(course.description || '').replace(/<[^>]+>/g, '').slice(0, 160) || `Curso ${course.title} en NOVU.`}
+        path={`/course/${course.slug || course.id}`}
+        type="product"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Course',
+          name: course.title,
+          description: (course.description || '').replace(/<[^>]+>/g, '').slice(0, 500),
+          provider: { '@type': 'Organization', name: 'NOVU', url: 'https://novuproject.lovable.app/' },
+          ...(course.instructor_name ? { instructor: { '@type': 'Person', name: course.instructor_name } } : {}),
+          ...(course.cover_image_url ? { image: course.cover_image_url } : {}),
+          ...(course.price_clp != null ? {
+            offers: { '@type': 'Offer', price: course.price_clp, priceCurrency: 'CLP', availability: 'https://schema.org/InStock' }
+          } : {}),
+        }}
+      />
       {/* HERO SECTION */}
       <section className="bg-muted/30 border-b">
         <div className="max-w-6xl mx-auto px-4 py-10">

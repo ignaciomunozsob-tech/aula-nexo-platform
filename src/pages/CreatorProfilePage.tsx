@@ -35,6 +35,7 @@ function StarRating({ value, onChange, readOnly = false }: { value: number; onCh
           type="button"
           disabled={readOnly}
           onClick={() => onChange?.(star)}
+          aria-label={`${star} de 5 estrellas`}
           className={`${readOnly ? 'cursor-default' : 'cursor-pointer hover:scale-110'} transition-transform`}
         >
           <Star

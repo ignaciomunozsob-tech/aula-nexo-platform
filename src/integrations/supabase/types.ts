@@ -1045,8 +1045,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_course_students: {
+        Args: { _course_id: string }
+        Returns: {
+          email: string
+          name: string
+          purchased_at: string
+          status: string
+          user_id: string
+        }[]
+      }
       get_ebook_file_url: { Args: { _ebook_id: string }; Returns: string }
       get_event_meeting_url: { Args: { _event_id: string }; Returns: string }
+      get_event_students: {
+        Args: { _event_id: string }
+        Returns: {
+          email: string
+          name: string
+          registered_at: string
+          status: string
+          user_id: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]

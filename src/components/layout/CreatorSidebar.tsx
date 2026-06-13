@@ -47,6 +47,7 @@ export function CreatorSidebar() {
     { to: '/creator-app/billing', icon: Receipt, label: 'Datos de facturación', end: false },
     { to: '/creator-app/reviews', icon: Star, label: 'Evaluaciones', end: false },
     { to: '/creator-app/profile', icon: User, label: 'Mi Perfil Público', end: false },
+    { to: '/creator-app/plan', icon: Sparkles, label: 'Mi Plan', end: false },
   ];
 
   const initials = profile?.name?.charAt(0).toUpperCase() || 'C';

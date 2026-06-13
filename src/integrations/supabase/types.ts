@@ -483,6 +483,80 @@ export type Database = {
         }
         Relationships: []
       }
+      creator_billing_info: {
+        Row: {
+          address: string | null
+          bank_account_holder: string | null
+          bank_account_holder_tax_id: string | null
+          bank_account_number: string | null
+          bank_account_type: string | null
+          bank_name: string | null
+          billing_email: string | null
+          business_type: string | null
+          city: string | null
+          created_at: string
+          creator_id: string
+          document_type: string | null
+          id: string
+          legal_name: string | null
+          region: string | null
+          tax_id: string | null
+          updated_at: string
+          verified: boolean
+          verified_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          bank_account_holder?: string | null
+          bank_account_holder_tax_id?: string | null
+          bank_account_number?: string | null
+          bank_account_type?: string | null
+          bank_name?: string | null
+          billing_email?: string | null
+          business_type?: string | null
+          city?: string | null
+          created_at?: string
+          creator_id: string
+          document_type?: string | null
+          id?: string
+          legal_name?: string | null
+          region?: string | null
+          tax_id?: string | null
+          updated_at?: string
+          verified?: boolean
+          verified_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          bank_account_holder?: string | null
+          bank_account_holder_tax_id?: string | null
+          bank_account_number?: string | null
+          bank_account_type?: string | null
+          bank_name?: string | null
+          billing_email?: string | null
+          business_type?: string | null
+          city?: string | null
+          created_at?: string
+          creator_id?: string
+          document_type?: string | null
+          id?: string
+          legal_name?: string | null
+          region?: string | null
+          tax_id?: string | null
+          updated_at?: string
+          verified?: boolean
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_billing_info_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creator_reviews: {
         Row: {
           comment: string | null

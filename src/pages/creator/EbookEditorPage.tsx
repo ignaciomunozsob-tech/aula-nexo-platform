@@ -82,19 +82,17 @@ export default function EbookEditorPage() {
     setUploadingFile(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `ebooks/${user.id}/${Date.now()}.${fileExt}`;
+      // Path MUST start with the creator's user_id for the protected-content RLS policies.
+      const fileName = `${user.id}/ebooks/${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('course-assets')
+        .from('protected-content')
         .upload(fileName, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from('course-assets')
-        .getPublicUrl(fileName);
-
-      setFileUrl(urlData.publicUrl);
+      // Store the storage PATH; readers fetch a signed URL via get-protected-url.
+      setFileUrl(fileName);
       toast({ title: 'Archivo subido correctamente' });
     } catch (error: any) {
       toast({ title: 'Error al subir archivo', description: error.message, variant: 'destructive' });

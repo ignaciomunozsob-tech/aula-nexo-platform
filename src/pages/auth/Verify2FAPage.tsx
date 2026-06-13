@@ -52,23 +52,11 @@ export default function Verify2FAPage() {
     setLoading(true);
 
     try {
-      // Check if code is valid
-      const { data: codes, error } = await supabase
-        .from("creator_2fa_codes")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("code", code)
-        .eq("used", false)
-        .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: false })
-        .limit(1);
+      const { data, error } = await supabase.functions.invoke("verify-2fa-code", {
+        body: { code },
+      });
 
-      if (error) {
-        console.error("[2FA] Error checking code:", error);
-        throw new Error("Error al verificar el código");
-      }
-
-      if (!codes || codes.length === 0) {
+      if (error || !data?.success) {
         toast({
           title: "Código inválido o expirado",
           description: "Por favor, solicita un nuevo código",
@@ -77,21 +65,13 @@ export default function Verify2FAPage() {
         return;
       }
 
-      // Mark code as used
-      await supabase
-        .from("creator_2fa_codes")
-        .update({ used: true })
-        .eq("id", codes[0].id);
-
       toast({ title: "Verificación exitosa ✅" });
-      
-      // Navigate to creator dashboard
       navigate("/creator-app");
     } catch (error: any) {
       console.error("[2FA] Verification error:", error);
       toast({
         title: "Error de verificación",
-        description: error.message,
+        description: "No se pudo verificar el código",
         variant: "destructive",
       });
     } finally {

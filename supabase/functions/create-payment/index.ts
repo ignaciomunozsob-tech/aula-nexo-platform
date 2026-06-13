@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
           email_confirm: true,
           user_metadata: { name: guestEmail.split('@')[0], created_via: 'guest_checkout' },
         });
-        if (createErr || !created?.user) return json({ error: 'No se pudo crear el usuario', detail: createErr?.message }, 500);
+        if (createErr || !created?.user) console.error('create-payment user create error', createErr); return json({ error: 'No se pudo crear el usuario' }, 500);
         userId = created.user.id;
         userEmail = guestEmail;
         isNewUser = true;
@@ -149,7 +149,7 @@ Deno.serve(async (req) => {
       bump_amount_clp: bumpInfo?.amount ?? 0,
       guest_email: userEmail,
     } as any).select().single();
-    if (orderErr || !order) return json({ error: 'No se pudo crear la orden', detail: orderErr?.message }, 500);
+    if (orderErr || !order) { console.error('create-payment order error', orderErr); return json({ error: 'No se pudo crear la orden' }, 500); }
 
     const origin = req.headers.get('origin') ?? body.return_url ?? '';
     const returnBase = `${origin}/#/payment`;
@@ -195,7 +195,7 @@ Deno.serve(async (req) => {
     if (!mpRes.ok) {
       console.error('MP error', mpRes.status, mpJson);
       await admin.from('orders').update({ status: 'failed', metadata: { ...order.metadata, mp_error: mpJson } }).eq('id', order.id);
-      return json({ error: 'MercadoPago error', detail: mpJson }, 502);
+      return json({ error: 'MercadoPago error' }, 502);
     }
 
     await admin.from('orders').update({ mp_preference_id: mpJson.id }).eq('id', order.id);
@@ -209,7 +209,7 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error('create-payment unexpected', e);
-    return json({ error: 'Unexpected error', detail: String(e) }, 500);
+    return json({ error: 'Unexpected error' }, 500);
   }
 });
 

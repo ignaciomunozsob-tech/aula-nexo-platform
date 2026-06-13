@@ -112,6 +112,14 @@ const handler = async (req: Request): Promise<Response> => {
         if (eventError || !event || event.creator_id !== user.id) {
           throw new Error("Unauthorized: You don't own this event");
         }
+      } else if (productType === "ebook") {
+        const { data: ebook, error: ebookError } = await supabaseAdmin
+          .from("ebooks").select("creator_id").eq("id", productId).single();
+        if (ebookError || !ebook || ebook.creator_id !== user.id) {
+          throw new Error("Unauthorized: You don't own this ebook");
+        }
+      } else {
+        throw new Error("Invalid product type");
       }
     }
 
@@ -145,11 +153,13 @@ const handler = async (req: Request): Promise<Response> => {
           if (alreadyExists) {
             userId = await findUserIdByEmail(supabaseAdmin, email);
             if (!userId) {
-              results.push({ email, success: false, message: `Usuario ya existe pero no se pudo encontrar (${msg})` });
+              console.error(`[add-students] user exists but not found ${email}`, msg);
+              results.push({ email, success: false, message: "No se pudo crear el usuario" });
               continue;
             }
           } else {
-            results.push({ email, success: false, message: msg });
+            console.error(`[add-students] signup error ${email}`, msg);
+            results.push({ email, success: false, message: "No se pudo crear el usuario" });
             continue;
           }
         } else {
@@ -168,21 +178,23 @@ const handler = async (req: Request): Promise<Response> => {
             event_id: productId, user_id: userId, status: "registered",
           });
           if (regError && !regError.message?.toLowerCase().includes("duplicate")) {
-            results.push({ email, success: false, message: regError.message }); continue;
+            console.error(`[add-students] event reg error ${email}`, regError);
+            results.push({ email, success: false, message: "No se pudo inscribir al estudiante" }); continue;
           }
         } else {
           const { error: enrollError } = await supabaseAdmin.from("enrollments").insert({
             course_id: productId, user_id: userId, status: "active",
           });
           if (enrollError && !enrollError.message?.toLowerCase().includes("duplicate")) {
-            results.push({ email, success: false, message: enrollError.message }); continue;
+            console.error(`[add-students] enroll error ${email}`, enrollError);
+            results.push({ email, success: false, message: "No se pudo inscribir al estudiante" }); continue;
           }
         }
 
         results.push({ email, success: true, message: "Added successfully" });
       } catch (studentError: any) {
         console.error(`Error adding student ${email}:`, studentError);
-        results.push({ email, success: false, message: studentError.message || "Unknown error" });
+        results.push({ email, success: false, message: "Error al procesar estudiante" });
       }
     }
 
@@ -201,10 +213,11 @@ const handler = async (req: Request): Promise<Response> => {
     });
   } catch (error: any) {
     console.error("Error in add-students function:", error);
+    const isAuth = error.message?.includes("Unauthorized");
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: isAuth ? "Unauthorized" : "No se pudo procesar la solicitud" }),
       {
-        status: error.message?.includes("Unauthorized") ? 401 : 400,
+        status: isAuth ? 401 : 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       },
     );

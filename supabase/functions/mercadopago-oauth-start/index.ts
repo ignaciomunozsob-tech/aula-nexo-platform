@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
 
     return json({ authorize_url: url.toString() });
   } catch (e) {
-    return json({ error: 'Unexpected', detail: String(e) }, 500);
+    return json({ error: 'Unexpected' }, 500);
   }
 });
 

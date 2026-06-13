@@ -1,53 +1,78 @@
-# Bugs detectados al revisar la web
+## Cosas que faltan o no concuerdan en la web
 
-## 1. 🔴 Página pública de curso rota — "permission denied for function has_active_enrollment"
-
-**Causa raíz:** las funciones `has_active_enrollment`, `has_role` e `is_course_creator` no tienen permiso `EXECUTE` para los roles `anon` y `authenticated`. La policy de SELECT en `lessons` llama a `has_active_enrollment(...)`, así que cualquier consulta pública que haga embed de lessons (como `course_modules → lessons` en `CourseDetailPage`) falla con 401 y rompe la página entera ("No pudimos cargar el curso").
-
-Es el mismo patrón que rompería cualquier endpoint que dependa de esas policies (panel de creador, admin, enrollment checks, etc.) — por eso aparece como bug crítico aunque el origen sea sólo permisos.
-
-## 2. 🟡 Carga lenta (HomePage, Marketplace, CourseDetail)
-
-**Causa:** waterfall de queries secuenciales. En `CourseDetailPage`, por ejemplo:
-1. `select courses`
-2. `rpc get_public_creators_by_ids` (espera a 1)
-3. `select course_modules + lessons` (espera a 2)
-4. `rpc get_creator_pixel_id_by_id` (en useEffect, otro round-trip)
-
-Cada paso suma latencia. Lo mismo en `HomePage` y `MarketplaceView`.
+Revisé rutas, navegación, layouts, planes/comisiones, dashboards y edge functions. Estos son los huecos reales que encontré, agrupados por gravedad.
 
 ---
 
-# Plan de arreglo
+### 🔴 Inconsistencias graves (contradicciones visibles al usuario)
 
-## A. Migración SQL — desbloquear las funciones usadas por RLS
+**1. La página `/precios` no concuerda con `/comisiones`**
+- `/comisiones` dice rotundamente: "10% siempre, fijo, sin sorpresas, 90/10".
+- `/precios` dice: Gratis = 10%, Creador = 5%, Pro = por definir.
+- Un visitante que lea ambas verá dos políticas distintas.
+- **Acción**: reescribir `ComisionesPage` para reflejar el modelo de 3 planes (o redirigir `/comisiones` → `/precios`). Actualizar el ejemplo "$10.000 → $9.000" para mostrar los tres escenarios.
 
-```sql
-GRANT EXECUTE ON FUNCTION public.has_active_enrollment(uuid, uuid) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role)   TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.is_course_creator(uuid, uuid)     TO anon, authenticated;
-```
+**2. Los planes de `/precios` no se aplican en ningún lado**
+- Se creó la tabla `creator_plans` y la RPC `get_my_plan()`, pero **ningún componente la consume**.
+- El edge function `create-payment` cobra siempre `0.9 / 0.1` (hard-coded), ignorando el plan del creador.
+- Un creador que "suba" al plan Creador (5%) seguiría pagando 10% real.
+- **Acción**: leer `get_my_plan()` en `create-payment` y usar `(100 - comision) / 100` en lugar de `0.9`.
 
-Son `SECURITY DEFINER` con `search_path` fijado, así que es seguro exponerlas — sólo devuelven `boolean` sobre el `_user_id` pasado.
+**3. El sidebar del creador no muestra ni enlaza al plan**
+- `CreatorSidebar` no tiene item "Mi Plan" / "Suscripción".
+- Tampoco hay nada en `CreatorDashboard` que indique el plan actual ni "Mejorar plan".
+- **Acción**: agregar item "Mi Plan" en el sidebar → nueva página `/creator-app/plan` que muestre plan actual + CTA "Ver planes" (link a `/precios`).
 
-## B. Optimización de carga (sólo frontend, sin cambios de lógica)
-
-1. **CourseDetailPage**: paralelizar con `Promise.all` la query de `course_modules` y el `rpc get_public_creators_by_ids` una vez que tengamos el `course`. Mover el pixel a la misma promesa.
-2. **HomePage / MarketplaceView**: ya hacen 2 fetches (courses + creators rpc). Verificar que se disparen en paralelo y agregar `staleTime: 60_000` al `useQuery` para evitar refetch al volver a la home.
-3. **CourseDetailPage**: agregar `staleTime: 30_000` para evitar refetch en navegaciones rápidas.
-
-## C. Smoke test
-
-Después de aplicar la migración:
-- Abrir `/#/course/<slug>` sin sesión → debe renderizar curso + módulos.
-- Abrir el mismo con sesión de student → idem.
-- Verificar que el panel de creador siga viendo sus cursos (no debería cambiar, sólo abrimos EXECUTE).
+**4. Restricciones de plan no implementadas** (pendiente del mensaje anterior)
+- Aún no se bloquean: >2 cursos en Gratis, subida directa de video en Gratis, límite de tamaño de archivos, ni publicar curso con precio > 0 sin MercadoPago.
 
 ---
 
-# Detalles técnicos
+### 🟡 Rutas/páginas que faltan (mencionadas o esperables)
 
-- Archivos a editar: `src/pages/CourseDetailPage.tsx`, `src/pages/HomePage.tsx`, `src/components/marketplace/MarketplaceView.tsx`.
-- Nueva migración: `supabase/migrations/<timestamp>_grant_rls_functions.sql`.
-- No se tocan policies ni se cambian columnas expuestas — el modelo de privacidad sigue igual.
-- No requiere cambios en edge functions ni en secrets.
+**5. Footer sin enlaces legales**
+- El footer de `PublicLayout` solo enlaza Marketplace, Comisiones, Login, Signup. Falta:
+  - `/precios` (existe pero no está en el footer)
+  - `/terminos` (Términos y Condiciones) — **no existe la página**
+  - `/privacidad` (Política de Privacidad) — **no existe la página**
+  - `/contacto` o `/ayuda` — **no existe**
+- Crítico para cobrar pagos y para Google/MercadoPago.
+
+**6. Página pública para creadores ("Vender en NOVU")**
+- El link existe (`/signup?role=creator`), pero no hay landing dedicada que explique beneficios + cuente la propuesta de valor antes de pedir registro. Hoy se mezcla todo en `HomePage`.
+
+**7. `/precios` no está en el footer**
+- Está solo en la navbar. Inconsistente con el resto de links del footer.
+
+---
+
+### 🟡 Concordancia entre páginas
+
+**8. `HomePage` sigue mencionando "10% de comisión, 90% para ti"** (revisar y alinear con el nuevo modelo de 3 planes, o aclarar que es el plan Gratis).
+
+**9. `CreatorFinancesPage` muestra "Comisión NOVU 10%"** hard-coded (asumido — verificar y parametrizar por plan).
+
+**10. FAQ de `/precios` dice "se calcula sobre el precio total"** — consistente, pero `/comisiones` muestra un solo número fijo. Unificar el mensaje.
+
+---
+
+### 🟢 Otros huecos menores detectados
+
+- **Ruta `/courses` vs `/marketplace`**: la navbar dice "Marketplace" pero apunta a `/courses`. No hay `/marketplace` real. Funciona, pero el slug es confuso.
+- **`StudentSettings`** no permite cambiar contraseña ni eliminar cuenta (revisar).
+- **`waitlist_pro`**: se guarda el email pero no hay panel admin para ver la lista.
+
+---
+
+## Propuesta de prioridades
+
+Te propongo abordarlo en este orden (puedes elegir cuáles):
+
+1. **Alinear `/comisiones` con `/precios`** (o redirigir) — elimina la contradicción más visible.
+2. **Conectar `get_my_plan()` al edge function `create-payment`** — para que el plan tenga efecto real.
+3. **Crear página `/creator-app/plan`** + item en sidebar — para que el creador vea/cambie su plan.
+4. **Crear `/terminos` y `/privacidad`** + agregar al footer junto con `/precios`.
+5. **Implementar restricciones de plan** (lo pendiente del mensaje anterior: >2 cursos, video directo, tamaño archivos).
+6. Limpiar copy del Home y Finanzas para reflejar planes variables.
+
+¿Por dónde empezamos? Puedo hacer 1+2+3 en una sola pasada (es lo más impactante), o ir uno a uno.

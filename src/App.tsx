@@ -14,6 +14,9 @@ import AdminCourseEditorPage from "@/pages/admin/AdminCourseEditorPage";
 import AdminInstructorsPage from "@/pages/admin/AdminInstructorsPage";
 import HomePage from "@/pages/HomePage";
 import ComisionesPage from "@/pages/ComisionesPage";
+import TerminosPage from "@/pages/TerminosPage";
+import PrivacidadPage from "@/pages/PrivacidadPage";
+import CreatorPlanPage from "@/pages/creator/CreatorPlanPage";
 import PreciosPage from "@/pages/PreciosPage";
 import CoursesPage from "@/pages/CoursesPage";
 import CourseDetailPage from "@/pages/CourseDetailPage";
@@ -75,6 +78,8 @@ const App = () => (
 
               {/* Comisiones route - standalone */}
               <Route path="/comisiones" element={<ComisionesPage />} />
+              <Route path="/terminos" element={<TerminosPage />} />
+              <Route path="/privacidad" element={<PrivacidadPage />} />
 
               {/* Debug route - dev only */}
               {import.meta.env.DEV && <Route path="/debug" element={<DebugPage />} />}
@@ -117,6 +122,7 @@ const App = () => (
                 <Route path="checkout-pages/new" element={<CheckoutPageEditorPage />} />
                 <Route path="checkout-pages/:id/edit" element={<CheckoutPageEditorPage />} />
                 <Route path="profile" element={<CreatorProfileEdit />} />
+                <Route path="plan" element={<CreatorPlanPage />} />
                 <Route path="billing" element={<CreatorBillingPage />} />
               </Route>
 

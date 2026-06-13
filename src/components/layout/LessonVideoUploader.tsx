@@ -110,8 +110,8 @@ export default function LessonVideoUploader({
 
       await uploadWithProgress(signed.signedUrl, accessToken, file, setProgress);
 
-      const { data } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
-      onUrlChange(data.publicUrl);
+      // Store the storage PATH (not a URL). Access is mediated by get-protected-url.
+      onUrlChange(filePath);
       setProgress(100);
       toast({ title: "Video subido correctamente ✅" });
     } catch (err: any) {

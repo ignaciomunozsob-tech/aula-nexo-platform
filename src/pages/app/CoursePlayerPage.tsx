@@ -404,16 +404,26 @@ export default function CoursePlayerPage() {
                 <h3 className="font-medium mb-3">Recursos descargables</h3>
                 <div className="space-y-2">
                   {currentLesson.lesson_resources.map((resource: any) => (
-                    <a
+                    <button
                       key={resource.id}
-                      href={resource.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const url = await resolveProtectedUrl(resource.file_url);
+                          window.open(url, '_blank', 'noopener,noreferrer');
+                        } catch (err: any) {
+                          toast({
+                            title: 'No se pudo abrir el recurso',
+                            description: err?.message || 'Intenta nuevamente',
+                            variant: 'destructive',
+                          });
+                        }
+                      }}
                       className="flex items-center gap-2 text-sm text-primary hover:underline"
                     >
                       <Download className="h-4 w-4" />
                       {resource.file_name}
-                    </a>
+                    </button>
                   ))}
                 </div>
               </div>

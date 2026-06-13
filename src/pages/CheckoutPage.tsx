@@ -125,7 +125,12 @@ export default function CheckoutPage({ embed = false }: Props) {
       }}
       bump={{
         enabled: !!products.bump,
-        product: products.bump ? { title: products.bump.title, price_clp: products.bump.price_clp } : undefined,
+        product: products.bump ? {
+          title: products.bump.title,
+          price_clp: products.bump.price_clp,
+          cover_image_url: (products.bump as any).cover_image_url,
+          description: (products.bump as any).description,
+        } : undefined,
         headline: page.bump_headline,
         description: page.bump_description,
         originalPrice: products.bump?.price_clp,

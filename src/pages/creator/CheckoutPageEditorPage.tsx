@@ -75,10 +75,10 @@ export default function CheckoutPageEditorPage() {
     enabled: !!user,
     queryFn: async () => {
       const [c, e, ev, cm] = await Promise.all([
-        supabase.from('courses').select('id, title, price_clp, cover_image_url').eq('creator_id', user!.id),
-        supabase.from('ebooks').select('id, title, price_clp, cover_image_url').eq('creator_id', user!.id),
-        supabase.from('events').select('id, title, price_clp, cover_image_url').eq('creator_id', user!.id),
-        supabase.from('communities').select('id, name, price_clp, cover_url').eq('creator_id', user!.id),
+        supabase.from('courses').select('id, title, description, price_clp, cover_image_url').eq('creator_id', user!.id),
+        supabase.from('ebooks').select('id, title, description, price_clp, cover_image_url').eq('creator_id', user!.id),
+        supabase.from('events').select('id, title, description, price_clp, cover_image_url').eq('creator_id', user!.id),
+        supabase.from('communities').select('id, name, description, price_clp, cover_url').eq('creator_id', user!.id),
       ]);
       return {
         course: c.data ?? [],
@@ -217,7 +217,12 @@ export default function CheckoutPageEditorPage() {
                 }}
                 bump={{
                   enabled: bumpEnabled && !!bumpProduct,
-                  product: bumpProduct ? { title: bumpProduct.title, price_clp: bumpProduct.price_clp } : undefined,
+                  product: bumpProduct ? {
+                    title: bumpProduct.title,
+                    price_clp: bumpProduct.price_clp,
+                    cover_image_url: bumpProduct.cover_image_url,
+                    description: bumpProduct.description,
+                  } : undefined,
                   headline: bumpHeadline, description: bumpDescription,
                   originalPrice: bumpProduct?.price_clp,
                   finalPrice: bumpProduct ? Math.round(bumpProduct.price_clp * (100 - bumpDiscountPct) / 100) : 0,

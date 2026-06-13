@@ -48,7 +48,7 @@ const productTypes = [
 const faqs = [
   {
     q: '¿Cuánto cobra NOVU por cada venta?',
-    a: 'NOVU cobra un 10% por venta. A eso se suma la comisión de MercadoPago que varía según las cuotas: 2,89% en 1 cuota, y aumenta progresivamente en cuotas sin interés. Puedes configurar esto directamente desde tu cuenta de MercadoPago.',
+    a: 'La comisión de NOVU depende del plan que elijas: 10% en el Plan Gratis, 5% en el Plan Creador y planes Pro a medida. A eso se suma la comisión de MercadoPago, que varía según el método de pago y las cuotas. Revisa el detalle en /precios.',
   },
   {
     q: '¿Cuándo recibo mi dinero?',

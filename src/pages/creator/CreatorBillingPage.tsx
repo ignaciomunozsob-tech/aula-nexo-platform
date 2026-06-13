@@ -229,7 +229,57 @@ export default function CreatorBillingPage() {
         )}
       </div>
 
+      <Card className={mp?.connected ? '' : 'border-amber-500/50 bg-amber-50/30 dark:bg-amber-950/10'}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Link2 className="h-5 w-5" />
+            MercadoPago — Cuenta de cobro
+          </CardTitle>
+          <CardDescription>
+            Conecta tu cuenta de MercadoPago para recibir los pagos directamente. NOVU descuenta
+            automáticamente el 10% de comisión en cada venta y tú recibes el 90% en tu cuenta MP.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {mp?.connected ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                <div>
+                  <div className="font-medium">
+                    Conectado{mp.nickname ? ` como ${mp.nickname}` : ''}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {mp.email ?? 'Cuenta MercadoPago vinculada'}
+                    {mp.live_mode === false && ' · Modo prueba'}
+                  </div>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={disconnectMp} disabled={mpBusy}>
+                {mpBusy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Unlink className="h-4 w-4 mr-2" />}
+                Desconectar
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-600" />
+                <div className="text-sm">
+                  Tu cuenta MercadoPago <strong>no está conectada</strong>. Sin esto, los alumnos no
+                  pueden comprar tus productos.
+                </div>
+              </div>
+              <Button onClick={connectMp} disabled={mpBusy}>
+                {mpBusy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Link2 className="h-4 w-4 mr-2" />}
+                Conectar MercadoPago
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
+
         <CardHeader>
           <CardTitle>Datos fiscales</CardTitle>
           <CardDescription>Para emisión de documentos tributarios</CardDescription>

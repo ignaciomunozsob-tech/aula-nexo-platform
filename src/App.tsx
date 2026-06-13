@@ -48,13 +48,15 @@ import CheckoutPageEditorPage from "@/pages/creator/CheckoutPageEditorPage";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { MetaPixelTracker } from "@/components/MetaPixelTracker";
 import DebugPage from "@/pages/DebugPage";
+import { ThemeProvider } from "@/lib/theme";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <TooltipProvider>
         <Toaster />
         <Sonner />
         <ErrorBoundary>
@@ -149,6 +151,7 @@ const App = () => (
         </ErrorBoundary>
       </TooltipProvider>
     </AuthProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

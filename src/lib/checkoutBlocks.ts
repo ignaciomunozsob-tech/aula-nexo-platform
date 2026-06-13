@@ -107,6 +107,6 @@ export const DEFAULT_BLOCKS: CheckoutBlock[] = [
 ];
 
 export const DEFAULT_THEME: CheckoutTheme = {
-  primary: '#004aad',
+  primary: '#fcc70e',
   background: '#ffffff',
 };

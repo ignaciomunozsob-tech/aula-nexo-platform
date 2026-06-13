@@ -9,8 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Loader2, ShieldCheck, ShieldAlert, Link2, Unlink, CheckCircle2, AlertCircle } from 'lucide-react';
 import { formatRut, validateRut, cleanRut } from '@/lib/rut';
+import { useSearchParams } from 'react-router-dom';
+
 
 const schema = z.object({
   business_type: z.enum(['persona_natural', 'empresa']),

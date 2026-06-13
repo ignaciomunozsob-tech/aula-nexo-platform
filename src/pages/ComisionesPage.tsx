@@ -6,6 +6,11 @@ import { SEO } from '@/components/SEO';
 export default function ComisionesPage() {
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Comisiones — Cómo cobra NOVU por cada venta"
+        description="Conoce el modelo de comisiones de NOVU: 10% en Plan Gratis, 5% en Plan Creador. Solo cobramos cuando tú vendes."
+        path="/comisiones"
+      />
       {/* Header */}
       <header className="border-b border-border bg-background sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">

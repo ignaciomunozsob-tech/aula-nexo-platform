@@ -181,14 +181,28 @@ export function CheckoutPageRenderer({
               {bump.enabled && bump.product && (
                 <div className="rounded-lg border-2 border-dashed p-3" style={{ borderColor: theme.primary }}>
                   <label className="flex gap-3 cursor-pointer">
-                    <Checkbox checked={includeBump} onCheckedChange={(v) => onToggleBump(!!v)} />
-                    <div className="flex-1">
+                    <Checkbox checked={includeBump} onCheckedChange={(v) => onToggleBump(!!v)} className="mt-1" />
+                    <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm">
                         {bump.headline || `Suma ${bump.product.title}`}
                       </p>
-                      {bump.description && (
-                        <p className="text-xs text-muted-foreground mt-1">{bump.description}</p>
-                      )}
+                      <div className="flex gap-3 mt-2">
+                        {bump.product.cover_image_url && (
+                          <img
+                            src={bump.product.cover_image_url}
+                            alt={bump.product.title}
+                            className="w-20 h-20 object-cover rounded-md flex-shrink-0"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <p className="text-xs font-medium truncate">{bump.product.title}</p>
+                          {(bump.description || bump.product.description) && (
+                            <p className="text-xs text-muted-foreground line-clamp-3">
+                              {bump.description || bump.product.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                       <p className="text-sm mt-2">
                         <span className="font-bold" style={{ color: theme.primary }}>
                           {formatCLP(bump.finalPrice ?? 0)}
@@ -203,6 +217,7 @@ export function CheckoutPageRenderer({
                   </label>
                 </div>
               )}
+
 
               <div className="flex justify-between pt-2 border-t font-bold">
                 <span>Total</span>

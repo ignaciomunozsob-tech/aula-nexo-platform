@@ -68,7 +68,7 @@ export default function CreatorProfilePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, name, avatar_url, role, creator_slug, bio, links, created_at, updated_at, intro_video_url, interests, onboarding_completed')
         .eq('creator_slug', slug)
         .maybeSingle();
       

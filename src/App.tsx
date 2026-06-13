@@ -151,6 +151,7 @@ const App = () => (
         </ErrorBoundary>
       </TooltipProvider>
     </AuthProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

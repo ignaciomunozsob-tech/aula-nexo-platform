@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     }
 
     const { access_token, refresh_token, user_id: mp_user_id, public_key, live_mode, expires_in, scope } = tokenJson;
-    if (!access_token || !mp_user_id) return json({ error: 'Respuesta MP incompleta', detail: tokenJson }, 400);
+    if (!access_token || !mp_user_id) { console.error('mp oauth incomplete'); return json({ error: 'Respuesta MP incompleta' }, 400); }
 
     // Optional: fetch MP user details (nickname/email)
     let nickname: string | null = null;

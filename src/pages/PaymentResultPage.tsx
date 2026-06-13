@@ -80,6 +80,14 @@ export default function PaymentResultPage() {
             <p className="text-muted-foreground mb-6">
               Tu compra fue procesada con éxito. Ya tienes acceso al contenido.
             </p>
+            {order?.metadata?.is_new_user && order?.guest_email && (
+              <div className="mb-6 p-4 rounded-lg bg-primary/10 border border-primary/20 text-left">
+                <p className="text-sm font-medium mb-1">📩 Configura tu contraseña</p>
+                <p className="text-sm text-muted-foreground">
+                  Te enviamos un correo a <span className="font-medium">{order.guest_email}</span> con un enlace para crear tu contraseña y acceder a tu cuenta en NOVU.
+                </p>
+              </div>
+            )}
             <Button asChild className="w-full">
               <Link to={productLink}>Ir al contenido</Link>
             </Button>

@@ -523,11 +523,17 @@ export default function CourseEditorPage() {
     },
     onError: (e: any) => {
       console.error("Save error:", e);
-      toast({
-        title: "Error al guardar",
-        description: e?.message ?? "Revisa tu conexión o intenta nuevamente",
-        variant: "destructive",
-      });
+      const raw = (e?.message || "") as string;
+      let title = "Error al guardar";
+      let description = raw || "Revisa tu conexión o intenta nuevamente";
+      if (raw.includes("mercadopago_not_connected")) {
+        title = "Conecta MercadoPago";
+        description = "Para publicar un producto con precio debes conectar tu cuenta de MercadoPago primero.";
+      } else if (raw.includes("plan_limit_courses_gratis")) {
+        title = "Límite del Plan Gratis";
+        description = "Tu Plan Gratis permite máximo 2 cursos publicados. Mejora tu plan en /precios para publicar más.";
+      }
+      toast({ title, description, variant: "destructive" });
     },
   });
 

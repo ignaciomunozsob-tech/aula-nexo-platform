@@ -3,8 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Upload, X, Film, Link2 } from "lucide-react";
+import { Loader2, Upload, X, Film, Link2, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useMyPlan } from "@/hooks/useMyPlan";
+import { Link } from "react-router-dom";
 
 interface LessonVideoUploaderProps {
   lessonId: string;
@@ -20,6 +22,9 @@ export default function LessonVideoUploader({
   onUrlChange,
 }: LessonVideoUploaderProps) {
   const { toast } = useToast();
+  const { data: plan } = useMyPlan();
+  const allowDirectVideo = plan?.allowDirectVideo ?? false;
+  const maxFileMB = plan?.maxFileMB ?? 10;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -68,11 +73,11 @@ export default function LessonVideoUploader({
       return;
     }
 
-    const maxSize = 500 * 1024 * 1024;
+    const maxSize = maxFileMB * 1024 * 1024;
     if (file.size > maxSize) {
       toast({
         title: "Archivo muy grande",
-        description: "El tamaño máximo es 500MB",
+        description: `El tamaño máximo de tu plan es ${maxFileMB}MB`,
         variant: "destructive",
       });
       return;
@@ -148,12 +153,28 @@ export default function LessonVideoUploader({
           type="button"
           variant={mode === "upload" ? "default" : "outline"}
           size="sm"
-          onClick={() => setMode("upload")}
+          onClick={() => {
+            if (!allowDirectVideo) {
+              toast({
+                title: "Función bloqueada en tu plan",
+                description: "La subida directa de videos está disponible desde el Plan Creador.",
+                variant: "destructive",
+              });
+              return;
+            }
+            setMode("upload");
+          }}
+          title={!allowDirectVideo ? "Disponible desde Plan Creador" : undefined}
         >
-          <Upload className="h-4 w-4 mr-1" />
+          {allowDirectVideo ? <Upload className="h-4 w-4 mr-1" /> : <Lock className="h-4 w-4 mr-1" />}
           Subir MP4
         </Button>
       </div>
+      {!allowDirectVideo && mode === "upload" && (
+        <div className="text-xs text-muted-foreground bg-muted/50 border border-border rounded-md p-2">
+          La subida directa de videos requiere <Link to="/precios" className="underline font-semibold">Plan Creador</Link>. Usa una URL de YouTube o Vimeo en el plan Gratis.
+        </div>
+      )}
 
       {mode === "url" ? (
         <Input

@@ -75,6 +75,7 @@ export default function CourseDetailPage() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["course-public", slug],
+    staleTime: 30_000,
     queryFn: async () => {
       if (!slug) throw new Error("Missing slug");
 
@@ -82,26 +83,10 @@ export default function CourseDetailPage() {
         .from("courses")
         .select(
           `
-          id,
-          slug,
-          title,
-          description,
-          cover_image_url,
-          price_clp,
-          level,
-          format,
-          duration_minutes_est,
-          status,
-          category_id,
-          creator_id,
-          is_novu_official,
-          instructor_name,
-          instructor_bio,
-          instructor_avatar_url,
-          categories:category_id (
-            name,
-            slug
-          )
+          id, slug, title, description, cover_image_url, price_clp, level, format,
+          duration_minutes_est, status, category_id, creator_id, is_novu_official,
+          instructor_name, instructor_bio, instructor_avatar_url,
+          categories:category_id ( name, slug )
         `
         )
         .eq("slug", slug)
@@ -109,23 +94,24 @@ export default function CourseDetailPage() {
 
       if (courseError) throw courseError;
 
-      // Hydrate creator info via secure RPC (replaces the public profiles embed)
-      let creatorProfile: any = null;
-      if (course.creator_id) {
-        const { data: creators } = await supabase.rpc('get_public_creators_by_ids', { _ids: [course.creator_id] });
-        creatorProfile = (creators && creators.length > 0) ? creators[0] : null;
-      }
-      (course as any).profiles = creatorProfile;
+      // Run creator hydration + modules in parallel
+      const [creatorsRes, modulesRes] = await Promise.all([
+        course.creator_id
+          ? supabase.rpc('get_public_creators_by_ids', { _ids: [course.creator_id] })
+          : Promise.resolve({ data: null } as any),
+        supabase
+          .from("course_modules")
+          .select("id,title,order_index, lessons(id,title,type,order_index)")
+          .eq("course_id", course.id)
+          .order("order_index"),
+      ]);
 
-      const { data: modules, error: modulesError } = await supabase
-        .from("course_modules")
-        .select("id,title,order_index, lessons(id,title,type,order_index)")
-        .eq("course_id", course.id)
-        .order("order_index");
+      if (modulesRes.error) throw modulesRes.error;
 
-      if (modulesError) throw modulesError;
+      const creators = creatorsRes?.data as any[] | null;
+      (course as any).profiles = (creators && creators.length > 0) ? creators[0] : null;
 
-      const normalized = (modules || []).map((m: any) => ({
+      const normalized = (modulesRes.data || []).map((m: any) => ({
         ...m,
         lessons: (m.lessons || []).sort(
           (a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0)

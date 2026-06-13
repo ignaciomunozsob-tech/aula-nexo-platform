@@ -168,6 +168,7 @@ function formatEventDate(iso: string) {
 export default function HomePage() {
   const { data: featuredCourses = [] } = useQuery({
     queryKey: ['home-featured-courses'],
+    staleTime: 60_000,
     queryFn: async () => {
       const { data } = await supabase
         .from('courses')

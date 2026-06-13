@@ -1,78 +1,53 @@
-# Plan: Cerrar findings de seguridad restantes
+# Bugs detectados al revisar la web
 
-## Objetivo
-Eliminar los 2 findings reales (`checkout_pages` y `profiles`) restringiendo lo que ve el público a un subconjunto mínimo de columnas. Marcar como ignorados los 2 warnings genéricos del linter sobre SECURITY DEFINER (son false positives).
+## 1. 🔴 Página pública de curso rota — "permission denied for function has_active_enrollment"
 
----
+**Causa raíz:** las funciones `has_active_enrollment`, `has_role` e `is_course_creator` no tienen permiso `EXECUTE` para los roles `anon` y `authenticated`. La policy de SELECT en `lessons` llama a `has_active_enrollment(...)`, así que cualquier consulta pública que haga embed de lessons (como `course_modules → lessons` en `CourseDetailPage`) falla con 401 y rompe la página entera ("No pudimos cargar el curso").
 
-## 1. `checkout_pages` — restringir exposición pública
+Es el mismo patrón que rompería cualquier endpoint que dependa de esas policies (panel de creador, admin, enrollment checks, etc.) — por eso aparece como bug crítico aunque el origen sea sólo permisos.
 
-**Problema:** La policy pública expone todas las columnas (incluyendo `creator_id`, `product_id`, `bump_product_id`, `blocks` JSONB completo).
+## 2. 🟡 Carga lenta (HomePage, Marketplace, CourseDetail)
 
-**Solución:**
-- Eliminar la policy `"Public can view published checkout pages"`.
-- Crear RPC `get_public_checkout_page(_slug text)` SECURITY DEFINER que devuelve solo:
-  - `slug, title, theme, blocks` (sanitizado para no incluir IDs internos sensibles si los hubiera), `product_summary` (precio, título, imagen del producto principal), `bump_summary` (si aplica: título, precio, imagen).
-- GRANT EXECUTE a `anon, authenticated`.
-- Refactorizar el frontend de la página pública de checkout para llamar el RPC en vez de hacer `select * from checkout_pages`.
+**Causa:** waterfall de queries secuenciales. En `CourseDetailPage`, por ejemplo:
+1. `select courses`
+2. `rpc get_public_creators_by_ids` (espera a 1)
+3. `select course_modules + lessons` (espera a 2)
+4. `rpc get_creator_pixel_id_by_id` (en useEffect, otro round-trip)
 
----
-
-## 2. `profiles` — perfil de creador privado por defecto
-
-**Decisión confirmada:** TODO el perfil queda privado. La vitrina pública solo expone el mínimo absoluto.
-
-**Solución:**
-- Eliminar la policy `"Creator profiles are publicly viewable"`.
-- Mantener solo las policies privadas existentes (dueño + admin).
-- Crear RPC `get_public_creator_profile(_slug text)` SECURITY DEFINER que:
-  - Valida que el usuario tenga rol `creator` en `user_roles` (no en `profiles.role`).
-  - Devuelve SOLO: `id, name, avatar_url, bio, creator_slug`.
-  - NO expone: `intro_video_url`, `links`, `interests`, `meta_pixel_id`, `last_2fa_verified_at`, `onboarding_completed`, `role`, `email`, ni ninguna otra columna.
-- GRANT EXECUTE a `anon, authenticated`.
-
-**Impacto en UI pública (consciente):**
-- La página pública del creador (`/c/{slug}`) ya **no mostrará** video de intro ni links sociales. Solo nombre, avatar, bio.
-- `get_creator_pixel_id(slug)` se mantiene tal cual (ya es RPC y solo devuelve el pixel ID, que es público por naturaleza en Meta).
-
-**Refactor de frontend:**
-- Reemplazar todas las queries `from('profiles').select(...).eq('creator_slug', ...)` públicas por llamadas al RPC.
-- Identificar todos los lugares afectados: página de creador, cards en marketplace/home, cards de cursos que muestran el nombre del creador.
-- Para listados (cards de cursos en marketplace/home que necesitan nombre+avatar del creador), crear adicionalmente RPC `get_public_creators_by_ids(_ids uuid[])` que devuelve la misma lista mínima de columnas para múltiples creators a la vez.
+Cada paso suma latencia. Lo mismo en `HomePage` y `MarketplaceView`.
 
 ---
 
-## 3. Warnings genéricos del linter — ignorar
+# Plan de arreglo
 
-Los 2 warnings `SUPA_anon_security_definer_function_executable` y `SUPA_authenticated_security_definer_function_executable` son alertas genéricas que se disparan por **cualquier** función SECURITY DEFINER ejecutable. En este proyecto, todas las funciones SECURITY DEFINER expuestas validan permisos internamente (`auth.uid()`, `has_role`, ownership checks). Son intencionalmente públicas.
+## A. Migración SQL — desbloquear las funciones usadas por RLS
 
-- Marcar ambos findings como **ignored** con explicación.
-- Actualizar `security-memory` documentando que estos warnings son aceptados.
+```sql
+GRANT EXECUTE ON FUNCTION public.has_active_enrollment(uuid, uuid) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role)   TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.is_course_creator(uuid, uuid)     TO anon, authenticated;
+```
 
----
+Son `SECURITY DEFINER` con `search_path` fijado, así que es seguro exponerlas — sólo devuelven `boolean` sobre el `_user_id` pasado.
 
-## Detalles técnicos (resumen)
+## B. Optimización de carga (sólo frontend, sin cambios de lógica)
 
-**Migración SQL:**
-1. `DROP POLICY` pública en `checkout_pages` y `profiles`.
-2. `CREATE FUNCTION get_public_checkout_page(text)` SECURITY DEFINER.
-3. `CREATE FUNCTION get_public_creator_profile(text)` SECURITY DEFINER, validando contra `user_roles`.
-4. `CREATE FUNCTION get_public_creators_by_ids(uuid[])` SECURITY DEFINER.
-5. `GRANT EXECUTE` de los 3 RPCs a `anon, authenticated`.
+1. **CourseDetailPage**: paralelizar con `Promise.all` la query de `course_modules` y el `rpc get_public_creators_by_ids` una vez que tengamos el `course`. Mover el pixel a la misma promesa.
+2. **HomePage / MarketplaceView**: ya hacen 2 fetches (courses + creators rpc). Verificar que se disparen en paralelo y agregar `staleTime: 60_000` al `useQuery` para evitar refetch al volver a la home.
+3. **CourseDetailPage**: agregar `staleTime: 30_000` para evitar refetch en navegaciones rápidas.
 
-**Frontend:**
-- Página pública de checkout: `supabase.rpc('get_public_checkout_page', { _slug })`.
-- Página pública de creador: `supabase.rpc('get_public_creator_profile', { _slug })`.
-- Listados con creator info: `supabase.rpc('get_public_creators_by_ids', { _ids })`.
-- Quitar render de `intro_video_url` y `links` de la página pública del creador.
+## C. Smoke test
 
-**Post-migración:**
-- Re-correr el scan para confirmar que los 2 findings reales desaparecen.
-- Ignorar los 2 warnings del linter + actualizar security memory.
+Después de aplicar la migración:
+- Abrir `/#/course/<slug>` sin sesión → debe renderizar curso + módulos.
+- Abrir el mismo con sesión de student → idem.
+- Verificar que el panel de creador siga viendo sus cursos (no debería cambiar, sólo abrimos EXECUTE).
 
 ---
 
-## Lo que NO cambia
-- Panel de creador logueado sigue viendo y editando todo su propio perfil (incluyendo intro_video_url, links).
-- Admin sigue viendo todo.
-- Lógica de pagos, pixel, auth, 2FA: sin cambios.
+# Detalles técnicos
+
+- Archivos a editar: `src/pages/CourseDetailPage.tsx`, `src/pages/HomePage.tsx`, `src/components/marketplace/MarketplaceView.tsx`.
+- Nueva migración: `supabase/migrations/<timestamp>_grant_rls_functions.sql`.
+- No se tocan policies ni se cambian columnas expuestas — el modelo de privacidad sigue igual.
+- No requiere cambios en edge functions ni en secrets.

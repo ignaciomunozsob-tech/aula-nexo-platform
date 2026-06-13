@@ -1129,6 +1129,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_creator_pixel_id: { Args: { _creator_slug: string }; Returns: string }
       get_ebook_file_url: { Args: { _ebook_id: string }; Returns: string }
       get_event_meeting_url: { Args: { _event_id: string }; Returns: string }
       get_event_students: {
@@ -1141,6 +1142,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_my_meta_pixel_id: { Args: never; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]

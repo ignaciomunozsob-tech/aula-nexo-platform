@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Heart, MessageCircle, Plus, Loader2, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMercadoPagoCheckout } from '@/hooks/useMercadoPagoCheckout';
+import { GuestCheckoutDialog } from '@/components/checkout/GuestCheckoutDialog';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 

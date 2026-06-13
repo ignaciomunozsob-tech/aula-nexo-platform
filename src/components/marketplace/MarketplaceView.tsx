@@ -18,6 +18,7 @@ import {
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useMercadoPagoCheckout } from '@/hooks/useMercadoPagoCheckout';
+import { GuestCheckoutDialog } from '@/components/checkout/GuestCheckoutDialog';
 import { Loader2 } from 'lucide-react';
 
 interface MarketplaceViewProps {

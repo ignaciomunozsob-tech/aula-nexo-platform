@@ -35,6 +35,74 @@ export type Database = {
         }
         Relationships: []
       }
+      checkout_pages: {
+        Row: {
+          blocks: Json
+          bump_description: string | null
+          bump_discount_pct: number
+          bump_enabled: boolean
+          bump_headline: string | null
+          bump_product_id: string | null
+          bump_product_type: string | null
+          created_at: string
+          creator_id: string
+          id: string
+          is_published: boolean
+          name: string
+          product_id: string
+          product_type: string
+          slug: string
+          theme: Json
+          updated_at: string
+        }
+        Insert: {
+          blocks?: Json
+          bump_description?: string | null
+          bump_discount_pct?: number
+          bump_enabled?: boolean
+          bump_headline?: string | null
+          bump_product_id?: string | null
+          bump_product_type?: string | null
+          created_at?: string
+          creator_id: string
+          id?: string
+          is_published?: boolean
+          name?: string
+          product_id: string
+          product_type: string
+          slug: string
+          theme?: Json
+          updated_at?: string
+        }
+        Update: {
+          blocks?: Json
+          bump_description?: string | null
+          bump_discount_pct?: number
+          bump_enabled?: boolean
+          bump_headline?: string | null
+          bump_product_id?: string | null
+          bump_product_type?: string | null
+          created_at?: string
+          creator_id?: string
+          id?: string
+          is_published?: boolean
+          name?: string
+          product_id?: string
+          product_type?: string
+          slug?: string
+          theme?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkout_pages_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       communities: {
         Row: {
           access_mode: Database["public"]["Enums"]["community_access_mode"]
@@ -776,6 +844,10 @@ export type Database = {
       orders: {
         Row: {
           amount_clp: number
+          bump_amount_clp: number
+          bump_product_id: string | null
+          bump_product_type: string | null
+          checkout_page_id: string | null
           created_at: string
           creator_amount_clp: number
           creator_id: string | null
@@ -794,6 +866,10 @@ export type Database = {
         }
         Insert: {
           amount_clp: number
+          bump_amount_clp?: number
+          bump_product_id?: string | null
+          bump_product_type?: string | null
+          checkout_page_id?: string | null
           created_at?: string
           creator_amount_clp?: number
           creator_id?: string | null
@@ -812,6 +888,10 @@ export type Database = {
         }
         Update: {
           amount_clp?: number
+          bump_amount_clp?: number
+          bump_product_id?: string | null
+          bump_product_type?: string | null
+          checkout_page_id?: string | null
           created_at?: string
           creator_amount_clp?: number
           creator_id?: string | null
@@ -828,7 +908,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_checkout_page_id_fkey"
+            columns: ["checkout_page_id"]
+            isOneToOne: false
+            referencedRelation: "checkout_pages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       page_views: {
         Row: {

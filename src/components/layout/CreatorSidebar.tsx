@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, User, LogOut, Home, DollarSign, Star, ChevronDown, Users } from 'lucide-react';
+import { LayoutDashboard, BookOpen, User, LogOut, Home, DollarSign, Star, ChevronDown, Users, CreditCard } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -42,6 +42,7 @@ export function CreatorSidebar() {
     { to: '/creator-app', icon: LayoutDashboard, label: 'Dashboard', end: true },
     { to: '/creator-app/products', icon: BookOpen, label: 'Mis Productos', end: false },
     { to: '/creator-app/communities', icon: Users, label: 'Comunidades', end: false },
+    { to: '/creator-app/checkout-pages', icon: CreditCard, label: 'Páginas de pago', end: false },
     { to: '/creator-app/finances', icon: DollarSign, label: 'Finanzas', end: false },
     { to: '/creator-app/reviews', icon: Star, label: 'Evaluaciones', end: false },
     { to: '/creator-app/profile', icon: User, label: 'Mi Perfil Público', end: false },

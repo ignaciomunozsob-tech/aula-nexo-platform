@@ -41,6 +41,9 @@ import CommunityPage from "@/pages/community/CommunityPage";
 import CommunityPostPage from "@/pages/community/CommunityPostPage";
 import NotFound from "@/pages/NotFound";
 import PaymentResultPage from "@/pages/PaymentResultPage";
+import CheckoutPage from "@/pages/CheckoutPage";
+import CheckoutPagesPage from "@/pages/creator/CheckoutPagesPage";
+import CheckoutPageEditorPage from "@/pages/creator/CheckoutPageEditorPage";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { MetaPixelTracker } from "@/components/MetaPixelTracker";
 import DebugPage from "@/pages/DebugPage";
@@ -105,6 +108,9 @@ const App = () => (
                 <Route path="reviews" element={<CreatorReviewsPage />} />
                 <Route path="communities" element={<CreatorCommunitiesPage />} />
                 <Route path="communities/:id/manage" element={<CommunityManagePage />} />
+                <Route path="checkout-pages" element={<CheckoutPagesPage />} />
+                <Route path="checkout-pages/new" element={<CheckoutPageEditorPage />} />
+                <Route path="checkout-pages/:id/edit" element={<CheckoutPageEditorPage />} />
                 <Route path="profile" element={<CreatorProfileEdit />} />
               </Route>
 
@@ -123,6 +129,11 @@ const App = () => (
 
               {/* Payment result */}
               <Route path="/payment/:result" element={<PaymentResultPage />} />
+
+              {/* Custom checkout pages */}
+              <Route path="/p/:creatorSlug/:pageSlug" element={<CheckoutPage />} />
+              <Route path="/embed/:creatorSlug/:pageSlug" element={<CheckoutPage embed />} />
+
 
 
               {/* Public course URL using creator slug: /:creatorSlug/:courseSlug */}

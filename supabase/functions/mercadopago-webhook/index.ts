@@ -6,6 +6,7 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 const MP_ACCESS_TOKEN = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN')!;
 const MP_WEBHOOK_SECRET = Deno.env.get('MERCADOPAGO_WEBHOOK_SECRET') ?? '';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 async function hmacSha256Hex(secret: string, message: string): Promise<string> {
@@ -117,6 +118,21 @@ Deno.serve(async (req) => {
           product_type: order.bump_product_type,
           product_id: order.bump_product_id,
         });
+      }
+
+      // If the buyer was created during checkout, send password setup email
+      const isNew = !!order.metadata?.is_new_user;
+      const buyerEmail: string | null = order.guest_email ?? null;
+      if (isNew && buyerEmail) {
+        try {
+          const origin = req.headers.get('origin') ?? '';
+          const anon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+          await anon.auth.resetPasswordForEmail(buyerEmail, {
+            redirectTo: `${origin || ''}/#/reset-password`,
+          });
+        } catch (e) {
+          console.error('reset email error', e);
+        }
       }
     }
 

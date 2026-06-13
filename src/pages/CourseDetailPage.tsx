@@ -137,7 +137,7 @@ export default function CourseDetailPage() {
     enabled: !!slug,
   });
 
-  const course = data?.course;
+  const course: any = data?.course;
   const modules = data?.modules || [];
   const isFree = (course?.price_clp || 0) === 0;
 

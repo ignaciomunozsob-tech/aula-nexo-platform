@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Upload, Trash2, Plus, FileText, Link2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const BUCKET = "course-assets";
+const BUCKET = "protected-content";
 
 export type LessonResourceItem = {
   id: string;

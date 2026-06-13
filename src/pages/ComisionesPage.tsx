@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, CheckCircle2, Calculator, CreditCard, Sparkles } from 'lucide-react';
+import { SEO } from '@/components/SEO';
 
 export default function ComisionesPage() {
   return (

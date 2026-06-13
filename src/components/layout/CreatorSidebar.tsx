@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, User, LogOut, Home, DollarSign, Star, ChevronDown, Users, CreditCard, Receipt } from 'lucide-react';
+import { LayoutDashboard, BookOpen, User, LogOut, Home, DollarSign, Star, ChevronDown, Users, CreditCard, Receipt, Sparkles } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

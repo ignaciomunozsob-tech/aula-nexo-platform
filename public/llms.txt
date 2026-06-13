@@ -1,0 +1,19 @@
+# NOVU
+
+> Plataforma chilena para vender productos digitales: cursos, ebooks, talleres en vivo y comunidades. Gratis para empezar.
+
+NOVU es un marketplace y panel de creadores que permite publicar y cobrar por productos digitales en pesos chilenos. Los pagos se procesan con MercadoPago. La comisión depende del plan elegido (10% en Gratis, 5% en Plan Creador).
+
+## Pages
+
+- [Inicio](/): Landing pública con marketplace destacado, beneficios para creadores y FAQ.
+- [Marketplace](/courses): Buscador y catálogo de cursos, ebooks y eventos publicados.
+- [Precios](/precios): Comparativa entre los planes Gratis, Creador y Pro.
+- [Comisiones](/comisiones): Explicación de cómo se calcula la comisión por venta.
+- [Términos](/terminos): Términos y condiciones de uso de la plataforma.
+- [Privacidad](/privacidad): Política de tratamiento de datos personales.
+
+## Optional
+
+- [Crear cuenta](/signup): Registro de estudiantes y creadores.
+- [Iniciar sesión](/login): Acceso a la cuenta.

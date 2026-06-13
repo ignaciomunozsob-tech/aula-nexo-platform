@@ -5,7 +5,6 @@ import { getCourseUrl } from '@/lib/utils';
 import {
   CheckCircle2,
   ShieldCheck,
-  Wallet,
   Users,
   LineChart,
   Award,
@@ -16,6 +15,7 @@ import {
   CalendarDays,
   MessageCircle,
   ArrowRight,
+  Check,
 } from 'lucide-react';
 import {
   Accordion,
@@ -23,6 +23,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import mockupDashboard from '@/assets/home-mockup-dashboard.jpg';
+import mockupEditor from '@/assets/home-mockup-editor.jpg';
+import mockupStudent from '@/assets/home-mockup-student.jpg';
+import mockupFinance from '@/assets/home-mockup-finance.jpg';
+import mockupPublic from '@/assets/home-mockup-public.jpg';
 
 const features = [
   { icon: Layout, title: 'Página de curso lista', desc: 'Sin diseñar nada desde cero' },
@@ -34,10 +39,10 @@ const features = [
 ];
 
 const productTypes = [
-  { icon: FileVideo, title: 'Cursos grabados', desc: 'Videos a tu ritmo', emoji: '✅' },
-  { icon: BookOpen, title: 'Ebooks y guías', desc: 'Contenido descargable', emoji: '✅' },
-  { icon: Layout, title: 'Plantillas', desc: 'Recursos listos para usar', emoji: '✅' },
-  { icon: CalendarDays, title: 'Eventos', desc: 'Talleres y sesiones online o presenciales que tus alumnos pueden agendar y pagar', soon: true, emoji: '⏳' },
+  { icon: FileVideo, title: 'Cursos grabados', desc: 'Videos a tu ritmo' },
+  { icon: BookOpen, title: 'Ebooks y guías', desc: 'Contenido descargable' },
+  { icon: Layout, title: 'Plantillas', desc: 'Recursos listos para usar' },
+  { icon: CalendarDays, title: 'Eventos', desc: 'Talleres y sesiones online o presenciales que tus alumnos pueden agendar y pagar', soon: true },
 ];
 
 const faqs = [
@@ -58,10 +63,6 @@ const faqs = [
     q: '¿Puedo vender más de un curso?',
     a: 'Sí, puedes crear y publicar todos los productos que quieras. Sin límites.',
   },
-  {
-    q: '¿Qué significa NOVU Certified?',
-    a: 'Es el sello de los cursos producidos directamente por NOVU. Garantiza estándares de calidad en contenido, producción y didáctica.',
-  },
 ];
 
 function SoonBadge() {
@@ -81,24 +82,111 @@ function NovuCertifiedBadge() {
   );
 }
 
+function BrowserFrame({ src, alt, className = '' }: { src: string; alt: string; className?: string }) {
+  return (
+    <div
+      className={`rounded-xl overflow-hidden border border-border bg-card ${className}`}
+      style={{ boxShadow: '0 24px 60px -20px rgba(0,0,0,0.18), 0 8px 20px -10px rgba(0,0,0,0.08)' }}
+    >
+      <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-border bg-muted/50">
+        <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
+        <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
+        <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
+      </div>
+      <img src={src} alt={alt} loading="lazy" width={1536} height={1024} className="w-full h-auto block" />
+    </div>
+  );
+}
+
+function FeatureSection({
+  bg,
+  reverse,
+  pill,
+  title,
+  subtitle,
+  bullets,
+  image,
+  imageAlt,
+}: {
+  bg: string;
+  reverse?: boolean;
+  pill: string;
+  title: string;
+  subtitle: string;
+  bullets: string[];
+  image: string;
+  imageAlt: string;
+}) {
+  return (
+    <section className="px-4 sm:px-6 lg:px-8 py-16 md:py-24" style={{ background: bg }}>
+      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10 md:gap-16 items-center">
+        <div className={reverse ? 'md:order-2' : ''}>
+          <span className="novu-pill">{pill}</span>
+          <h2 className="mt-5 text-3xl md:text-4xl lg:text-5xl font-black tracking-tight">{title}</h2>
+          <p className="mt-4 text-muted-foreground text-lg leading-relaxed">{subtitle}</p>
+          <ul className="mt-7 space-y-3">
+            {bullets.map((b) => (
+              <li key={b} className="flex items-start gap-3">
+                <span
+                  className="flex-shrink-0 mt-0.5 h-6 w-6 rounded-full flex items-center justify-center"
+                  style={{ background: 'hsl(var(--novu-accent) / 0.2)' }}
+                >
+                  <Check className="h-3.5 w-3.5" strokeWidth={3} style={{ color: 'hsl(var(--novu-accent))' }} />
+                </span>
+                <span className="text-foreground font-medium">{b}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className={reverse ? 'md:order-1' : ''}>
+          <BrowserFrame src={image} alt={imageAlt} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+type FeaturedCourse = {
+  id: string;
+  slug: string;
+  title: string;
+  cover_image_url: string | null;
+  price_clp: number;
+  format: string;
+  is_novu_official: boolean;
+  creator: { name: string | null; creator_slug: string | null } | null;
+};
+
+function formatEventDate(iso: string) {
+  try {
+    return new Date(iso).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch {
+    return iso;
+  }
+}
+
 export default function HomePage() {
-  const { data: certifiedCourse } = useQuery({
-    queryKey: ['novu-certified-featured'],
+  const { data: featuredCourses = [] } = useQuery({
+    queryKey: ['home-featured-courses'],
     queryFn: async () => {
       const { data } = await supabase
         .from('courses')
-        .select('id, slug, title, cover_image_url, price_clp, creator:creator_id(name, creator_slug)')
+        .select('id, slug, title, cover_image_url, price_clp, format, is_novu_official, creator:creator_id(name, creator_slug)')
         .eq('status', 'published')
-        .ilike('title', '%manychat%')
-        .limit(1)
-        .maybeSingle();
-      return data;
+        .order('is_novu_official', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(8);
+
+      const now = Date.now();
+      const list = ((data as unknown as (FeaturedCourse & { event_start_at?: string | null })[]) || []).filter((c) => {
+        if (c.format === 'live' && (c as any).event_start_at) {
+          return new Date((c as any).event_start_at).getTime() >= now;
+        }
+        return true;
+      });
+      return list.slice(0, 4);
     },
   });
-
-  const featuredHref = certifiedCourse
-    ? getCourseUrl((certifiedCourse.creator as any)?.creator_slug, certifiedCourse.slug)
-    : '/courses';
 
   return (
     <div className="bg-background">
@@ -125,11 +213,16 @@ export default function HomePage() {
             <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4" style={{ color: 'hsl(var(--novu-accent))' }} /> 5 min para publicar</span>
             <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4" style={{ color: 'hsl(var(--novu-accent))' }} /> Pagos seguros</span>
           </div>
+
+          {/* Mockup dashboard creador */}
+          <div className="mt-16 max-w-[900px] mx-auto">
+            <BrowserFrame src={mockupDashboard} alt="Dashboard del creador NOVU" />
+          </div>
         </div>
       </section>
 
       {/* 2. FEATURES */}
-      <section className="px-4 sm:px-6 lg:px-8 py-16 md:py-20">
+      <section className="px-4 sm:px-6 lg:px-8 py-16 md:py-20" style={{ background: '#f3f4f6' }}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-5xl font-black tracking-tight">
@@ -139,9 +232,9 @@ export default function HomePage() {
               Lanzar un producto digital nunca había sido tan simple
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {features.map((f) => (
-              <div key={f.title} className="novu-card flex flex-col gap-4">
+              <div key={f.title} className="novu-card flex flex-col gap-4" style={{ background: '#ffffff' }}>
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'hsl(var(--novu-accent) / 0.18)' }}>
                   <f.icon className="h-6 w-6" style={{ color: 'hsl(var(--novu-accent))' }} />
                 </div>
@@ -158,55 +251,153 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 3. NOVU CERTIFIED */}
-      <section className="px-4 sm:px-6 lg:px-8 py-16 md:py-20" style={{ background: 'hsl(var(--bg-card-alt-raw))' }}>
+      {/* 3. Sección A — Para creadores */}
+      <FeatureSection
+        bg="#ffffff"
+        pill="Para creadores"
+        title="Así de fácil es crear tu curso"
+        subtitle="Sube tus videos, organiza módulos y publica en minutos"
+        bullets={['Editor simple e intuitivo', 'Previsualización en tiempo real', 'Publica con un solo click']}
+        image={mockupEditor}
+        imageAlt="Editor de curso NOVU"
+      />
+
+      {/* 4. Sección B — Para alumnos */}
+      <FeatureSection
+        bg="#f3f4f6"
+        reverse
+        pill="Para alumnos"
+        title="Una experiencia de aprendizaje limpia"
+        subtitle="Tus alumnos acceden desde cualquier dispositivo, sin distracciones"
+        bullets={['Reproductor de video fluido', 'Progreso guardado automáticamente', 'Acceso de por vida']}
+        image={mockupStudent}
+        imageAlt="Vista del alumno viendo una lección"
+      />
+
+      {/* 5. Sección C — Finanzas */}
+      <FeatureSection
+        bg="#ffffff"
+        pill="Finanzas"
+        title="Tus ventas en tiempo real"
+        subtitle="Ve ingresos, ventas y ticket promedio cuando quieras"
+        bullets={['Dashboard de ingresos y ventas', 'Historial de transacciones', 'Métricas por curso']}
+        image={mockupFinance}
+        imageAlt="Dashboard de finanzas NOVU"
+      />
+
+      {/* 6. Sección D — Tu vitrina */}
+      <FeatureSection
+        bg="#f3f4f6"
+        reverse
+        pill="Tu vitrina"
+        title="Tu curso con su propia página profesional"
+        subtitle="Lista para vender, con tu imagen y tu precio"
+        bullets={['Página de ventas incluida', 'Badge NOVU Certified si aplica', 'Compra en un solo click']}
+        image={mockupPublic}
+        imageAlt="Página pública de un curso en NOVU"
+      />
+
+      {/* 7. CURSOS DESTACADOS */}
+      <section className="px-4 sm:px-6 lg:px-8 py-16 md:py-20" style={{ background: '#0a0a0a' }}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <NovuCertifiedBadge />
-            <h2 className="mt-5 text-3xl md:text-5xl font-black tracking-tight">
-              Cursos creados por NOVU
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight" style={{ color: '#ffffff' }}>
+              Cursos destacados
             </h2>
-            <p className="mt-4 text-muted-foreground text-lg max-w-2xl mx-auto">
-              Producidos y respaldados directamente por nuestro equipo. Calidad garantizada
+            <p className="mt-4 text-lg max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.65)' }}>
+              Los cursos más vendidos de la plataforma
             </p>
           </div>
 
-          <div className="max-w-md mx-auto">
-            <div className="novu-card flex flex-col gap-5">
-              <div className="aspect-[16/10] rounded-xl overflow-hidden bg-muted">
-                {certifiedCourse?.cover_image_url ? (
-                  <img src={certifiedCourse.cover_image_url} alt={certifiedCourse.title} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
-                    Manychat desde cero
+          {featuredCourses.length === 0 ? (
+            <p className="text-center" style={{ color: 'rgba(255,255,255,0.5)' }}>
+              Aún no hay cursos publicados.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {featuredCourses.map((c) => {
+                const href = getCourseUrl((c.creator as any)?.creator_slug, c.slug);
+                const isLive = c.format === 'live';
+                const eventDate = (c as any).event_start_at as string | undefined;
+                return (
+                  <div
+                    key={c.id}
+                    className="rounded-2xl overflow-hidden flex flex-col"
+                    style={{ background: '#161616', border: '1px solid rgba(255,255,255,0.08)' }}
+                  >
+                    <div className="aspect-[16/10] bg-white/5 overflow-hidden">
+                      {c.cover_image_url ? (
+                        <img src={c.cover_image_url} alt={c.title} loading="lazy" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                          Sin portada
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-5 flex flex-col flex-1 gap-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {c.is_novu_official && <NovuCertifiedBadge />}
+                        {isLive && eventDate ? (
+                          <span
+                            className="inline-flex items-center text-[11px] font-bold px-2.5 py-1 rounded-full"
+                            style={{ background: 'hsl(var(--novu-accent))', color: '#0a0a0a' }}
+                          >
+                            {formatEventDate(eventDate)}
+                          </span>
+                        ) : (
+                          <span
+                            className="inline-flex items-center text-[11px] font-bold px-2.5 py-1 rounded-full"
+                            style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.85)' }}
+                          >
+                            Grabado · A tu ritmo
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-base font-bold leading-snug" style={{ color: '#ffffff' }}>
+                        {c.title}
+                      </h3>
+                      <p className="text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                        por {(c.creator as any)?.name || 'Creador NOVU'}
+                      </p>
+                      <div className="mt-auto flex items-center justify-between pt-3">
+                        <div className="text-lg font-black" style={{ color: '#ffffff' }}>
+                          ${c.price_clp.toLocaleString('es-CL')}
+                        </div>
+                        <Link
+                          to={href}
+                          className="inline-flex items-center gap-1.5 text-sm font-bold transition-opacity hover:opacity-80"
+                          style={{ color: 'hsl(var(--novu-accent))' }}
+                        >
+                          Ver curso <ArrowRight className="h-4 w-4" />
+                        </Link>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <NovuCertifiedBadge />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold leading-snug">
-                  {certifiedCourse?.title || 'Manychat desde cero'}
-                </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  por {(certifiedCourse?.creator as any)?.name || 'Ignacio Muñoz'}
-                </p>
-              </div>
-              <div className="flex items-center justify-between pt-2">
-                <div className="text-2xl font-black">
-                  ${(certifiedCourse?.price_clp ?? 27000).toLocaleString('es-CL')}
-                </div>
-                <Link to={featuredHref} className="novu-btn-primary" style={{ padding: '12px 22px' }}>
-                  Ver curso
-                </Link>
-              </div>
+                );
+              })}
             </div>
-          </div>
+          )}
+
+          {featuredCourses.length >= 4 && (
+            <div className="mt-10 text-center">
+              <Link
+                to="/courses"
+                className="inline-flex items-center justify-center gap-2 rounded-full font-bold transition-colors"
+                style={{
+                  padding: '14px 28px',
+                  border: '1.5px solid rgba(255,255,255,0.9)',
+                  color: '#ffffff',
+                  background: 'transparent',
+                }}
+              >
+                Ver todos los cursos <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 
-      {/* 4. TIPOS DE PRODUCTOS */}
+      {/* 8. TIPOS DE PRODUCTOS */}
       <section className="px-4 sm:px-6 lg:px-8 py-16 md:py-20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
@@ -220,11 +411,8 @@ export default function HomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {productTypes.map((p) => (
               <div key={p.title} className="novu-card flex flex-col gap-4 h-full">
-                <div className="flex items-center justify-between">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'hsl(var(--novu-accent) / 0.18)' }}>
-                    <p.icon className="h-6 w-6" style={{ color: 'hsl(var(--novu-accent))' }} />
-                  </div>
-                  <span className="text-xl" aria-hidden>{p.emoji}</span>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'hsl(var(--novu-accent) / 0.18)' }}>
+                  <p.icon className="h-6 w-6" style={{ color: 'hsl(var(--novu-accent))' }} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -239,7 +427,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 5. FAQ */}
+      {/* 9. FAQ */}
       <section className="px-4 sm:px-6 lg:px-8 py-16 md:py-20" style={{ background: 'hsl(var(--bg-card-alt-raw))' }}>
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
@@ -281,7 +469,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 6. CTA FINAL */}
+      {/* 10. CTA FINAL */}
       <section className="px-4 sm:px-6 lg:px-8 py-20 md:py-28" style={{ background: '#000000' }}>
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-6xl font-black tracking-tight" style={{ color: '#ffffff' }}>

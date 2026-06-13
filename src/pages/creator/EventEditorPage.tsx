@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Loader2, Upload, Trash2, Calendar, Clock, Users, Video } from 'lucide-react';
 import { generateSlug, formatPrice } from '@/lib/utils';
+import StudentManagement from '@/components/creator/StudentManagement';
 
 export default function EventEditorPage() {
   const { id } = useParams();
@@ -405,6 +406,13 @@ export default function EventEditorPage() {
           </Button>
         </div>
       </form>
+
+      {isEditing && id && (
+        <div className="mt-8">
+          <StudentManagement productId={id} productType="event" />
+        </div>
+      )}
     </div>
   );
 }
+

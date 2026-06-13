@@ -1,5 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, User, LogOut, Home, DollarSign, Star, ChevronDown, Users, CreditCard, Receipt, Sparkles } from 'lucide-react';
+import { LayoutDashboard, BookOpen, User, LogOut, Home, DollarSign, Star, ChevronDown, Users, CreditCard, Receipt, Sparkles, Lock, BarChart3, Share2 } from 'lucide-react';
+import { useMyPlan } from '@/hooks/useMyPlan';
+import { LockedFeature } from '@/components/creator/LockedFeature';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -12,9 +14,35 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
+function LockedSidebarItem({
+  icon: Icon,
+  label,
+  requires,
+  allow,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  requires: 'creador' | 'pro' | 'coming-soon';
+  allow: boolean;
+}) {
+  if (allow) return null;
+  return (
+    <li>
+      <LockedFeature requires={requires} featureName={label}>
+        <div className="sidebar-item w-full opacity-70 cursor-pointer">
+          <Icon className="h-5 w-5" />
+          <span className="flex-1">{label}</span>
+          <Lock className="h-3.5 w-3.5" />
+        </div>
+      </LockedFeature>
+    </li>
+  );
+}
+
 export function CreatorSidebar() {
   const { profile, user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { data: plan } = useMyPlan();
 
   // Check if user has any enrollments (purchased courses)
   const { data: hasEnrollments } = useQuery({
@@ -124,6 +152,9 @@ export function CreatorSidebar() {
               </NavLink>
             </li>
           ))}
+          <LockedSidebarItem icon={BarChart3} label="Estadísticas avanzadas" requires="pro" allow={!!plan?.allowAdvancedStats} />
+          <LockedSidebarItem icon={Share2} label="Afiliados" requires="pro" allow={!!plan?.allowAffiliates} />
+          <LockedSidebarItem icon={CreditCard} label="Carritos abandonados" requires="pro" allow={!!plan?.allowAbandonedCart} />
         </ul>
       </nav>
 

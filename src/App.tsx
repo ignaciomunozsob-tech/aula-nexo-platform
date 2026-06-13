@@ -18,6 +18,7 @@ import TerminosPage from "@/pages/TerminosPage";
 import PrivacidadPage from "@/pages/PrivacidadPage";
 import CreatorPlanPage from "@/pages/creator/CreatorPlanPage";
 import PreciosPage from "@/pages/PreciosPage";
+import SubscripcionCheckoutPage from "@/pages/SubscripcionCheckoutPage";
 import CoursesPage from "@/pages/CoursesPage";
 import CourseDetailPage from "@/pages/CourseDetailPage";
 import CreatorProfilePage from "@/pages/CreatorProfilePage";
@@ -80,6 +81,7 @@ const App = () => (
               <Route path="/comisiones" element={<ComisionesPage />} />
               <Route path="/terminos" element={<TerminosPage />} />
               <Route path="/privacidad" element={<PrivacidadPage />} />
+              <Route path="/suscripcion/checkout" element={<SubscripcionCheckoutPage />} />
 
               {/* Debug route - dev only */}
               {import.meta.env.DEV && <Route path="/debug" element={<DebugPage />} />}

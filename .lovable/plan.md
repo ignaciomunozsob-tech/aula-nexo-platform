@@ -1,78 +1,90 @@
-## Cosas que faltan o no concuerdan en la web
+## Plan: Actualizar sistema de planes y pagos NOVU
 
-Revisé rutas, navegación, layouts, planes/comisiones, dashboards y edge functions. Estos son los huecos reales que encontré, agrupados por gravedad.
+### 1. Página `/precios` (`src/pages/PreciosPage.tsx`)
 
----
+**Precios actualizados (netos + IVA 19%):**
+- Gratis: $0
+- Creador: $14.990/mes (IVA → $17.838) · $149.900/año (IVA → $178.381)
+- Pro: $27.990/mes (IVA → $33.308) · $279.900/año (IVA → $333.081)
 
-### 🔴 Inconsistencias graves (contradicciones visibles al usuario)
+**Cards de planes pagados:**
+- Toggle "Mensual / Anual" en cada card
+- En modo Anual: precio mensual equivalente + badge verde "2 meses gratis" + total anual debajo
+- Siempre: "+ IVA (19%)" debajo del precio + línea pequeña gris "Total: $XX.XXX/mes con IVA"
 
-**1. La página `/precios` no concuerda con `/comisiones`**
-- `/comisiones` dice rotundamente: "10% siempre, fijo, sin sorpresas, 90/10".
-- `/precios` dice: Gratis = 10%, Creador = 5%, Pro = por definir.
-- Un visitante que lea ambas verá dos políticas distintas.
-- **Acción**: reescribir `ComisionesPage` para reflejar el modelo de 3 planes (o redirigir `/comisiones` → `/precios`). Actualizar el ejemplo "$10.000 → $9.000" para mostrar los tres escenarios.
+**Features por plan** (reemplazar las actuales):
+- Gratis: 2 cursos, video YouTube/Vimeo, 10MB, 10 alumnos manuales, stats básicas, soporte docs
+- Creador: 10 cursos, video propio, 50MB, 10 alumnos manuales, cupones, email bienvenida, stats básicas, soporte WhatsApp, Agenda 1:1 (Próximamente)
+- Pro: ilimitado, video propio, 200MB, alumnos ilimitados, cupones, email bienvenida, stats avanzadas, Pixel Meta, order bump, carritos abandonados, afiliados, comunidad por curso, Agenda 1:1 (Próximamente), soporte prioritario · comisión 2%
 
-**2. Los planes de `/precios` no se aplican en ningún lado**
-- Se creó la tabla `creator_plans` y la RPC `get_my_plan()`, pero **ningún componente la consume**.
-- El edge function `create-payment` cobra siempre `0.9 / 0.1` (hard-coded), ignorando el plan del creador.
-- Un creador que "suba" al plan Creador (5%) seguiría pagando 10% real.
-- **Acción**: leer `get_my_plan()` en `create-payment` y usar `(100 - comision) / 100` en lugar de `0.9`.
+**Tabla comparativa:**
+- Tres columnas con todas las features anteriores
+- Columna Pro destacada: `border-2 border-[#fcc70e]`
 
-**3. El sidebar del creador no muestra ni enlaza al plan**
-- `CreatorSidebar` no tiene item "Mi Plan" / "Suscripción".
-- Tampoco hay nada en `CreatorDashboard` que indique el plan actual ni "Mejorar plan".
-- **Acción**: agregar item "Mi Plan" en el sidebar → nueva página `/creator-app/plan` que muestre plan actual + CTA "Ver planes" (link a `/precios`).
+### 2. Checkout de suscripción
 
-**4. Restricciones de plan no implementadas** (pendiente del mensaje anterior)
-- Aún no se bloquean: >2 cursos en Gratis, subida directa de video en Gratis, límite de tamaño de archivos, ni publicar curso con precio > 0 sin MercadoPago.
+Nueva ruta `/suscripcion/checkout?plan=creador|pro&ciclo=mensual|anual` → nueva página `src/pages/SubscripcionCheckoutPage.tsx`:
+- Resumen del plan (nombre, neto, IVA 19%, total)
+- Radio "¿Qué documento necesitas?" Boleta (default) / Factura
+- Si Factura: campos RUT empresa, razón social, giro, dirección
+- Texto gris: "El documento será emitido manualmente en un plazo de 24-48 horas hábiles"
+- Métodos: MercadoPago (siempre) / Transferencia bancaria (solo Anual)
+- Si transferencia: mostrar datos bancarios placeholder + instrucción de enviar comprobante
+- Botón "Suscribirme" en cards de `/precios` enlaza a esta ruta con query params
 
----
+Crear tabla `subscription_requests` para guardar la solicitud (plan, ciclo, método, doc, datos factura, status). MercadoPago de suscripción queda como TODO (por ahora marca el request `pending_payment` y redirige a un mensaje de "te contactaremos"; transferencia queda `pending_transfer`).
 
-### 🟡 Rutas/páginas que faltan (mencionadas o esperables)
+### 3. Features bloqueadas en panel creador
 
-**5. Footer sin enlaces legales**
-- El footer de `PublicLayout` solo enlaza Marketplace, Comisiones, Login, Signup. Falta:
-  - `/precios` (existe pero no está en el footer)
-  - `/terminos` (Términos y Condiciones) — **no existe la página**
-  - `/privacidad` (Política de Privacidad) — **no existe la página**
-  - `/contacto` o `/ayuda` — **no existe**
-- Crítico para cobrar pagos y para Google/MercadoPago.
+**Hook `useMyPlan.ts`** (extender):
+```ts
+interface PlanLimits {
+  plan, comision, planLabel,
+  maxCourses, allowDirectVideo, maxFileMB, maxManualStudents,
+  allowCoupons, allowWelcomeEmail, allowAdvancedStats,
+  allowMetaPixel, allowOrderBump, allowAbandonedCart,
+  allowAffiliates, allowCommunityPerCourse,
+}
+```
+Limits actualizados:
+- Gratis: 2 cursos, no video directo, 10MB, 10 alumnos, todo lo demás false
+- Creador: 10 cursos, video directo, 50MB, 10 alumnos, cupones+email true, resto false
+- Pro: ilimitado, video, 200MB, alumnos ilimitados, todo true, comisión 2%
 
-**6. Página pública para creadores ("Vender en NOVU")**
-- El link existe (`/signup?role=creator`), pero no hay landing dedicada que explique beneficios + cuente la propuesta de valor antes de pedir registro. Hoy se mezcla todo en `HomePage`.
+**Nuevo componente `src/components/creator/LockedFeature.tsx`:**
+- Wrapper que muestra candado 🔒 y al click abre modal
+- Props: `requires: 'creador' | 'pro' | 'coming-soon'`, `children`
+- Modal con: título, subtítulo según caso, botón amarillo "Ver plan X →" → `/precios`, botón outline "Ahora no" / "Entendido"
+- `rounded-2xl` (border-radius 16px), fondo card, sombra
 
-**7. `/precios` no está en el footer**
-- Está solo en la navbar. Inconsistente con el resto de links del footer.
+**Aplicar en panel creador** donde correspondan las features bloqueadas:
+- `CheckoutPageEditorPage` → bloquear order bump si !allowOrderBump
+- `CreatorProfileEdit` → Pixel Meta bloqueado si !allowMetaPixel
+- `CourseEditorPage` → cupones, email bienvenida, comunidad por curso
+- `CreatorFinancesPage` o sidebar → afiliados, carritos abandonados, stats avanzadas como secciones bloqueadas
+- `CreatorSidebar` → ítems "Afiliados", "Carritos", "Agenda 1:1" con badge 🔒 o "Próximamente"
 
----
+### 4. DB migration
 
-### 🟡 Concordancia entre páginas
+- Extender `creator_plans.plan` para aceptar `'gratis' | 'creador' | 'pro'` (ya soportado)
+- Crear `subscription_requests` (id, creator_id, plan, ciclo, metodo, documento, rut/razon/giro/direccion, status, created_at, updated_at)
+- Actualizar trigger `enforce_course_publish_rules` con nuevos límites por plan (2/10/ilimitado)
 
-**8. `HomePage` sigue mencionando "10% de comisión, 90% para ti"** (revisar y alinear con el nuevo modelo de 3 planes, o aclarar que es el plan Gratis).
+### Archivos a tocar
 
-**9. `CreatorFinancesPage` muestra "Comisión NOVU 10%"** hard-coded (asumido — verificar y parametrizar por plan).
+- `src/pages/PreciosPage.tsx` (rewrite)
+- `src/pages/SubscripcionCheckoutPage.tsx` (nuevo)
+- `src/App.tsx` (ruta nueva)
+- `src/hooks/useMyPlan.ts` (extender limits)
+- `src/components/creator/LockedFeature.tsx` (nuevo)
+- `src/components/layout/LessonVideoUploader.tsx` (usar nuevos límites + LockedFeature)
+- `src/components/layout/CreatorSidebar.tsx` (badges 🔒 / Próximamente)
+- `src/pages/creator/CheckoutPageEditorPage.tsx` (bloquear order bump)
+- `src/pages/creator/CreatorProfileEdit.tsx` (bloquear pixel)
+- `src/pages/creator/CourseEditorPage.tsx` (bloquear cupones, email, comunidad)
+- Migration: nueva tabla + trigger actualizado
 
-**10. FAQ de `/precios` dice "se calcula sobre el precio total"** — consistente, pero `/comisiones` muestra un solo número fijo. Unificar el mensaje.
+### Fuera de alcance (confirmar)
 
----
-
-### 🟢 Otros huecos menores detectados
-
-- **Ruta `/courses` vs `/marketplace`**: la navbar dice "Marketplace" pero apunta a `/courses`. No hay `/marketplace` real. Funciona, pero el slug es confuso.
-- **`StudentSettings`** no permite cambiar contraseña ni eliminar cuenta (revisar).
-- **`waitlist_pro`**: se guarda el email pero no hay panel admin para ver la lista.
-
----
-
-## Propuesta de prioridades
-
-Te propongo abordarlo en este orden (puedes elegir cuáles):
-
-1. **Alinear `/comisiones` con `/precios`** (o redirigir) — elimina la contradicción más visible.
-2. **Conectar `get_my_plan()` al edge function `create-payment`** — para que el plan tenga efecto real.
-3. **Crear página `/creator-app/plan`** + item en sidebar — para que el creador vea/cambie su plan.
-4. **Crear `/terminos` y `/privacidad`** + agregar al footer junto con `/precios`.
-5. **Implementar restricciones de plan** (lo pendiente del mensaje anterior: >2 cursos, video directo, tamaño archivos).
-6. Limpiar copy del Home y Finanzas para reflejar planes variables.
-
-¿Por dónde empezamos? Puedo hacer 1+2+3 en una sola pasada (es lo más impactante), o ir uno a uno.
+- Integración real de pagos recurrentes MercadoPago para suscripciones queda como flujo manual (transferencia/MP con activación manual del plan por admin) — la activación automática se puede agregar después.
+- Datos bancarios reales para transferencia → usar placeholders hasta que me los pases.

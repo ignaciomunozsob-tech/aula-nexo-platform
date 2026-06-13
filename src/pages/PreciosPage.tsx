@@ -201,7 +201,7 @@ export default function PreciosPage() {
               <li className="flex items-start gap-2 text-sm"><Check className="h-4 w-4 mt-0.5 shrink-0" style={{ color: '#fcc70e' }} strokeWidth={3} /><span>Cursos ilimitados</span></li>
               <li className="flex items-start gap-2 text-sm"><Check className="h-4 w-4 mt-0.5 shrink-0" style={{ color: '#fcc70e' }} strokeWidth={3} /><span>5% de comisión por venta</span></li>
               <li className="flex items-start gap-2 text-sm"><Check className="h-4 w-4 mt-0.5 shrink-0" style={{ color: '#fcc70e' }} strokeWidth={3} /><span>Sube tus propios videos</span></li>
-              <li className="flex items-start gap-2 text-sm"><Check className="h-4 w-4 mt-0.5 shrink-0" style={{ color: '#fcc70e' }} strokeWidth={3} /><span>Archivos hasta 50MB</span></li>
+              <li className="flex items-start gap-2 text-sm"><Check className="h-4 w-4 mt-0.5 shrink-0" style={{ color: '#fcc70e' }} strokeWidth={3} /><span>Archivos ilimitados</span></li>
               <li className="flex items-start gap-2 text-sm"><Check className="h-4 w-4 mt-0.5 shrink-0" style={{ color: '#fcc70e' }} strokeWidth={3} /><span>Hasta 10 alumnos manuales</span></li>
               <li className="flex items-start gap-2 text-sm"><Check className="h-4 w-4 mt-0.5 shrink-0" style={{ color: '#fcc70e' }} strokeWidth={3} /><span>Soporte vía WhatsApp directo</span></li>
               <li className="flex items-start gap-2 text-sm">

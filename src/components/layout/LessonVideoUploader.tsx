@@ -24,7 +24,7 @@ export default function LessonVideoUploader({
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [mode, setMode] = useState<"url" | "upload">(
-    currentUrl?.includes("supabase") ? "upload" : "url"
+    currentUrl && !/^https?:\/\//i.test(currentUrl) ? "upload" : "url"
   );
 
   const isUploadedVideo = !!currentUrl && !/^https?:\/\//i.test(currentUrl);

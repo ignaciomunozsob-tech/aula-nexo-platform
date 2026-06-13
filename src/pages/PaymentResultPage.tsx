@@ -19,10 +19,21 @@ export default function PaymentResultPage() {
     const poll = async () => {
       if (!orderId) { setLoading(false); return; }
       while (active && attempts < 6) {
-        const { data } = await supabase.from('orders').select('*').eq('id', orderId).maybeSingle();
-        if (data) {
-          setOrder(data);
-          if (data.status !== 'pending') break;
+        const { data } = await supabase.rpc('get_order_public', { _order_id: orderId });
+        const row = Array.isArray(data) ? data[0] : null;
+        if (row) {
+          // Adapt RPC shape to match previous order shape
+          setOrder({
+            id: row.id,
+            status: row.status,
+            product_type: row.product_type,
+            product_id: row.product_id,
+            amount_clp: row.amount_clp,
+            creator_id: row.creator_id,
+            guest_email: row.guest_email,
+            metadata: { is_new_user: row.is_new_user },
+          });
+          if (row.status !== 'pending') break;
         }
         attempts++;
         await new Promise((r) => setTimeout(r, 1500));

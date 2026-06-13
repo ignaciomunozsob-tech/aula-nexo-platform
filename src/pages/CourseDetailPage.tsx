@@ -254,7 +254,16 @@ export default function CourseDetailPage() {
 
   const { startCheckout, loading: checkoutLoading } = useMercadoPagoCheckout();
 
-  const creatorPixelId = (course?.profiles as any)?.meta_pixel_id as string | null | undefined;
+  const [creatorPixelId, setCreatorPixelId] = useState<string | null>(null);
+
+  // Fetch creator's pixel via secure RPC
+  useEffect(() => {
+    const cid = (course as any)?.creator_id;
+    if (!cid) return;
+    supabase.rpc('get_creator_pixel_id_by_id', { _creator_id: cid }).then(({ data }) => {
+      setCreatorPixelId((data as string | null) ?? null);
+    });
+  }, [(course as any)?.creator_id]);
 
   // Initialize creator pixel + fire ViewContent when the course loads
   useEffect(() => {

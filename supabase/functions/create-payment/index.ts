@@ -183,7 +183,7 @@ Deno.serve(async (req) => {
       items,
       payer: userEmail ? { email: userEmail } : undefined,
       external_reference: order.id,
-      marketplace_fee: platformAmount, // NOVU 10% commission (in CLP, integer)
+      marketplace_fee: platformAmount, // NOVU commission (in CLP, integer) — varies by creator plan
       back_urls: {
         success: `${returnBase}/success?order=${order.id}`,
         failure: `${returnBase}/failure?order=${order.id}`,

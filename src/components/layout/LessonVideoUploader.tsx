@@ -153,12 +153,28 @@ export default function LessonVideoUploader({
           type="button"
           variant={mode === "upload" ? "default" : "outline"}
           size="sm"
-          onClick={() => setMode("upload")}
+          onClick={() => {
+            if (!allowDirectVideo) {
+              toast({
+                title: "Función bloqueada en tu plan",
+                description: "La subida directa de videos está disponible desde el Plan Creador.",
+                variant: "destructive",
+              });
+              return;
+            }
+            setMode("upload");
+          }}
+          title={!allowDirectVideo ? "Disponible desde Plan Creador" : undefined}
         >
-          <Upload className="h-4 w-4 mr-1" />
+          {allowDirectVideo ? <Upload className="h-4 w-4 mr-1" /> : <Lock className="h-4 w-4 mr-1" />}
           Subir MP4
         </Button>
       </div>
+      {!allowDirectVideo && mode === "upload" && (
+        <div className="text-xs text-muted-foreground bg-muted/50 border border-border rounded-md p-2">
+          La subida directa de videos requiere <Link to="/precios" className="underline font-semibold">Plan Creador</Link>. Usa una URL de YouTube o Vimeo en el plan Gratis.
+        </div>
+      )}
 
       {mode === "url" ? (
         <Input

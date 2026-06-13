@@ -12,7 +12,7 @@ interface LessonVideoUploaderProps {
   onUrlChange: (url: string) => void;
 }
 
-const BUCKET = "course-assets";
+const BUCKET = "protected-content";
 
 export default function LessonVideoUploader({
   lessonId,

@@ -16,30 +16,30 @@ export default function CheckoutPage({ embed = false }: Props) {
   const [includeBump, setIncludeBump] = useState(false);
   const { startCheckout, loading, guestDialogOpen, setGuestDialogOpen, submitGuestEmail } = useMercadoPagoCheckout();
 
-  // Get creator by slug
-  // Get creator by slug (meta_pixel_id is fetched separately via secure RPC)
-  const { data: creator } = useQuery({
-    queryKey: ['creator-by-slug', creatorSlug],
+  // Get checkout page (RPC returns only safe columns) — includes creator_id
+  const { data: page, isLoading } = useQuery({
+    queryKey: ['public-checkout-page', creatorSlug, pageSlug],
+    enabled: !!creatorSlug && !!pageSlug,
     queryFn: async () => {
-      const { data } = await supabase.from('profiles')
-        .select('id, name').eq('creator_slug', creatorSlug!).maybeSingle();
-      if (!data) return null;
-      const { data: pixel } = await supabase.rpc('get_creator_pixel_id', { _creator_slug: creatorSlug! });
-      return { ...data, meta_pixel_id: (pixel as string | null) ?? null };
+      const { data, error } = await supabase.rpc('get_public_checkout_page', {
+        _creator_slug: creatorSlug!,
+        _page_slug: pageSlug!,
+      });
+      if (error) throw error;
+      return (data && data.length > 0) ? data[0] as any : null;
     },
-    enabled: !!creatorSlug,
   });
 
-  // Get checkout page
-  const { data: page, isLoading } = useQuery({
-    queryKey: ['public-checkout-page', creator?.id, pageSlug],
-    enabled: !!creator?.id && !!pageSlug,
+  // Get creator public info via secure RPCs
+  const { data: creator } = useQuery({
+    queryKey: ['creator-by-slug', creatorSlug],
+    enabled: !!creatorSlug,
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from('checkout_pages')
-        .select('*').eq('creator_id', creator!.id).eq('slug', pageSlug!)
-        .eq('is_published', true).maybeSingle();
-      if (error) throw error;
-      return data as any;
+      const { data } = await supabase.rpc('get_public_creator_profile', { _slug: creatorSlug! });
+      const base = (data && data.length > 0) ? data[0] : null;
+      if (!base) return null;
+      const { data: pixel } = await supabase.rpc('get_creator_pixel_id', { _creator_slug: creatorSlug! });
+      return { ...base, meta_pixel_id: (pixel as string | null) ?? null };
     },
   });
 

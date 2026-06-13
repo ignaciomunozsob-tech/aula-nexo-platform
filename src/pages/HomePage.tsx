@@ -97,7 +97,7 @@ export default function HomePage() {
   });
 
   const featuredHref = certifiedCourse
-    ? getCourseUrl((certifiedCourse.creator as any)?.creator_slug, certifiedCourse.slug, certifiedCourse.id)
+    ? getCourseUrl((certifiedCourse.creator as any)?.creator_slug, certifiedCourse.slug)
     : '/courses';
 
   return (

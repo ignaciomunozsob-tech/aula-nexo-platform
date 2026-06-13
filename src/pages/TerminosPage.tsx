@@ -6,6 +6,11 @@ import { SEO } from '@/components/SEO';
 export default function TerminosPage() {
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Términos y Condiciones — NOVU"
+        description="Términos y condiciones de uso de la plataforma NOVU para creadores y estudiantes en Chile."
+        path="/terminos"
+      />
       <header className="border-b border-border bg-background sticky top-0 z-50">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center h-16">

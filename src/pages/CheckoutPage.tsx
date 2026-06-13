@@ -45,15 +45,16 @@ export default function CheckoutPage({ embed = false }: Props) {
     enabled: !!page,
     queryFn: async () => {
       const fetchOne = async (type: string, id: string) => {
-        if (type === 'course') return (await supabase.from('courses').select('id, title, price_clp, cover_image_url').eq('id', id).maybeSingle()).data;
-        if (type === 'ebook') return (await supabase.from('ebooks').select('id, title, price_clp, cover_image_url').eq('id', id).maybeSingle()).data;
-        if (type === 'event') return (await supabase.from('events').select('id, title, price_clp, cover_image_url').eq('id', id).maybeSingle()).data;
+        if (type === 'course') return (await supabase.from('courses').select('id, title, description, price_clp, cover_image_url').eq('id', id).maybeSingle()).data;
+        if (type === 'ebook') return (await supabase.from('ebooks').select('id, title, description, price_clp, cover_image_url').eq('id', id).maybeSingle()).data;
+        if (type === 'event') return (await supabase.from('events').select('id, title, description, price_clp, cover_image_url').eq('id', id).maybeSingle()).data;
         if (type === 'community') {
-          const { data } = await supabase.from('communities').select('id, name, price_clp, cover_url').eq('id', id).maybeSingle();
-          return data ? { id: data.id, title: data.name, price_clp: data.price_clp, cover_image_url: data.cover_url } : null;
+          const { data } = await supabase.from('communities').select('id, name, description, price_clp, cover_url').eq('id', id).maybeSingle();
+          return data ? { id: data.id, title: data.name, description: data.description, price_clp: data.price_clp, cover_image_url: data.cover_url } : null;
         }
         return null;
       };
+
       const main = await fetchOne(page.product_type, page.product_id);
       const bump = page.bump_enabled && page.bump_product_id
         ? await fetchOne(page.bump_product_type, page.bump_product_id) : null;

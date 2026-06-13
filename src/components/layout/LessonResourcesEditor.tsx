@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Upload, Trash2, Plus, FileText, Link2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const BUCKET = "course-assets";
+const BUCKET = "protected-content";
 
 export type LessonResourceItem = {
   id: string;
@@ -71,13 +71,12 @@ export default function LessonResourcesEditor({ lessonId, resources, onChange }:
         .upload(filePath, file, { upsert: true, contentType: file.type });
       if (upErr) throw upErr;
 
-      const { data } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
-
+      // Store the storage PATH; reader fetches signed URL via edge function.
       onChange([
         ...resources,
         {
           id: `new-${Date.now()}`,
-          file_url: data.publicUrl,
+          file_url: filePath,
           file_name: file.name,
         },
       ]);

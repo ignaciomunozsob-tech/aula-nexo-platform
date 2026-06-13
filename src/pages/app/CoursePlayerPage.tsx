@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { formatDuration } from '@/lib/utils';
+import { resolveProtectedUrl } from '@/lib/protectedMedia';
 import { Button } from '@/components/ui/button';
 import { 
   Play, 
@@ -124,6 +125,23 @@ export default function CoursePlayerPage() {
       return data;
     },
     enabled: !!enrollment?.id && !isPreviewMode,
+  });
+
+  // Compute current lesson early so we can sign protected URLs as a hook (must be top-level).
+  const allLessonsPre = modules?.flatMap((m: any) => (m.lessons as any[]) || []) || [];
+  const currentLessonForUrl = allLessonsPre.find((l: any) => l.id === selectedLessonId);
+  const protectedVideoPath =
+    currentLessonForUrl?.type === 'video' &&
+    currentLessonForUrl?.video_url &&
+    !/^https?:\/\//i.test(currentLessonForUrl.video_url)
+      ? (currentLessonForUrl.video_url as string)
+      : null;
+
+  const { data: signedVideoUrl } = useQuery({
+    queryKey: ['signed-video', protectedVideoPath],
+    queryFn: () => resolveProtectedUrl(protectedVideoPath!),
+    enabled: !!protectedVideoPath && (!!enrollment || isPreviewMode),
+    staleTime: 50 * 60 * 1000, // refresh before the 60-min TTL
   });
 
   // Select first lesson by default
@@ -340,6 +358,21 @@ export default function CoursePlayerPage() {
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   />
+                ) : protectedVideoPath ? (
+                  signedVideoUrl ? (
+                    <video
+                      src={signedVideoUrl}
+                      controls
+                      className="w-full h-full"
+                      controlsList="nodownload"
+                    >
+                      Tu navegador no soporta la reproducción de video.
+                    </video>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                  )
                 ) : (
                   <video
                     src={currentLesson.video_url}
@@ -371,16 +404,26 @@ export default function CoursePlayerPage() {
                 <h3 className="font-medium mb-3">Recursos descargables</h3>
                 <div className="space-y-2">
                   {currentLesson.lesson_resources.map((resource: any) => (
-                    <a
+                    <button
                       key={resource.id}
-                      href={resource.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const url = await resolveProtectedUrl(resource.file_url);
+                          window.open(url, '_blank', 'noopener,noreferrer');
+                        } catch (err: any) {
+                          toast({
+                            title: 'No se pudo abrir el recurso',
+                            description: err?.message || 'Intenta nuevamente',
+                            variant: 'destructive',
+                          });
+                        }
+                      }}
                       className="flex items-center gap-2 text-sm text-primary hover:underline"
                     >
                       <Download className="h-4 w-4" />
                       {resource.file_name}
-                    </a>
+                    </button>
                   ))}
                 </div>
               </div>

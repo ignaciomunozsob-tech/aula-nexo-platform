@@ -82,19 +82,17 @@ export default function EbookEditorPage() {
     setUploadingFile(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `ebooks/${user.id}/${Date.now()}.${fileExt}`;
+      // Path MUST start with the creator's user_id for the protected-content RLS policies.
+      const fileName = `${user.id}/ebooks/${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('course-assets')
+        .from('protected-content')
         .upload(fileName, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from('course-assets')
-        .getPublicUrl(fileName);
-
-      setFileUrl(urlData.publicUrl);
+      // Store the storage PATH; readers fetch a signed URL via get-protected-url.
+      setFileUrl(fileName);
       toast({ title: 'Archivo subido correctamente' });
     } catch (error: any) {
       toast({ title: 'Error al subir archivo', description: error.message, variant: 'destructive' });
@@ -309,9 +307,21 @@ export default function EbookEditorPage() {
                 <FileText className="h-8 w-8 text-primary" />
                 <div className="flex-1">
                   <p className="font-medium">Archivo cargado</p>
-                  <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                  <button
+                    type="button"
+                    className="text-sm text-primary hover:underline"
+                    onClick={async () => {
+                      try {
+                        const { resolveProtectedUrl } = await import('@/lib/protectedMedia');
+                        const url = await resolveProtectedUrl(fileUrl);
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                      } catch (err: any) {
+                        toast({ title: 'No se pudo abrir el archivo', description: err?.message, variant: 'destructive' });
+                      }
+                    }}
+                  >
                     Ver archivo
-                  </a>
+                  </button>
                 </div>
                 <Button
                   type="button"

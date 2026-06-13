@@ -12,7 +12,7 @@ interface LessonVideoUploaderProps {
   onUrlChange: (url: string) => void;
 }
 
-const BUCKET = "course-assets";
+const BUCKET = "protected-content";
 
 export default function LessonVideoUploader({
   lessonId,
@@ -24,11 +24,10 @@ export default function LessonVideoUploader({
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [mode, setMode] = useState<"url" | "upload">(
-    currentUrl?.includes("supabase") ? "upload" : "url"
+    currentUrl && !/^https?:\/\//i.test(currentUrl) ? "upload" : "url"
   );
 
-  const isUploadedVideo =
-    currentUrl?.includes("supabase") || currentUrl?.includes("course-assets");
+  const isUploadedVideo = !!currentUrl && !/^https?:\/\//i.test(currentUrl);
 
   const uploadWithProgress = (
     url: string,
@@ -111,8 +110,8 @@ export default function LessonVideoUploader({
 
       await uploadWithProgress(signed.signedUrl, accessToken, file, setProgress);
 
-      const { data } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
-      onUrlChange(data.publicUrl);
+      // Store the storage PATH (not a URL). Access is mediated by get-protected-url.
+      onUrlChange(filePath);
       setProgress(100);
       toast({ title: "Video subido correctamente ✅" });
     } catch (err: any) {

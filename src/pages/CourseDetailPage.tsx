@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMercadoPagoCheckout } from "@/hooks/useMercadoPagoCheckout";
+import { GuestCheckoutDialog } from "@/components/checkout/GuestCheckoutDialog";
 import { initPixel, trackEvent, trackEventFor } from "@/lib/metaPixel";
 
 
@@ -252,7 +253,7 @@ export default function CourseDetailPage() {
     },
   });
 
-  const { startCheckout, loading: checkoutLoading } = useMercadoPagoCheckout();
+  const { startCheckout, loading: checkoutLoading, guestDialogOpen, setGuestDialogOpen, submitGuestEmail } = useMercadoPagoCheckout();
 
   const [creatorPixelId, setCreatorPixelId] = useState<string | null>(null);
 
@@ -683,6 +684,12 @@ export default function CourseDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <GuestCheckoutDialog
+        open={guestDialogOpen}
+        onOpenChange={setGuestDialogOpen}
+        onSubmit={submitGuestEmail}
+        loading={checkoutLoading}
+      />
     </>
   );
 }

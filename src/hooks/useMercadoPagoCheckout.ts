@@ -57,7 +57,8 @@ export function useMercadoPagoCheckout() {
         },
       });
       if (error) throw error;
-      const url = data?.sandbox_init_point || data?.init_point;
+      // Producción: usar init_point. Solo caer a sandbox si MP no devolvió el de prod.
+      const url = data?.init_point || data?.sandbox_init_point;
       if (!url) throw new Error('No se obtuvo el link de pago');
       if (window.top && window.top !== window.self) {
         window.top.location.href = url;

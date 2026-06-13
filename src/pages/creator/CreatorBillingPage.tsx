@@ -347,8 +347,12 @@ export default function CreatorBillingPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Datos bancarios</CardTitle>
-          <CardDescription>Cuenta donde recibirás tus pagos (90% de cada venta)</CardDescription>
+          <CardTitle>Datos bancarios (respaldo)</CardTitle>
+          <CardDescription>
+            Solo se usan si necesitamos transferirte fondos fuera de MercadoPago (ej. reembolsos
+            de comisión, ajustes). Tus ventas normales llegan a tu cuenta MP conectada arriba.
+          </CardDescription>
+
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -1,127 +1,78 @@
-## Resumen
+# Plan: Cerrar findings de seguridad restantes
 
-Crear un sistema de **páginas de pago personalizadas** que el creador construye con bloques pre-armados, puede agregar **1 order bump opcional** (checkbox), y luego puede **embeber** el checkout en su propia landing vía `<iframe>`.
-
----
-
-## 1. Modelo de datos (nueva migración)
-
-### Tabla `checkout_pages`
-- `id`, `creator_id` (fk profiles), `product_type` ('course'|'ebook'|'event'|'community'), `product_id` (uuid)
-- `slug` (text, único por creador) — define la URL pública
-- `is_published` (bool)
-- `bump_product_type`, `bump_product_id`, `bump_discount_pct` (nullable) — order bump opcional
-- `bump_headline` (text), `bump_description` (text)
-- `blocks` (jsonb) — array ordenado de bloques con su config y `enabled`
-- `theme` (jsonb) — colores, tipografía base
-- `created_at`, `updated_at`
-
-**Bloques fijos disponibles** (cada uno on/off + campos editables):
-1. `hero` — imagen + título + subtítulo
-2. `video` — embed YouTube/Vimeo
-3. `benefits` — lista de bullets con íconos
-4. `testimonials` — hasta 6 testimonios (nombre, foto, texto, rating)
-5. `guarantee` — bloque de garantía con ícono
-6. `faq` — preguntas y respuestas
-7. `countdown` — temporizador con fecha límite
-8. `summary` — resumen de compra (precio, bump, total) **siempre visible**
-9. `checkout_button` — CTA al pago **siempre visible**
-
-### RLS
-- `SELECT` público cuando `is_published = true` (para mostrar la página y el embed)
-- `INSERT/UPDATE/DELETE` solo si `creator_id = auth.uid()` o admin
-- `GRANT SELECT` a `anon` y `authenticated`; `GRANT ALL` a `service_role`
-
-### Cambios en `orders`
-- Añadir columnas: `checkout_page_id` (fk), `bump_product_type`, `bump_product_id`, `bump_amount_clp`
-- El monto total ya queda en `amount_clp` (producto + bump si aplica)
+## Objetivo
+Eliminar los 2 findings reales (`checkout_pages` y `profiles`) restringiendo lo que ve el público a un subconjunto mínimo de columnas. Marcar como ignorados los 2 warnings genéricos del linter sobre SECURITY DEFINER (son false positives).
 
 ---
 
-## 2. Edge functions
+## 1. `checkout_pages` — restringir exposición pública
 
-### `create-payment` (actualizar)
-- Acepta `checkout_page_id` y `include_bump: boolean`
-- Si `include_bump`, calcula precio del bump aplicando descuento desde DB (nunca confiar en el cliente), crea **una sola preferencia MercadoPago** con dos `items` (producto + bump)
-- Guarda `bump_*` en `orders`
+**Problema:** La policy pública expone todas las columnas (incluyendo `creator_id`, `product_id`, `bump_product_id`, `blocks` JSONB completo).
 
-### `mercadopago-webhook` (actualizar)
-- Al pagar, si hay bump → crear acceso al producto bump también (enrollment / order paid para ebook / event registration)
-
----
-
-## 3. Frontend — creador
-
-### `/creator-app/checkout-pages`
-Listado de páginas con filtro por producto, botón "Nueva página".
-
-### `/creator-app/checkout-pages/new` y `/:id/edit`
-Editor en 3 paneles:
-- **Izquierda**: lista de bloques con switch on/off y drag para reordenar (`@dnd-kit`)
-- **Centro**: preview en vivo
-- **Derecha**: panel de propiedades del bloque seleccionado
-
-Sección aparte:
-- **Producto principal** (selector)
-- **Order bump** (selector de producto + headline + descripción + descuento %)
-- **Slug** personalizable con validación de unicidad
-- **Tema** (color principal, fondo)
-- Botones: Guardar borrador / Publicar / Copiar URL pública / Copiar snippet embed
+**Solución:**
+- Eliminar la policy `"Public can view published checkout pages"`.
+- Crear RPC `get_public_checkout_page(_slug text)` SECURITY DEFINER que devuelve solo:
+  - `slug, title, theme, blocks` (sanitizado para no incluir IDs internos sensibles si los hubiera), `product_summary` (precio, título, imagen del producto principal), `bump_summary` (si aplica: título, precio, imagen).
+- GRANT EXECUTE a `anon, authenticated`.
+- Refactorizar el frontend de la página pública de checkout para llamar el RPC en vez de hacer `select * from checkout_pages`.
 
 ---
 
-## 4. Frontend — página pública
+## 2. `profiles` — perfil de creador privado por defecto
 
-### `/p/:creatorSlug/:checkoutSlug`
-- Layout limpio sin la nav de NOVU (solo logo discreto de "Procesado por NOVU" en footer si free, ocultable en planes pagos a futuro)
-- Renderiza los bloques en orden, con `summary` y `checkout_button` siempre presentes
-- Checkbox del bump dentro del bloque `summary`
-- Botón → llama a `create-payment` con `include_bump` actual → redirige a MercadoPago
-- Dispara Meta Pixel (`ViewContent`, `InitiateCheckout`) global + pixel del creador
+**Decisión confirmada:** TODO el perfil queda privado. La vitrina pública solo expone el mínimo absoluto.
 
-### `/embed/:creatorSlug/:checkoutSlug`
-- Versión **minimalista** pensada para `<iframe>`: sin scroll lateral, alto auto, sin footer NOVU, listener `postMessage` para reportar alto al padre
-- Headers: permitir embed (`X-Frame-Options: ALLOWALL` vía meta/respuesta) — al ser SPA en Hash Router basta con no setear `frame-ancestors`
+**Solución:**
+- Eliminar la policy `"Creator profiles are publicly viewable"`.
+- Mantener solo las policies privadas existentes (dueño + admin).
+- Crear RPC `get_public_creator_profile(_slug text)` SECURITY DEFINER que:
+  - Valida que el usuario tenga rol `creator` en `user_roles` (no en `profiles.role`).
+  - Devuelve SOLO: `id, name, avatar_url, bio, creator_slug`.
+  - NO expone: `intro_video_url`, `links`, `interests`, `meta_pixel_id`, `last_2fa_verified_at`, `onboarding_completed`, `role`, `email`, ni ninguna otra columna.
+- GRANT EXECUTE a `anon, authenticated`.
 
-### Snippet de embed (mostrado al creador)
-```html
-<iframe src="https://novu.cl/#/embed/:creator/:slug"
-        style="width:100%;border:0;min-height:900px"
-        id="novu-checkout"></iframe>
-<script>
-  window.addEventListener('message', e => {
-    if (e.data?.type === 'novu:resize' && e.data.height)
-      document.getElementById('novu-checkout').style.height = e.data.height + 'px';
-  });
-</script>
-```
+**Impacto en UI pública (consciente):**
+- La página pública del creador (`/c/{slug}`) ya **no mostrará** video de intro ni links sociales. Solo nombre, avatar, bio.
+- `get_creator_pixel_id(slug)` se mantiene tal cual (ya es RPC y solo devuelve el pixel ID, que es público por naturaleza en Meta).
+
+**Refactor de frontend:**
+- Reemplazar todas las queries `from('profiles').select(...).eq('creator_slug', ...)` públicas por llamadas al RPC.
+- Identificar todos los lugares afectados: página de creador, cards en marketplace/home, cards de cursos que muestran el nombre del creador.
+- Para listados (cards de cursos en marketplace/home que necesitan nombre+avatar del creador), crear adicionalmente RPC `get_public_creators_by_ids(_ids uuid[])` que devuelve la misma lista mínima de columnas para múltiples creators a la vez.
 
 ---
 
-## 5. Integración con Meta Pixel
-Reutilizar `metaPixel.ts`. La página pública y el embed disparan los mismos eventos que ya existen, usando `creator_pixel_id` del perfil del creador dueño de la página.
+## 3. Warnings genéricos del linter — ignorar
+
+Los 2 warnings `SUPA_anon_security_definer_function_executable` y `SUPA_authenticated_security_definer_function_executable` son alertas genéricas que se disparan por **cualquier** función SECURITY DEFINER ejecutable. En este proyecto, todas las funciones SECURITY DEFINER expuestas validan permisos internamente (`auth.uid()`, `has_role`, ownership checks). Son intencionalmente públicas.
+
+- Marcar ambos findings como **ignored** con explicación.
+- Actualizar `security-memory` documentando que estos warnings son aceptados.
 
 ---
 
-## 6. Entregables por orden de implementación
+## Detalles técnicos (resumen)
 
-1. Migración DB (tabla `checkout_pages` + columnas en `orders` + RLS + GRANTs)
-2. Edge function `create-payment` actualizada + webhook
-3. Editor del creador (`CheckoutPagesPage`, `CheckoutPageEditor`) con bloques fijos
-4. Página pública `/p/:creator/:slug`
-5. Vista embed `/embed/:creator/:slug` con `postMessage` resize
-6. UI para copiar URL y snippet embed
-7. Entrada en el sidebar del creador
+**Migración SQL:**
+1. `DROP POLICY` pública en `checkout_pages` y `profiles`.
+2. `CREATE FUNCTION get_public_checkout_page(text)` SECURITY DEFINER.
+3. `CREATE FUNCTION get_public_creator_profile(text)` SECURITY DEFINER, validando contra `user_roles`.
+4. `CREATE FUNCTION get_public_creators_by_ids(uuid[])` SECURITY DEFINER.
+5. `GRANT EXECUTE` de los 3 RPCs a `anon, authenticated`.
+
+**Frontend:**
+- Página pública de checkout: `supabase.rpc('get_public_checkout_page', { _slug })`.
+- Página pública de creador: `supabase.rpc('get_public_creator_profile', { _slug })`.
+- Listados con creator info: `supabase.rpc('get_public_creators_by_ids', { _ids })`.
+- Quitar render de `intro_video_url` y `links` de la página pública del creador.
+
+**Post-migración:**
+- Re-correr el scan para confirmar que los 2 findings reales desaparecen.
+- Ignorar los 2 warnings del linter + actualizar security memory.
 
 ---
 
-## Notas técnicas
-
-- **Drag & drop**: `@dnd-kit/core` + `@dnd-kit/sortable` (ya soportado por el stack).
-- **Sanitización**: todo texto rico de bloques pasa por `DOMPurify` (`src/lib/sanitize.ts`).
-- **Bloques**: cada uno es un componente `<BlockHero />`, `<BlockTestimonials />`, etc. en `src/components/checkout-blocks/`. Renderer recibe el array `blocks` y mapea por `type`.
-- **Seguridad bump**: el precio del bump se recalcula en `create-payment` desde la DB; el cliente solo envía `include_bump: boolean`.
-- **Slug**: validar `^[a-z0-9-]{3,40}$`, único por `creator_id`.
-- **Embed**: HashRouter ya hace que `/#/embed/...` funcione sin server config extra. `postMessage` con `ResizeObserver` sobre el `body`.
-
-¿Lo apruebas y arranco con la migración?
+## Lo que NO cambia
+- Panel de creador logueado sigue viendo y editando todo su propio perfil (incluyendo intro_video_url, links).
+- Admin sigue viendo todo.
+- Lógica de pagos, pixel, auth, 2FA: sin cambios.

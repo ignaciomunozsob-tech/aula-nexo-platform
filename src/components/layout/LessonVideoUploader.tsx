@@ -27,8 +27,7 @@ export default function LessonVideoUploader({
     currentUrl?.includes("supabase") ? "upload" : "url"
   );
 
-  const isUploadedVideo =
-    currentUrl?.includes("supabase") || currentUrl?.includes("course-assets");
+  const isUploadedVideo = !!currentUrl && !/^https?:\/\//i.test(currentUrl);
 
   const uploadWithProgress = (
     url: string,

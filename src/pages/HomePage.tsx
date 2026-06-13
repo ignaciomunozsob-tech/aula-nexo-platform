@@ -204,6 +204,20 @@ export default function HomePage() {
 
   return (
     <div className="bg-background">
+      <SEO
+        title="NOVU — Vende cursos, ebooks y talleres digitales en Chile"
+        description="Crea tu cuenta gratis y vende cursos, ebooks y talleres en CLP con MercadoPago. Plataforma chilena para creadores digitales."
+        path="/"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: faqs.map((f) => ({
+            '@type': 'Question',
+            name: f.q,
+            acceptedAnswer: { '@type': 'Answer', text: f.a },
+          })),
+        }}
+      />
       {/* 1. HERO */}
       <section className="px-4 sm:px-6 lg:px-8 pt-16 pb-20 md:pt-24 md:pb-28">
         <div className="max-w-5xl mx-auto text-center">

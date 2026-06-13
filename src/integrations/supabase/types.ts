@@ -925,6 +925,7 @@ export type Database = {
           created_at: string
           creator_amount_clp: number
           creator_id: string | null
+          guest_email: string | null
           id: string
           metadata: Json | null
           mp_payment_id: string | null
@@ -947,6 +948,7 @@ export type Database = {
           created_at?: string
           creator_amount_clp?: number
           creator_id?: string | null
+          guest_email?: string | null
           id?: string
           metadata?: Json | null
           mp_payment_id?: string | null
@@ -969,6 +971,7 @@ export type Database = {
           created_at?: string
           creator_amount_clp?: number
           creator_id?: string | null
+          guest_email?: string | null
           id?: string
           metadata?: Json | null
           mp_payment_id?: string | null
@@ -1119,6 +1122,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      find_user_id_by_email: { Args: { _email: string }; Returns: string }
       get_course_students: {
         Args: { _course_id: string }
         Returns: {

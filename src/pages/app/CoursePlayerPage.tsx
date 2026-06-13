@@ -5,6 +5,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { formatDuration } from '@/lib/utils';
+import { resolveProtectedUrl } from '@/lib/protectedMedia';
+import { Button } from '@/components/ui/button';
 import { Button } from '@/components/ui/button';
 import { 
   Play, 

@@ -266,7 +266,7 @@ export default function CommunityPage() {
 }
 
 function PaidCommunityCTA({ communityId, priceClp }: { communityId: string; priceClp: number }) {
-  const { startCheckout, loading } = useMercadoPagoCheckout();
+  const { startCheckout, loading, guestDialogOpen, setGuestDialogOpen, submitGuestEmail } = useMercadoPagoCheckout();
   return (
     <div>
       <p className="mb-2">Comunidad de pago.</p>
@@ -277,6 +277,12 @@ function PaidCommunityCTA({ communityId, priceClp }: { communityId: string; pric
         {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
         Comprar acceso
       </Button>
+      <GuestCheckoutDialog
+        open={guestDialogOpen}
+        onOpenChange={setGuestDialogOpen}
+        onSubmit={submitGuestEmail}
+        loading={loading}
+      />
     </div>
   );
 }

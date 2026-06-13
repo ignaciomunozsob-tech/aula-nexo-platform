@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useMercadoPagoCheckout } from '@/hooks/useMercadoPagoCheckout';
+import { GuestCheckoutDialog } from '@/components/checkout/GuestCheckoutDialog';
 import { CheckoutPageRenderer } from '@/components/checkout-blocks/CheckoutPageRenderer';
 import { DEFAULT_BLOCKS, DEFAULT_THEME } from '@/lib/checkoutBlocks';
 import { initPixel, trackEventFor } from '@/lib/metaPixel';
@@ -13,7 +14,7 @@ interface Props { embed?: boolean }
 export default function CheckoutPage({ embed = false }: Props) {
   const { creatorSlug, pageSlug } = useParams();
   const [includeBump, setIncludeBump] = useState(false);
-  const { startCheckout, loading } = useMercadoPagoCheckout();
+  const { startCheckout, loading, guestDialogOpen, setGuestDialogOpen, submitGuestEmail } = useMercadoPagoCheckout();
 
   // Get creator by slug
   // Get creator by slug (meta_pixel_id is fetched separately via secure RPC)
@@ -118,32 +119,40 @@ export default function CheckoutPage({ embed = false }: Props) {
   };
 
   return (
-    <CheckoutPageRenderer
-      blocks={page.blocks?.length ? page.blocks : DEFAULT_BLOCKS}
-      theme={page.theme ?? DEFAULT_THEME}
-      product={{
-        title: products.main.title,
-        price_clp: products.main.price_clp,
-        cover_image_url: products.main.cover_image_url,
-      }}
-      bump={{
-        enabled: !!products.bump,
-        product: products.bump ? {
-          title: products.bump.title,
-          price_clp: products.bump.price_clp,
-          cover_image_url: (products.bump as any).cover_image_url,
-          description: (products.bump as any).description,
-        } : undefined,
-        headline: page.bump_headline,
-        description: page.bump_description,
-        originalPrice: products.bump?.price_clp,
-        finalPrice: bumpFinal,
-      }}
-      includeBump={includeBump}
-      onToggleBump={setIncludeBump}
-      onCheckout={onCheckout}
-      loading={loading}
-      embed={embed}
-    />
+    <>
+      <CheckoutPageRenderer
+        blocks={page.blocks?.length ? page.blocks : DEFAULT_BLOCKS}
+        theme={page.theme ?? DEFAULT_THEME}
+        product={{
+          title: products.main.title,
+          price_clp: products.main.price_clp,
+          cover_image_url: products.main.cover_image_url,
+        }}
+        bump={{
+          enabled: !!products.bump,
+          product: products.bump ? {
+            title: products.bump.title,
+            price_clp: products.bump.price_clp,
+            cover_image_url: (products.bump as any).cover_image_url,
+            description: (products.bump as any).description,
+          } : undefined,
+          headline: page.bump_headline,
+          description: page.bump_description,
+          originalPrice: products.bump?.price_clp,
+          finalPrice: bumpFinal,
+        }}
+        includeBump={includeBump}
+        onToggleBump={setIncludeBump}
+        onCheckout={onCheckout}
+        loading={loading}
+        embed={embed}
+      />
+      <GuestCheckoutDialog
+        open={guestDialogOpen}
+        onOpenChange={setGuestDialogOpen}
+        onSubmit={submitGuestEmail}
+        loading={loading}
+      />
+    </>
   );
 }

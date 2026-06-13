@@ -535,18 +535,26 @@ function BuyButton({ productType, productId, price, className }: {
   price: number;
   className?: string;
 }) {
-  const { startCheckout, loading } = useMercadoPagoCheckout();
+  const { startCheckout, loading, guestDialogOpen, setGuestDialogOpen, submitGuestEmail } = useMercadoPagoCheckout();
   if (price <= 0) return null;
   return (
-    <Button
-      size="sm"
-      className={className}
-      disabled={loading}
-      onClick={(e) => { e.preventDefault(); e.stopPropagation(); startCheckout(productType, productId); }}
-    >
-      {loading && <Loader2 className="h-3 w-3 mr-2 animate-spin" />}
-      Comprar
-    </Button>
+    <>
+      <Button
+        size="sm"
+        className={className}
+        disabled={loading}
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); startCheckout(productType, productId); }}
+      >
+        {loading && <Loader2 className="h-3 w-3 mr-2 animate-spin" />}
+        Comprar
+      </Button>
+      <GuestCheckoutDialog
+        open={guestDialogOpen}
+        onOpenChange={setGuestDialogOpen}
+        onSubmit={submitGuestEmail}
+        loading={loading}
+      />
+    </>
   );
 }
 

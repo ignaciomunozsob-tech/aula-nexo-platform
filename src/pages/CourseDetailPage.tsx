@@ -98,12 +98,6 @@ export default function CourseDetailPage() {
           instructor_name,
           instructor_bio,
           instructor_avatar_url,
-          profiles:creator_id (
-            name,
-            creator_slug,
-            bio,
-            avatar_url
-          ),
           categories:category_id (
             name,
             slug
@@ -114,6 +108,14 @@ export default function CourseDetailPage() {
         .single();
 
       if (courseError) throw courseError;
+
+      // Hydrate creator info via secure RPC (replaces the public profiles embed)
+      let creatorProfile: any = null;
+      if (course.creator_id) {
+        const { data: creators } = await supabase.rpc('get_public_creators_by_ids', { _ids: [course.creator_id] });
+        creatorProfile = (creators && creators.length > 0) ? creators[0] : null;
+      }
+      (course as any).profiles = creatorProfile;
 
       const { data: modules, error: modulesError } = await supabase
         .from("course_modules")

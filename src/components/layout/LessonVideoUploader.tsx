@@ -3,8 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Upload, X, Film, Link2 } from "lucide-react";
+import { Loader2, Upload, X, Film, Link2, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useMyPlan } from "@/hooks/useMyPlan";
+import { Link } from "react-router-dom";
 
 interface LessonVideoUploaderProps {
   lessonId: string;
@@ -20,6 +22,9 @@ export default function LessonVideoUploader({
   onUrlChange,
 }: LessonVideoUploaderProps) {
   const { toast } = useToast();
+  const { data: plan } = useMyPlan();
+  const allowDirectVideo = plan?.allowDirectVideo ?? false;
+  const maxFileMB = plan?.maxFileMB ?? 10;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);

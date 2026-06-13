@@ -9,8 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { Loader2, ShieldCheck, ShieldAlert, Link2, Unlink, CheckCircle2, AlertCircle } from 'lucide-react';
 import { formatRut, validateRut, cleanRut } from '@/lib/rut';
+import { useSearchParams } from 'react-router-dom';
+
 
 const schema = z.object({
   business_type: z.enum(['persona_natural', 'empresa']),
@@ -65,6 +67,83 @@ export default function CreatorBillingPage() {
   const [verified, setVerified] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [mp, setMp] = useState<{ connected: boolean; nickname?: string | null; email?: string | null; live_mode?: boolean } | null>(null);
+  const [mpBusy, setMpBusy] = useState(false);
+  const [params, setParams] = useSearchParams();
+
+  // Show toast on return from MP OAuth
+  useEffect(() => {
+    const status = params.get('mp');
+    if (status === 'connected') {
+      toast.success('MercadoPago conectado correctamente');
+      params.delete('mp'); setParams(params, { replace: true });
+    } else if (status === 'error') {
+      toast.error('No se pudo conectar MercadoPago. Intenta de nuevo.');
+      params.delete('mp'); setParams(params, { replace: true });
+    }
+  }, [params, setParams]);
+
+  // Load MP connection state
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from('creator_mercadopago_accounts')
+        .select('nickname, email, live_mode')
+        .eq('creator_id', user.id)
+        .maybeSingle();
+      setMp(data ? { connected: true, ...data } : { connected: false });
+    })();
+  }, [user, params]);
+
+  const connectMp = async () => {
+    setMpBusy(true);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      if (!token) { toast.error('Inicia sesión nuevamente'); return; }
+      const redirectUri = `${window.location.origin}/mercadopago/callback`;
+      const res = await fetch(
+        `https://oahdxazzbqsdgfwwqbaj.supabase.co/functions/v1/mercadopago-oauth-start`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ redirect_uri: redirectUri }),
+        }
+      );
+      const body = await res.json();
+      if (!res.ok || !body?.authorize_url) {
+        toast.error(body?.error ?? 'No se pudo iniciar la conexión');
+        return;
+      }
+      window.location.href = body.authorize_url;
+    } finally {
+      setMpBusy(false);
+    }
+  };
+
+  const disconnectMp = async () => {
+    if (!confirm('¿Desconectar tu cuenta de MercadoPago? Los pagos se pausarán hasta reconectar.')) return;
+    setMpBusy(true);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      if (!token) return;
+      const res = await fetch(
+        `https://oahdxazzbqsdgfwwqbaj.supabase.co/functions/v1/mercadopago-disconnect`,
+        { method: 'POST', headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.ok) {
+        toast.success('MercadoPago desconectado');
+        setMp({ connected: false });
+      } else {
+        toast.error('No se pudo desconectar');
+      }
+    } finally {
+      setMpBusy(false);
+    }
+  };
+
 
   useEffect(() => {
     if (!user) return;
@@ -150,7 +229,57 @@ export default function CreatorBillingPage() {
         )}
       </div>
 
+      <Card className={mp?.connected ? '' : 'border-amber-500/50 bg-amber-50/30 dark:bg-amber-950/10'}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Link2 className="h-5 w-5" />
+            MercadoPago — Cuenta de cobro
+          </CardTitle>
+          <CardDescription>
+            Conecta tu cuenta de MercadoPago para recibir los pagos directamente. NOVU descuenta
+            automáticamente el 10% de comisión en cada venta y tú recibes el 90% en tu cuenta MP.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {mp?.connected ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                <div>
+                  <div className="font-medium">
+                    Conectado{mp.nickname ? ` como ${mp.nickname}` : ''}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {mp.email ?? 'Cuenta MercadoPago vinculada'}
+                    {mp.live_mode === false && ' · Modo prueba'}
+                  </div>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={disconnectMp} disabled={mpBusy}>
+                {mpBusy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Unlink className="h-4 w-4 mr-2" />}
+                Desconectar
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-600" />
+                <div className="text-sm">
+                  Tu cuenta MercadoPago <strong>no está conectada</strong>. Sin esto, los alumnos no
+                  pueden comprar tus productos.
+                </div>
+              </div>
+              <Button onClick={connectMp} disabled={mpBusy}>
+                {mpBusy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Link2 className="h-4 w-4 mr-2" />}
+                Conectar MercadoPago
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card>
+
         <CardHeader>
           <CardTitle>Datos fiscales</CardTitle>
           <CardDescription>Para emisión de documentos tributarios</CardDescription>
@@ -218,8 +347,12 @@ export default function CreatorBillingPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Datos bancarios</CardTitle>
-          <CardDescription>Cuenta donde recibirás tus pagos (90% de cada venta)</CardDescription>
+          <CardTitle>Datos bancarios (respaldo)</CardTitle>
+          <CardDescription>
+            Solo se usan si necesitamos transferirte fondos fuera de MercadoPago (ej. reembolsos
+            de comisión, ajustes). Tus ventas normales llegan a tu cuenta MP conectada arriba.
+          </CardDescription>
+
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

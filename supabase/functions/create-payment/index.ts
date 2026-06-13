@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    if (!MP_ACCESS_TOKEN) return json({ error: 'MERCADOPAGO_ACCESS_TOKEN not configured' }, 500);
+    // MP access token now comes from the creator's connected MercadoPago account (marketplace).
 
     const body = await req.json().catch(() => null) as
       | { product_type: ProductType; product_id: string; checkout_page_id?: string; include_bump?: boolean; return_url?: string; guest_email?: string }
@@ -117,6 +117,22 @@ Deno.serve(async (req) => {
     const creatorAmount = Math.round(totalAmount * 0.9);
     const platformAmount = totalAmount - creatorAmount;
 
+    // Marketplace: use the creator's MercadoPago access token + take 10% as marketplace_fee.
+    // Falls back to NOVU's own MP token only if marketplace is not configured for this creator.
+    const { data: mpAccount } = await admin
+      .from('creator_mercadopago_accounts')
+      .select('access_token')
+      .eq('creator_id', main.creator_id)
+      .maybeSingle();
+
+    if (!mpAccount?.access_token) {
+      return json({
+        error: 'creator_not_connected',
+        message: 'El creador no ha conectado su cuenta de MercadoPago. No se puede procesar el pago.',
+      }, 409);
+    }
+    const sellerAccessToken = mpAccount.access_token;
+
     const { data: order, error: orderErr } = await admin.from('orders').insert({
       user_id: userId,
       creator_id: main.creator_id,
@@ -126,7 +142,7 @@ Deno.serve(async (req) => {
       creator_amount_clp: creatorAmount,
       platform_amount_clp: platformAmount,
       status: 'pending',
-      metadata: { title: main.title, has_bump: !!bumpInfo, is_new_user: isNewUser },
+      metadata: { title: main.title, has_bump: !!bumpInfo, is_new_user: isNewUser, marketplace: true },
       checkout_page_id: body.checkout_page_id ?? null,
       bump_product_type: bumpInfo?.type ?? null,
       bump_product_id: bumpInfo?.id ?? null,
@@ -153,6 +169,7 @@ Deno.serve(async (req) => {
       items,
       payer: userEmail ? { email: userEmail } : undefined,
       external_reference: order.id,
+      marketplace_fee: platformAmount, // NOVU 10% commission (in CLP, integer)
       back_urls: {
         success: `${returnBase}/success?order=${order.id}`,
         failure: `${returnBase}/failure?order=${order.id}`,
@@ -165,12 +182,13 @@ Deno.serve(async (req) => {
         product_type: body.product_type,
         product_id: body.product_id,
         user_id: userId,
+        creator_id: main.creator_id,
       },
     };
 
     const mpRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${MP_ACCESS_TOKEN}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sellerAccessToken}` },
       body: JSON.stringify(preferencePayload),
     });
     const mpJson = await mpRes.json();
@@ -181,6 +199,7 @@ Deno.serve(async (req) => {
     }
 
     await admin.from('orders').update({ mp_preference_id: mpJson.id }).eq('id', order.id);
+
 
     return json({
       order_id: order.id,

@@ -557,6 +557,51 @@ export type Database = {
           },
         ]
       }
+      creator_mercadopago_accounts: {
+        Row: {
+          access_token: string
+          connected_at: string
+          creator_id: string
+          email: string | null
+          expires_at: string | null
+          live_mode: boolean
+          mp_user_id: string
+          nickname: string | null
+          public_key: string | null
+          refresh_token: string | null
+          scope: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          connected_at?: string
+          creator_id: string
+          email?: string | null
+          expires_at?: string | null
+          live_mode?: boolean
+          mp_user_id: string
+          nickname?: string | null
+          public_key?: string | null
+          refresh_token?: string | null
+          scope?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          connected_at?: string
+          creator_id?: string
+          email?: string | null
+          expires_at?: string | null
+          live_mode?: boolean
+          mp_user_id?: string
+          nickname?: string | null
+          public_key?: string | null
+          refresh_token?: string | null
+          scope?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       creator_reviews: {
         Row: {
           comment: string | null
@@ -1122,6 +1167,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      creator_has_mercadopago: {
+        Args: { _creator_id: string }
+        Returns: boolean
+      }
       find_user_id_by_email: { Args: { _email: string }; Returns: string }
       get_course_students: {
         Args: { _course_id: string }

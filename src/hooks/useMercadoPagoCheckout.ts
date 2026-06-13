@@ -8,12 +8,11 @@ import { trackEvent, trackEventFor } from '@/lib/metaPixel';
 type ProductType = 'course' | 'ebook' | 'event' | 'community';
 
 interface CheckoutMeta {
-  /** Price in CLP, used for Meta Pixel InitiateCheckout */
   value?: number;
-  /** Creator's Meta Pixel ID, if any */
   creatorPixelId?: string | null;
-  /** Optional content name for analytics */
   contentName?: string;
+  checkoutPageId?: string;
+  includeBump?: boolean;
 }
 
 export function useMercadoPagoCheckout() {
@@ -33,7 +32,6 @@ export function useMercadoPagoCheckout() {
     }
     setLoading(true);
 
-    // Fire Meta Pixel InitiateCheckout (global + creator pixel if provided)
     const params = {
       value: meta.value ?? undefined,
       currency: 'CLP',
@@ -48,12 +46,22 @@ export function useMercadoPagoCheckout() {
 
     try {
       const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: { product_type: productType, product_id: productId },
+        body: {
+          product_type: productType,
+          product_id: productId,
+          checkout_page_id: meta.checkoutPageId,
+          include_bump: !!meta.includeBump,
+        },
       });
       if (error) throw error;
       const url = data?.sandbox_init_point || data?.init_point;
       if (!url) throw new Error('No se obtuvo el link de pago');
-      window.location.href = url;
+      // If we're inside an iframe (embed), break out to top window
+      if (window.top && window.top !== window.self) {
+        window.top.location.href = url;
+      } else {
+        window.location.href = url;
+      }
     } catch (e: any) {
       console.error(e);
       toast.error('No se pudo iniciar el pago: ' + (e?.message ?? 'error desconocido'));

@@ -111,6 +111,13 @@ Deno.serve(async (req) => {
 
     if (newStatus === 'paid' && !wasPaidBefore) {
       await fulfillOrder(admin, order);
+      if (order.bump_product_type && order.bump_product_id && (order.bump_amount_clp ?? 0) > 0) {
+        await fulfillOrder(admin, {
+          ...order,
+          product_type: order.bump_product_type,
+          product_id: order.bump_product_id,
+        });
+      }
     }
 
     return new Response('ok', { status: 200, headers: corsHeaders });
@@ -141,7 +148,9 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, order: any) 
       await admin.from('community_join_requests').update({ status: 'approved' })
         .eq('user_id', user_id).eq('community_id', product_id);
     }
+    // ebook: access is granted via the orders table (paid order)
   } catch (e) {
     console.error('fulfill error', product_type, e);
   }
 }
+

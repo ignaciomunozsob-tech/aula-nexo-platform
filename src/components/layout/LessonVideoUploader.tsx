@@ -226,7 +226,7 @@ export default function LessonVideoUploader({
                     Seleccionar video
                   </Button>
                   <p className="text-xs text-muted-foreground">
-                    MP4, MOV, WEBM (máx. 500MB)
+                    MP4, MOV, WEBM (máx. {maxFileMB}MB)
                   </p>
                 </>
               )}

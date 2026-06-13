@@ -358,6 +358,21 @@ export default function CoursePlayerPage() {
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   />
+                ) : protectedVideoPath ? (
+                  signedVideoUrl ? (
+                    <video
+                      src={signedVideoUrl}
+                      controls
+                      className="w-full h-full"
+                      controlsList="nodownload"
+                    >
+                      Tu navegador no soporta la reproducción de video.
+                    </video>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                  )
                 ) : (
                   <video
                     src={currentLesson.video_url}

@@ -114,8 +114,22 @@ Deno.serve(async (req) => {
     }
 
     const totalAmount = main.amount + (bumpInfo?.amount ?? 0);
-    const creatorAmount = Math.round(totalAmount * 0.9);
-    const platformAmount = totalAmount - creatorAmount;
+
+    // Resolve the creator's current plan commission (defaults to 10% if no row).
+    let comisionPct = 10;
+    {
+      const { data: planRow } = await admin
+        .from('creator_plans')
+        .select('comision, plan_vence')
+        .eq('creator_id', main.creator_id)
+        .maybeSingle();
+      if (planRow && typeof planRow.comision === 'number') {
+        const notExpired = !planRow.plan_vence || new Date(planRow.plan_vence as any) > new Date();
+        if (notExpired) comisionPct = Math.max(0, Math.min(100, planRow.comision));
+      }
+    }
+    const platformAmount = Math.round(totalAmount * comisionPct / 100);
+    const creatorAmount = totalAmount - platformAmount;
 
     // Marketplace: use the creator's MercadoPago access token + take 10% as marketplace_fee.
     // Falls back to NOVU's own MP token only if marketplace is not configured for this creator.

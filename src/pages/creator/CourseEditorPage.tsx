@@ -1135,6 +1135,12 @@ export default function CourseEditorPage() {
                               <Plus className="h-4 w-4 mr-1" />
                               Agregar Lección
                             </Button>
+
+                            {id && !mod.id?.startsWith("new-") && (
+                              <div className="mt-3">
+                                <ModuleResourcesEditor moduleId={mod.id} courseId={id} />
+                              </div>
+                            )}
                           </div>
                         </div>
                       </CollapsibleContent>

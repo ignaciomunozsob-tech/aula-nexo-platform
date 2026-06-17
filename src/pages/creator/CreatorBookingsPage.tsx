@@ -5,13 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Video, X, Loader2, CalendarDays, List } from "lucide-react";
+import { Video, X, Loader2, CalendarDays, List, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { Calendar, dateFnsLocalizer, Views, View } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, startOfMonth, endOfMonth, addDays } from "date-fns";
 import { es } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "@/styles/calendar.css";
+import CreatorAvailabilityPage from "./CreatorAvailabilityPage";
 
 const locales = { es };
 const localizer = dateFnsLocalizer({
@@ -30,7 +31,6 @@ export default function CreatorBookingsPage() {
   const [selected, setSelected] = useState<CalEvent | null>(null);
 
   const range = useMemo(() => {
-    // Fetch a wide range around current month for fewer refetches
     const s = startOfMonth(date); const e = endOfMonth(date);
     return { from: addDays(s, -7).toISOString(), to: addDays(e, 7).toISOString() };
   }, [date]);
@@ -97,15 +97,6 @@ export default function CreatorBookingsPage() {
     (calData?.google_events || []).forEach((e: any) => {
       out.push({
         id: `g-${e.id}`,
-        title: e.title,
-        start: new Date(e.start),
-        end: new Date(e.end),
-        resource: { kind: "google", raw: e },
-      });
-    });
-    (calData?.google_events || []).forEach((e: any) => {
-      out.push({
-        id: `g-${e.id}`,
         title: `📅 ${e.title}`,
         start: new Date(e.start),
         end: new Date(e.end),
@@ -149,7 +140,7 @@ export default function CreatorBookingsPage() {
       <div>
         <h1 className="text-3xl font-bold">Reservas</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Tus servicios agendados <span className="inline-block w-2 h-2 bg-primary rounded-full ml-1" /> y eventos de Google Calendar <span className="inline-block w-2 h-2 bg-muted-foreground rounded-full ml-1" />.
+          Tus servicios agendados y eventos de Google Calendar.
         </p>
       </div>
 
@@ -157,6 +148,7 @@ export default function CreatorBookingsPage() {
         <TabsList>
           <TabsTrigger value="calendar"><CalendarDays className="h-4 w-4 mr-1" /> Calendario</TabsTrigger>
           <TabsTrigger value="list"><List className="h-4 w-4 mr-1" /> Lista</TabsTrigger>
+          <TabsTrigger value="availability"><Clock className="h-4 w-4 mr-1" /> Disponibilidad default</TabsTrigger>
         </TabsList>
 
         <TabsContent value="calendar" className="mt-4">
@@ -221,6 +213,12 @@ export default function CreatorBookingsPage() {
               </Card>
             </>
           )}
+        </TabsContent>
+
+        <TabsContent value="availability" className="mt-4">
+          <div className="-m-6">
+            <CreatorAvailabilityPage />
+          </div>
         </TabsContent>
       </Tabs>
 

@@ -1,7 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, User, LogOut, Home, DollarSign, Star, ChevronDown, Users, CreditCard, Receipt, Sparkles, Lock, BarChart3, Share2, Plug, CalendarClock, CalendarCheck } from 'lucide-react';
-import { useMyPlan } from '@/hooks/useMyPlan';
-import { LockedFeature } from '@/components/creator/LockedFeature';
+import { LayoutDashboard, BookOpen, User, LogOut, Home, DollarSign, ChevronDown, CalendarCheck, Sparkles } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,48 +12,19 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-function LockedSidebarItem({
-  icon: Icon,
-  label,
-  requires,
-  allow,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  requires: 'creador' | 'pro' | 'coming-soon';
-  allow: boolean;
-}) {
-  if (allow) return null;
-  return (
-    <li>
-      <LockedFeature requires={requires} featureName={label}>
-        <div className="sidebar-item w-full opacity-70 cursor-pointer">
-          <Icon className="h-5 w-5" />
-          <span className="flex-1">{label}</span>
-          <Lock className="h-3.5 w-3.5" />
-        </div>
-      </LockedFeature>
-    </li>
-  );
-}
-
 export function CreatorSidebar() {
   const { profile, user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { data: plan } = useMyPlan();
 
-  // Check if user has any enrollments (purchased courses)
   const { data: hasEnrollments } = useQuery({
     queryKey: ['creator-has-enrollments', user?.id],
     queryFn: async () => {
       if (!user?.id) return false;
-      const { count, error } = await supabase
+      const { count } = await supabase
         .from('enrollments')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .eq('status', 'active');
-      
-      if (error) return false;
       return (count || 0) > 0;
     },
     enabled: !!user?.id,
@@ -70,13 +39,8 @@ export function CreatorSidebar() {
     { to: '/creator-app', icon: LayoutDashboard, label: 'Dashboard', end: true },
     { to: '/creator-app/products', icon: BookOpen, label: 'Mis Productos', end: false },
     { to: '/creator-app/bookings', icon: CalendarCheck, label: 'Reservas', end: false },
-    { to: '/creator-app/communities', icon: Users, label: 'Comunidades', end: false },
-    { to: '/creator-app/checkout-pages', icon: CreditCard, label: 'Páginas de pago', end: false },
     { to: '/creator-app/finances', icon: DollarSign, label: 'Finanzas', end: false },
-    { to: '/creator-app/billing', icon: Receipt, label: 'Datos de facturación', end: false },
-    { to: '/creator-app/reviews', icon: Star, label: 'Evaluaciones', end: false },
     { to: '/creator-app/profile', icon: User, label: 'Mi Perfil Público', end: false },
-    { to: '/creator-app/integrations', icon: Plug, label: 'Integraciones', end: false },
     { to: '/creator-app/plan', icon: Sparkles, label: 'Mi Plan', end: false },
   ];
 
@@ -84,7 +48,6 @@ export function CreatorSidebar() {
 
   return (
     <aside className="w-64 bg-sidebar border-r border-sidebar-border min-h-screen flex flex-col">
-      {/* Logo */}
       <div className="p-6 border-b border-sidebar-border">
         <NavLink to="/" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
@@ -94,7 +57,6 @@ export function CreatorSidebar() {
         </NavLink>
       </div>
 
-      {/* User Info with Dropdown */}
       <div className="p-4 border-b border-sidebar-border">
         <DropdownMenu>
           <DropdownMenuTrigger className="w-full focus:outline-none">
@@ -131,7 +93,6 @@ export function CreatorSidebar() {
         </DropdownMenu>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 p-4">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
           Panel Creador
@@ -143,10 +104,7 @@ export function CreatorSidebar() {
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
-                  cn(
-                    'sidebar-item',
-                    isActive && 'sidebar-item-active'
-                  )
+                  cn('sidebar-item', isActive && 'sidebar-item-active')
                 }
               >
                 <item.icon className="h-5 w-5" />
@@ -154,18 +112,11 @@ export function CreatorSidebar() {
               </NavLink>
             </li>
           ))}
-          <LockedSidebarItem icon={BarChart3} label="Estadísticas avanzadas" requires="pro" allow={!!plan?.allowAdvancedStats} />
-          <LockedSidebarItem icon={Share2} label="Afiliados" requires="pro" allow={!!plan?.allowAffiliates} />
-          <LockedSidebarItem icon={CreditCard} label="Carritos abandonados" requires="pro" allow={!!plan?.allowAbandonedCart} />
         </ul>
       </nav>
 
-      {/* Bottom Actions */}
       <div className="p-4 border-t border-sidebar-border">
-        <NavLink
-          to="/"
-          className="sidebar-item mb-2"
-        >
+        <NavLink to="/" className="sidebar-item mb-2">
           <Home className="h-5 w-5" />
           <span>Ir al Inicio</span>
         </NavLink>

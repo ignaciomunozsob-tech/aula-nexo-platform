@@ -1,18 +1,15 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sparkles, ArrowUpRight, Check } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useMyPlan } from '@/hooks/useMyPlan';
+import CreatorBillingPage from './CreatorBillingPage';
+import CreatorIntegrationsPage from './CreatorIntegrationsPage';
 
-export default function CreatorPlanPage() {
+function PlanOverview() {
   const { data: plan, isLoading } = useMyPlan();
-
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Mi Plan</h1>
-        <p className="text-muted-foreground">Gestiona tu suscripción y revisa la comisión que pagas por venta.</p>
-      </div>
-
+    <div className="space-y-8">
       <div className="bg-card border-2 rounded-2xl p-8" style={{ borderColor: '#fcc70e' }}>
         {isLoading || !plan ? (
           <p className="text-muted-foreground">Cargando…</p>
@@ -28,7 +25,6 @@ export default function CreatorPlanPage() {
                 <div className="text-4xl font-bold" style={{ color: '#fcc70e' }}>{plan.comision}%</div>
               </div>
             </div>
-
             <ul className="space-y-2 mb-6">
               <li className="flex items-center gap-2 text-sm">
                 <Check className="h-4 w-4" style={{ color: '#fcc70e' }} />
@@ -44,10 +40,9 @@ export default function CreatorPlanPage() {
               </li>
               <li className="flex items-center gap-2 text-sm">
                 <Check className="h-4 w-4" style={{ color: '#fcc70e' }} />
-                {plan.maxManualStudents === null ? 'Alumnos manuales ilimitados' : `Hasta ${plan.maxManualStudents} alumnos manuales`}
+                {plan.allowCommunityPerCourse ? 'Comunidad por curso disponible' : 'Comunidad por curso (Plan Pro)'}
               </li>
             </ul>
-
             <Button asChild>
               <Link to="/precios">
                 <Sparkles className="h-4 w-4 mr-2" />
@@ -74,6 +69,38 @@ export default function CreatorPlanPage() {
           <p className="text-sm text-muted-foreground">Ejemplos prácticos con números reales.</p>
         </Link>
       </div>
+    </div>
+  );
+}
+
+export default function CreatorPlanPage() {
+  return (
+    <div className="max-w-5xl mx-auto p-6 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold mb-2">Mi Plan</h1>
+        <p className="text-muted-foreground">Plan, facturación e integraciones de tu cuenta.</p>
+      </div>
+
+      <Tabs defaultValue="plan">
+        <TabsList>
+          <TabsTrigger value="plan">Plan</TabsTrigger>
+          <TabsTrigger value="billing">Datos de facturación</TabsTrigger>
+          <TabsTrigger value="integrations">Integraciones</TabsTrigger>
+        </TabsList>
+        <TabsContent value="plan" className="mt-6">
+          <PlanOverview />
+        </TabsContent>
+        <TabsContent value="billing" className="mt-6">
+          <div className="-m-6">
+            <CreatorBillingPage />
+          </div>
+        </TabsContent>
+        <TabsContent value="integrations" className="mt-6">
+          <div className="-m-6">
+            <CreatorIntegrationsPage />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

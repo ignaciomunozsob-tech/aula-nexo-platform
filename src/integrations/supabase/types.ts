@@ -337,6 +337,163 @@ export type Database = {
           },
         ]
       }
+      course_community_bans: {
+        Row: {
+          banned_by: string
+          course_id: string
+          created_at: string
+          id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          banned_by: string
+          course_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          banned_by?: string
+          course_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_community_bans_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_community_posts: {
+        Row: {
+          author_id: string
+          body: string
+          course_id: string
+          created_at: string
+          id: string
+          image_url: string | null
+          pinned: boolean
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          course_id: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          pinned?: boolean
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          course_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          pinned?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_community_posts_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_community_reactions: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_community_reactions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_community_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "course_community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_community_replies: {
+        Row: {
+          author_id: string
+          body: string
+          course_id: string
+          created_at: string
+          id: string
+          post_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          course_id: string
+          created_at?: string
+          id?: string
+          post_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          course_id?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_community_replies_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_community_replies_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "course_community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_modules: {
         Row: {
           course_id: string
@@ -374,6 +531,8 @@ export type Database = {
           category_id: string | null
           certificate_enabled: boolean
           certificate_template_url: string | null
+          community_enabled: boolean
+          community_fee_clp: number
           cover_image_url: string | null
           created_at: string
           creator_id: string
@@ -397,6 +556,8 @@ export type Database = {
           category_id?: string | null
           certificate_enabled?: boolean
           certificate_template_url?: string | null
+          community_enabled?: boolean
+          community_fee_clp?: number
           cover_image_url?: string | null
           created_at?: string
           creator_id: string
@@ -420,6 +581,8 @@ export type Database = {
           category_id?: string | null
           certificate_enabled?: boolean
           certificate_template_url?: string | null
+          community_enabled?: boolean
+          community_fee_clp?: number
           cover_image_url?: string | null
           created_at?: string
           creator_id?: string
@@ -1095,6 +1258,57 @@ export type Database = {
           },
         ]
       }
+      module_resources: {
+        Row: {
+          course_id: string
+          created_at: string
+          file_size_bytes: number | null
+          file_url: string
+          id: string
+          mime_type: string | null
+          module_id: string
+          order_index: number
+          title: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          file_size_bytes?: number | null
+          file_url: string
+          id?: string
+          mime_type?: string | null
+          module_id: string
+          order_index?: number
+          title: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          file_size_bytes?: number | null
+          file_url?: string
+          id?: string
+          mime_type?: string | null
+          module_id?: string
+          order_index?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "module_resources_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "module_resources_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "course_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       one_on_one_sessions: {
         Row: {
           buffer_after_min: number
@@ -1156,6 +1370,7 @@ export type Database = {
           bump_product_id: string | null
           bump_product_type: string | null
           checkout_page_id: string | null
+          community_fee_clp: number
           created_at: string
           creator_amount_clp: number
           creator_id: string | null
@@ -1179,6 +1394,7 @@ export type Database = {
           bump_product_id?: string | null
           bump_product_type?: string | null
           checkout_page_id?: string | null
+          community_fee_clp?: number
           created_at?: string
           creator_amount_clp?: number
           creator_id?: string | null
@@ -1202,6 +1418,7 @@ export type Database = {
           bump_product_id?: string | null
           bump_product_type?: string | null
           checkout_page_id?: string | null
+          community_fee_clp?: number
           created_at?: string
           creator_amount_clp?: number
           creator_id?: string | null
@@ -1536,6 +1753,44 @@ export type Database = {
         Returns: boolean
       }
       find_user_id_by_email: { Args: { _email: string }; Returns: string }
+      get_course_bans: {
+        Args: { _course_id: string }
+        Returns: {
+          created_at: string
+          email: string
+          name: string
+          user_id: string
+        }[]
+      }
+      get_course_community_feed: {
+        Args: { _course_id: string }
+        Returns: {
+          author_avatar: string
+          author_id: string
+          author_name: string
+          body: string
+          created_at: string
+          id: string
+          image_url: string
+          is_creator: boolean
+          my_liked: boolean
+          pinned: boolean
+          reactions_count: number
+          replies_count: number
+        }[]
+      }
+      get_course_community_replies: {
+        Args: { _post_id: string }
+        Returns: {
+          author_avatar: string
+          author_id: string
+          author_name: string
+          body: string
+          created_at: string
+          id: string
+          is_creator: boolean
+        }[]
+      }
       get_course_students: {
         Args: { _course_id: string }
         Returns: {
@@ -1745,11 +2000,19 @@ export type Database = {
         Args: { _community_id: string; _user_id: string }
         Returns: boolean
       }
+      is_course_banned: {
+        Args: { _course_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_course_creator: {
         Args: { _course_id: string; _user_id: string }
         Returns: boolean
       }
       is_creator_2fa_valid: { Args: never; Returns: boolean }
+      unban_user_from_course: {
+        Args: { _course_id: string; _user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "student" | "creator" | "admin"

@@ -44,6 +44,9 @@ import {
   Users,
   BookOpen,
   Settings,
+  Star,
+  CreditCard,
+  MessagesSquare,
 } from "lucide-react";
 import {
   Table,
@@ -56,8 +59,13 @@ import {
 import CourseCoverUploader from "@/components/layout/CourseCoverUploader";
 import LessonVideoUploader from "@/components/layout/LessonVideoUploader";
 import LessonResourcesEditor from "@/components/layout/LessonResourcesEditor";
+import ModuleResourcesEditor from "@/components/creator/ModuleResourcesEditor";
 import StudentManagement from "@/components/creator/StudentManagement";
 import CertificateTemplateUploader from "@/components/creator/CertificateTemplateUploader";
+import CourseCommunityManager from "@/components/creator/CourseCommunityManager";
+import CreatorReviewsPage from "@/pages/creator/CreatorReviewsPage";
+import CheckoutPagesPage from "@/pages/creator/CheckoutPagesPage";
+
 
 type LessonResourceForm = {
   id: string;

@@ -367,6 +367,7 @@ export default function CourseEditorPage() {
       format: (course as any).format ?? "recorded",
       certificate_enabled: !!(course as any).certificate_enabled,
       certificate_template_url: (course as any).certificate_template_url ?? "",
+      community_enabled: !!(course as any).community_enabled,
     };
     
     setForm(initialForm);

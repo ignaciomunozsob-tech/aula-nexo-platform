@@ -1660,6 +1660,19 @@ export type Database = {
         Returns: boolean
       }
       find_user_id_by_email: { Args: { _email: string }; Returns: string }
+      get_booking_by_token: {
+        Args: { _id: string; _token: string }
+        Returns: {
+          end_at: string
+          ics_token: string
+          id: string
+          meet_url: string
+          session_description: string
+          session_id: string
+          session_title: string
+          start_at: string
+        }[]
+      }
       get_course_bans: {
         Args: { _course_id: string }
         Returns: {

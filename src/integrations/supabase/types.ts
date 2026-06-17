@@ -1097,38 +1097,53 @@ export type Database = {
       }
       one_on_one_sessions: {
         Row: {
+          buffer_after_min: number
+          buffer_before_min: number
           cover_url: string | null
           created_at: string
           creator_id: string
           description: string | null
           duration_min: number
           id: string
+          max_days_ahead: number
+          min_notice_hours: number
           price_clp: number
           status: string
+          timezone: string
           title: string
           updated_at: string
         }
         Insert: {
+          buffer_after_min?: number
+          buffer_before_min?: number
           cover_url?: string | null
           created_at?: string
           creator_id: string
           description?: string | null
           duration_min?: number
           id?: string
+          max_days_ahead?: number
+          min_notice_hours?: number
           price_clp?: number
           status?: string
+          timezone?: string
           title: string
           updated_at?: string
         }
         Update: {
+          buffer_after_min?: number
+          buffer_before_min?: number
           cover_url?: string | null
           created_at?: string
           creator_id?: string
           description?: string | null
           duration_min?: number
           id?: string
+          max_days_ahead?: number
+          min_notice_hours?: number
           price_clp?: number
           status?: string
+          timezone?: string
           title?: string
           updated_at?: string
         }
@@ -1299,6 +1314,41 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      session_availability_rules: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          session_id: string
+          start_time: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          session_id: string
+          start_time: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          session_id?: string
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_availability_rules_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "one_on_one_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       session_bookings: {
         Row: {
@@ -1658,6 +1708,18 @@ export type Database = {
           price_clp: number
           timezone: string
           title: string
+        }[]
+      }
+      get_session_availability: {
+        Args: { _session_id: string }
+        Returns: {
+          buffer_after_min: number
+          buffer_before_min: number
+          duration_min: number
+          max_days_ahead: number
+          min_notice_hours: number
+          rules: Json
+          timezone: string
         }[]
       }
       get_user_role: {

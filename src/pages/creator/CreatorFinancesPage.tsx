@@ -182,6 +182,23 @@ export default function CreatorFinancesPage() {
         </Card>
       </div>
 
+      {(data?.totalCommunityFee ?? 0) > 0 && (
+        <Card className="mb-8 border-primary/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-primary" />
+              Cargos por Comunidades de cursos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">- {formatCLP(data!.totalCommunityFee)}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Descuento aplicado a tu payout por cada venta de cursos con comunidad activa ($990 por venta).
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Sales by Course */}
       <Card className="mb-8">
         <CardHeader>

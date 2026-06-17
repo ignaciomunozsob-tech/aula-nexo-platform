@@ -8,7 +8,6 @@ export default function TrustPage() {
       <SEO
         title="Confianza y Seguridad — NOVU"
         description="Cómo NOVU protege tus datos: autenticación, almacenamiento, pagos, privacidad y prácticas de seguridad."
-        canonical="/trust"
       />
 
       <header className="border-b border-border bg-card/50">

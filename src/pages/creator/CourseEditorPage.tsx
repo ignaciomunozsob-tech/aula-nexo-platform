@@ -690,18 +690,30 @@ export default function CourseEditorPage() {
       </div>
 
       <Tabs defaultValue="info" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
+        <TabsList className="flex flex-wrap w-full gap-1 h-auto mb-6">
           <TabsTrigger value="info" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
-            Información del Curso
+            Información
           </TabsTrigger>
           <TabsTrigger value="modules" className="flex items-center gap-2">
             <BookOpen className="h-4 w-4" />
-            Módulos y Lecciones
+            Módulos
           </TabsTrigger>
           <TabsTrigger value="students" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            Gestión de Alumnos
+            Alumnos
+          </TabsTrigger>
+          <TabsTrigger value="community" className="flex items-center gap-2">
+            <MessagesSquare className="h-4 w-4" />
+            Comunidad
+          </TabsTrigger>
+          <TabsTrigger value="reviews" className="flex items-center gap-2">
+            <Star className="h-4 w-4" />
+            Evaluaciones
+          </TabsTrigger>
+          <TabsTrigger value="checkout" className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            Páginas de pago
           </TabsTrigger>
         </TabsList>
 

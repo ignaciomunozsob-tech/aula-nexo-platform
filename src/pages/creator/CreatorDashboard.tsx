@@ -375,7 +375,8 @@ export default function CreatorDashboard() {
                   Aún no tienes ventas en este rango. Cuando alguien compre, aquí verás el registro.
                 </div>
               ) : (
-                <div className="rounded-lg border overflow-hidden">
+                <div className="rounded-lg border overflow-x-auto">
+                  <div className="min-w-[640px]">
                   <Table>
                     <TableHeader>
                       <TableRow>

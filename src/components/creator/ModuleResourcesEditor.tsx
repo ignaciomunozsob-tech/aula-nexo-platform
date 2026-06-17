@@ -21,7 +21,7 @@ export default function ModuleResourcesEditor({ moduleId, courseId }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
-  const maxMB = plan?.plan === "pro" ? 200 : 50;
+  const maxMB = plan?.maxFileMB ?? 500;
   const realModuleId = moduleId?.startsWith("new-") ? null : moduleId;
 
   const { data: resources = [] } = useQuery({

@@ -1,163 +1,101 @@
-# Plan de implementación — NOVU (deploy único)
 
-Cambios solicitados; nada más se toca.
+# Migración al modelo sin planes
 
----
+Cambio coordinado para eliminar el sistema de planes/trials y dejar el modelo único: NOVU cobra 10% por venta, sin mensualidad, add-on opcional de comunidad ($990 por venta).
 
-## 1. Sidebar panel creador (reorganización)
+## 1. Base de datos (1 migración)
 
-Nueva estructura en `src/components/layout/CreatorSidebar.tsx`:
+- Eliminar trigger `enforce_course_publish_rules` (la lógica de límite de cursos por plan).
+- Reemplazar por un trigger nuevo `enforce_course_publish_requires_mp` que sólo valida la conexión MercadoPago cuando se publica un producto con precio (sin chequear plan).
+- Eliminar la columna/tabla `creator_plans` y la función `get_my_plan()` (o dejar `get_my_plan` retornando siempre `plan='novu'`, `comision=10` para no romper código en transición — preferimos eliminar).
+- Eliminar la tabla `subscription_requests` y `waitlist_pro`.
+- Agregar `app_settings` (tabla key/value) con defaults: `commission_pct=10`, `community_fee_clp=990`, `max_installments=3`, `support_whatsapp=https://wa.me/56933728004`. Sólo lectura para `authenticated`, escritura para admin.
 
-1. Dashboard → `/creator-app`
-2. Mis Productos → `/creator-app/products`
-3. Reservas → `/creator-app/bookings` (tabs internos: **Calendario · Disponibilidad default**)
-4. Finanzas → `/creator-app/finances`
-5. Mi Perfil Público → `/creator-app/profile`
-6. Mi Plan → `/creator-app/plan` (tabs internos: **Plan · Facturación · Integraciones**)
+## 2. Edge functions
 
-Reubicaciones (rutas viejas se conservan como redirects para no romper links):
-- Disponibilidad default → tab dentro de Reservas (reusa `CreatorAvailabilityPage`)
-- Páginas de pago → entra a un producto (curso) → tab "Páginas de pago" en el editor
-- Datos de facturación → tab en Mi Plan (reusa `CreatorBillingPage`)
-- Integraciones → tab en Mi Plan (reusa `CreatorIntegrationsPage`)
-- Evaluaciones (reviews) → tab dentro de cada curso en su editor
-- Comunidades → tab dentro de cada curso en su editor, con `LockedFeature` si plan ≠ Pro
+- `create-payment`: ya descuenta `community_fee_clp` si el curso lo tiene activo. Actualizar para:
+  - Comisión siempre 10% (ignorar `creator_plans.comision`).
+  - Quitar cualquier branch que cobre planes.
+- `mercadopago-webhook`: al marcar la orden como `paid`, invocar las nuevas notificaciones por email (venta al admin + bienvenida si aplica). Sin cambios a comisión.
+- Crear/actualizar email templates:
+  - `creator-welcome` (al registrarse, ya disparado por `handle_new_user` vía hook que ya tenemos para auth — o por una función nueva `notify-new-creator` llamada desde el SignupPage; usaremos el envío transaccional con `send-transactional-email`).
+  - `admin-new-creator` (a `ignacio@raffamarketing.cl`).
+  - `admin-new-sale` (con desglose 10% + comunidad).
+- Eliminar funciones de cobro de suscripción si existen (no veo `subscription-*` en el árbol, sólo página de checkout — la quitamos del frontend).
 
-Ningún componente se borra; solo cambia dónde se monta y se quitan entradas del sidebar.
+## 3. Frontend creador
 
----
+- **Sidebar** (`CreatorSidebar.tsx`): renombrar "Mi Plan" → "Mi cuenta" y apuntar a `/creator-app/cuenta`.
+- **`CreatorPlanPage` → `CreatorAccountPage`**: nueva página simplificada con perfil, fecha de registro, total vendido, comisión pagada, botones editar perfil / cambiar contraseña. Conservar internamente las sub-vistas de Billing e Integrations pero accesibles desde Mi Cuenta como tabs (Datos personales, Datos de facturación, Integraciones).
+- **`LockedFeature.tsx`**: convertir en passthrough (siempre renderiza children). Conservar el componente para no romper imports.
+- **`useMyPlan.ts`**: hardcodear `{ plan: 'novu', comision: 10, isPro: true, isCreator: true }` para que todas las features pasen sus checks. Eliminar las llamadas a `get_my_plan`.
+- **`CourseEditorPage`**: el toggle de comunidad ya existe; mantener.
+- **`CreatorFinancesPage`**: el desglose por venta debe mostrar Precio / Comisión 10% / Comunidad / Total. Confirmar que el desglose por orden listado lo refleja.
 
-## 2. Vista alumno del curso (`CoursePlayerPage`)
+## 4. Frontend admin
 
-Rediseñar `src/pages/app/CoursePlayerPage.tsx`:
+- `/admin/creadores` (`AdminInstructorsPage`): quitar columnas plan/comisión y acciones de plan. Agregar columnas "Ventas totales" y "Comisión pagada" (suma agregada por creador).
+- `/admin/ventas` (`AdminDashboard` o vista correspondiente): agregar columna "Comunidad" ($990 o $0) y métrica "Ingresos por comunidades este mes".
+- `/admin/configuracion`: limitar a comisión por venta, cargo comunidad, máx. cuotas, link WhatsApp (lee/escribe `app_settings`).
 
-**Sidebar izquierdo del curso** (componente nuevo `CourseSidebar`):
-- Título del curso
-- Barra de progreso (% completado)
-- Lista de módulos colapsables con sus lecciones (ícono check si completada)
-- Item final **Comunidad** (solo si `courses.community_enabled = true` para ese curso)
+## 5. Páginas públicas
 
-**Área principal — modo lección:**
-- Player (ya existe)
-- Título + descripción
-- Recursos del módulo (lista descargable desde `lesson_resources` por módulo — ver §5)
-- Botón "Marcar como completada"
+- Eliminar ruta `/suscripcion/checkout` y `SubscripcionCheckoutPage.tsx`.
+- Borrar referencias a planes en `MiPlanPage` viejo, signup flujo "creador" (sin selección de plan).
+- `TerminosPage`: reescribir sección 6 con el texto del prompt.
 
-**Área principal — modo comunidad:**
-- Render del feed del curso (componente `CourseCommunityFeed`)
-- El sidebar permanece visible
+## 6. Emails
 
-Ruteo interno: query `?view=community` o `?lesson=<id>` (sin cambiar la ruta principal).
+- Borrar templates de trial/renovación/pago fallido (si existen en `_shared/transactional-email-templates/`).
+- Crear/actualizar: `creator-welcome.tsx`, `admin-new-creator.tsx`, `admin-new-sale.tsx` con los textos del prompt.
+- Trigger de bienvenida creador: invocar `send-transactional-email` desde `SignupPage` cuando `role=creator` (idempotency key = user.id).
+- Trigger admin-new-creator: misma invocación en SignupPage (segundo invoke).
+- Trigger admin-new-sale: invocar desde `mercadopago-webhook` después de marcar `paid`.
+- Requiere: infraestructura de emails ya inicializada (`setup_email_infra` + `scaffold_transactional_email`). Si no está, lo levantamos en este mismo deploy.
 
----
+## 7. Detalles técnicos
 
-## 3. Comunidad por curso
+```text
+DB
+├─ DROP TRIGGER enforce_course_publish_rules
+├─ CREATE TRIGGER enforce_course_publish_requires_mp (solo MP check)
+├─ DROP TABLE creator_plans, subscription_requests, waitlist_pro
+├─ DROP FUNCTION get_my_plan
+└─ CREATE TABLE app_settings (key text PK, value jsonb)
 
-### Schema (migración)
-```sql
-ALTER TABLE public.courses
-  ADD COLUMN community_enabled boolean NOT NULL DEFAULT false,
-  ADD COLUMN community_fee_clp integer NOT NULL DEFAULT 990;
+Edge
+├─ create-payment: commission_pct=10 fijo
+├─ mercadopago-webhook: dispara admin-new-sale email
+└─ send-transactional-email (existente o nuevo)
 
-CREATE TABLE public.course_community_posts (
-  id uuid pk, course_id uuid, author_id uuid,
-  body text, image_url text, pinned boolean default false,
-  created_at, updated_at);
+Front creador
+├─ Sidebar: Mi cuenta
+├─ CreatorAccountPage (nueva, reemplaza CreatorPlanPage)
+├─ useMyPlan: hardcoded novu
+└─ LockedFeature: passthrough
 
-CREATE TABLE public.course_community_replies (
-  id uuid pk, post_id uuid, author_id uuid, body text, created_at);
+Front admin
+├─ AdminInstructorsPage: nuevas columnas
+├─ AdminDashboard /ventas: columna Comunidad + métrica
+└─ AdminSettings: solo 4 campos
 
-CREATE TABLE public.course_community_reactions (
-  id uuid pk, post_id uuid, user_id uuid, created_at,
-  unique(post_id, user_id));
-
-CREATE TABLE public.course_community_bans (
-  id uuid pk, course_id uuid, user_id uuid,
-  banned_by uuid, reason text, created_at,
-  unique(course_id, user_id));
-```
-+ GRANTs a `authenticated` y `service_role`, RLS y policies:
-- SELECT posts/replies/reactions: alumnos con `has_active_enrollment` **o** creador del curso, y NO baneados.
-- INSERT/DELETE propios para alumnos no baneados.
-- DELETE de cualquiera + INSERT en bans: solo `is_course_creator`.
-- Función `public.is_course_banned(_user, _course)` SECURITY DEFINER.
-
-Trigger en `enrollments`: si el alumno está baneado, bloquear re-enroll (o el ban marca `enrollments.status='banned'`).
-
-### Activación (panel creador, editor del curso)
-- Toggle "Activar comunidad — $990 por cada venta de este curso" (deshabilitado + `LockedFeature` si no Pro).
-- Se persiste en `courses.community_enabled`.
-
-### Feed (estilo Facebook Groups)
-- Posts cronológicos, pinned arriba
-- Avatar + nombre (+ badge "Creador" si `author_id = creator_id`)
-- Texto, foto opcional (1 sola, bucket `course-assets/community/<course>/...`)
-- 👍 toggle, contador respuestas, respuestas anidadas 1 nivel
-- Composer alumno: texto + 1 imagen
-
-### Permisos
-Como spec. Creador puede borrar/pinear/banear desde vista gestión y desde vista participación (mismas RLS).
-
----
-
-## 4. Cargo $990 en finanzas
-
-`orders` ya existe. Añadir columna:
-```sql
-ALTER TABLE public.orders ADD COLUMN community_fee_clp integer NOT NULL DEFAULT 0;
+Públicas
+├─ ELIMINAR /suscripcion/checkout
+├─ ELIMINAR PreciosPage menciones de planes (ya rehecho)
+└─ TerminosPage sección 6
 ```
 
-Al crear orden de curso en `create-payment` / `mercadopago-webhook`: si `courses.community_enabled`, setear `community_fee_clp = courses.community_fee_clp` y descontarlo del payout del creador (en cálculo de finanzas, no del monto cobrado al alumno; el cargo lo absorbe el creador como en el spec).
+## Fuera de alcance
 
-Mostrar desglose en:
-- `CreatorFinancesPage`: línea "Comunidad activa: -$990" por orden.
-- `AdminDashboard` / panel admin ventas: columna "Cargo comunidad" + métrica "Ingresos por comunidades" (suma de `community_fee_clp`).
+- Reembolsos automáticos del add-on de comunidad si se desactiva.
+- Migración retroactiva de ventas históricas (la columna `community_fee_clp` queda 0 para ventas previas).
+- Migración de datos de `creator_plans` a otro destino (se borra; no se usa más).
+- Cambio de visual/branding (la UI sólo cambia donde se mencionan los textos).
 
----
+## Preguntas antes de implementar
 
-## 5. Recursos por módulo
+1. **¿Confirmas borrar la tabla `creator_plans` y `subscription_requests`?** Pierde el histórico de planes anteriores. Alternativa: dejarlas como archivo de solo lectura.
+2. **Bienvenida al creador**: ¿OK enviarla desde el cliente (`SignupPage` tras signup exitoso) o prefieres una función nueva `notify-new-creator` invocada por webhook?
+3. **Email infraestructura**: si todavía no está configurada en este proyecto, ¿avanzo con el setup (requiere completar el diálogo de dominio de email)?
 
-Tabla actual `lesson_resources` es por lección. Crear paralela `module_resources`:
-```sql
-CREATE TABLE public.module_resources (
-  id uuid pk, module_id uuid references course_modules,
-  title text, file_url text, file_size_bytes bigint,
-  mime_type text, created_at);
-```
-+ GRANT/RLS: creador del curso gestiona; alumnos inscritos pueden leer.
-
-UI:
-- Editor del módulo: sección "Recursos del módulo" — subir PDF/imagen/Word/Excel.
-- Validación cliente: ≤50MB plan Creador, ≤200MB plan Pro (ya hay `useMyPlan`).
-- Vista alumno: render bajo la lección actual.
-
-Bucket: `protected-content/module-resources/<course>/<module>/<file>` (usa `get-protected-url`).
-
----
-
-## 6. Tab "Comunidad" en gestión del curso
-
-Nuevo tab en `CourseEditorPage` junto a Módulos/Lecciones/Alumnos:
-- Tabla de posts: autor, preview, fecha, 👍, acciones (Ver / Eliminar / Banear / Pinear)
-- Filtros: todos / con reportes (placeholder: por ahora sin sistema de reportes — solo "todos")
-- Modal de ban con copy exacto del spec
-- Sección "Alumnos baneados" con botón Desbanear (elimina row de `course_community_bans` y reactiva enrollment)
-
----
-
-## Orden de build
-
-1. Migración (schema completo: courses cols, 4 tablas comunidad, module_resources, orders.community_fee_clp, funciones, RLS, GRANTs)
-2. Backend: actualizar `create-payment` / `mercadopago-webhook` para `community_fee_clp`
-3. Sidebar creador + redirects de rutas viejas
-4. `CourseEditorPage`: tabs nuevos (Páginas de pago, Evaluaciones, Comunidad, Recursos por módulo, Toggle comunidad)
-5. `MiPlanPage` con tabs (Plan / Facturación / Integraciones)
-6. `CreatorBookingsPage`: tabs (Calendario / Disponibilidad default)
-7. `CoursePlayerPage` rediseñado + `CourseCommunityFeed`
-8. Finanzas (desglose) + admin (columna y métrica)
-
-## Fuera de scope
-- Sistema de reportes de posts (solo filtro placeholder)
-- Notificaciones push/email de comunidad
-- Edición de posts (solo crear/eliminar)
-- Reembolso automático al banear
+Si las tres respuestas son "sí, dale", procedo sin más preguntas.

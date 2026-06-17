@@ -1,74 +1,134 @@
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Sparkles, ArrowUpRight, Check } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useMyPlan } from '@/hooks/useMyPlan';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/lib/auth';
+import { supabase } from '@/integrations/supabase/client';
+import { formatPrice } from '@/lib/utils';
+import { Mail, KeyRound, Pencil, MessageCircle } from 'lucide-react';
 import CreatorBillingPage from './CreatorBillingPage';
 import CreatorIntegrationsPage from './CreatorIntegrationsPage';
+import { toast } from 'sonner';
 
-function PlanOverview() {
-  const { data: plan, isLoading } = useMyPlan();
+function AccountOverview() {
+  const { user, profile } = useAuth();
+  const [sendingReset, setSendingReset] = useState(false);
+
+  const { data: totals } = useQuery({
+    queryKey: ['creator-account-totals', user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('amount_clp, platform_amount_clp, community_fee_clp')
+        .eq('creator_id', user!.id)
+        .eq('status', 'paid');
+      if (error) throw error;
+      const rows = data || [];
+      const sold = rows.reduce((s, r: any) => s + (r.amount_clp || 0), 0);
+      const fee = rows.reduce(
+        (s, r: any) => s + (r.platform_amount_clp || 0) + (r.community_fee_clp || 0),
+        0,
+      );
+      return { sold, fee, count: rows.length };
+    },
+  });
+
+  const initials = profile?.name?.charAt(0).toUpperCase() || 'C';
+  const registered = (user as any)?.created_at
+    ? new Date((user as any).created_at).toLocaleDateString('es-CL', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      })
+    : '—';
+
+  const handleResetPassword = async () => {
+    if (!user?.email) return;
+    setSendingReset(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+      redirectTo: `${window.location.origin}/#/reset-password`,
+    });
+    setSendingReset(false);
+    if (error) toast.error('No pudimos enviar el correo');
+    else toast.success('Te enviamos un correo para cambiar tu contraseña');
+  };
+
   return (
-    <div className="space-y-8">
-      <div className="bg-card border-2 rounded-2xl p-8" style={{ borderColor: '#fcc70e' }}>
-        {isLoading || !plan ? (
-          <p className="text-muted-foreground">Cargando…</p>
-        ) : (
-          <>
-            <div className="flex items-start justify-between gap-4 mb-6 flex-wrap">
-              <div>
-                <p className="text-sm font-semibold text-muted-foreground mb-1">Plan actual</p>
-                <h2 className="text-3xl font-bold">{plan.planLabel}</h2>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-semibold text-muted-foreground mb-1">Comisión por venta</p>
-                <div className="text-4xl font-bold" style={{ color: '#fcc70e' }}>{plan.comision}%</div>
-              </div>
-            </div>
-            <ul className="space-y-2 mb-6">
-              <li className="flex items-center gap-2 text-sm">
-                <Check className="h-4 w-4" style={{ color: '#fcc70e' }} />
-                {plan.maxCourses === null ? 'Cursos ilimitados' : `Hasta ${plan.maxCourses} cursos publicados`}
-              </li>
-              <li className="flex items-center gap-2 text-sm">
-                <Check className="h-4 w-4" style={{ color: '#fcc70e' }} />
-                {plan.allowDirectVideo ? 'Sube tus propios videos' : 'Videos vía YouTube o Vimeo'}
-              </li>
-              <li className="flex items-center gap-2 text-sm">
-                <Check className="h-4 w-4" style={{ color: '#fcc70e' }} />
-                Archivos hasta {plan.maxFileMB}MB
-              </li>
-              <li className="flex items-center gap-2 text-sm">
-                <Check className="h-4 w-4" style={{ color: '#fcc70e' }} />
-                {plan.allowCommunityPerCourse ? 'Comunidad por curso disponible' : 'Comunidad por curso (Plan Pro)'}
-              </li>
-            </ul>
-            <Button asChild>
-              <Link to="/precios">
-                <Sparkles className="h-4 w-4 mr-2" />
-                {plan.plan === 'pro' ? 'Ver todos los planes' : 'Mejorar mi plan'}
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="p-6 flex items-center gap-5">
+          <Avatar className="h-20 w-20">
+            <AvatarImage src={profile?.avatar_url || ''} alt={profile?.name || 'Creador'} />
+            <AvatarFallback className="text-2xl font-bold bg-primary/10">{initials}</AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-2xl font-bold truncate">{profile?.name || 'Creador'}</h2>
+            <p className="text-muted-foreground flex items-center gap-1.5 text-sm mt-1">
+              <Mail className="h-4 w-4" /> {user?.email}
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">Miembro desde {registered}</p>
+          </div>
+          <div className="flex flex-col gap-2 shrink-0">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/creator-app/profile">
+                <Pencil className="h-4 w-4 mr-1.5" /> Editar perfil
               </Link>
             </Button>
-          </>
-        )}
+            <Button onClick={handleResetPassword} variant="outline" size="sm" disabled={sendingReset}>
+              <KeyRound className="h-4 w-4 mr-1.5" /> Cambiar contraseña
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid sm:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Ventas totales</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totals?.count ?? 0}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total vendido</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatPrice(totals?.sold ?? 0)}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Comisión pagada</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatPrice(totals?.fee ?? 0)}</div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
-        <Link to="/precios" className="bg-card border border-border rounded-xl p-6 hover:border-foreground/20 transition-colors group">
-          <div className="flex items-start justify-between mb-2">
-            <h3 className="font-semibold">Comparar planes</h3>
-            <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
+      <Card>
+        <CardContent className="p-5 flex items-start gap-3">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: 'hsl(var(--novu-accent) / 0.18)' }}
+          >
+            <MessageCircle className="h-5 w-5" style={{ color: 'hsl(var(--novu-accent))' }} />
           </div>
-          <p className="text-sm text-muted-foreground">Revisa todas las diferencias entre Gratis, Creador y Pro.</p>
-        </Link>
-        <Link to="/comisiones" className="bg-card border border-border rounded-xl p-6 hover:border-foreground/20 transition-colors group">
-          <div className="flex items-start justify-between mb-2">
-            <h3 className="font-semibold">Cómo se calcula tu comisión</h3>
-            <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
+          <div className="flex-1">
+            <h3 className="font-bold">Modelo de cobro</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              NOVU cobra un 10% por cada venta. Sin mensualidad, sin costos fijos. Si activas la
+              comunidad en un curso se descuenta $990 adicional por cada venta de ese curso.
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">Ejemplos prácticos con números reales.</p>
-        </Link>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -77,18 +137,18 @@ export default function CreatorPlanPage() {
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Mi Plan</h1>
-        <p className="text-muted-foreground">Plan, facturación e integraciones de tu cuenta.</p>
+        <h1 className="text-3xl font-bold mb-2">Mi cuenta</h1>
+        <p className="text-muted-foreground">Datos personales, facturación e integraciones.</p>
       </div>
 
-      <Tabs defaultValue="plan">
+      <Tabs defaultValue="account">
         <TabsList>
-          <TabsTrigger value="plan">Plan</TabsTrigger>
+          <TabsTrigger value="account">Datos personales</TabsTrigger>
           <TabsTrigger value="billing">Datos de facturación</TabsTrigger>
           <TabsTrigger value="integrations">Integraciones</TabsTrigger>
         </TabsList>
-        <TabsContent value="plan" className="mt-6">
-          <PlanOverview />
+        <TabsContent value="account" className="mt-6">
+          <AccountOverview />
         </TabsContent>
         <TabsContent value="billing" className="mt-6">
           <div className="-m-6">

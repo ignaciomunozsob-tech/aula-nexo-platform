@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, User, LogOut, Home, DollarSign, ChevronDown, CalendarCheck, Sparkles } from 'lucide-react';
+import { LayoutDashboard, BookOpen, User, LogOut, Home, DollarSign, ChevronDown, CalendarCheck, UserCircle } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -41,7 +41,7 @@ export function CreatorSidebar() {
     { to: '/creator-app/bookings', icon: CalendarCheck, label: 'Reservas', end: false },
     { to: '/creator-app/finances', icon: DollarSign, label: 'Finanzas', end: false },
     { to: '/creator-app/profile', icon: User, label: 'Mi Perfil Público', end: false },
-    { to: '/creator-app/plan', icon: Sparkles, label: 'Mi Plan', end: false },
+    { to: '/creator-app/plan', icon: UserCircle, label: 'Mi Cuenta', end: false },
   ];
 
   const initials = profile?.name?.charAt(0).toUpperCase() || 'C';

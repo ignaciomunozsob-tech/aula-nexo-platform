@@ -509,3 +509,38 @@ export default function CoursePlayerPage() {
     </div>
   );
 }
+
+function ModuleResourcesList({ moduleId }: { moduleId: string }) {
+  const { toast } = useToast();
+  const { data: resources = [] } = useQuery({
+    queryKey: ['module-resources-player', moduleId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('module_resources').select('*')
+        .eq('module_id', moduleId).order('order_index');
+      if (error) throw error;
+      return data as any[];
+    },
+    enabled: !!moduleId,
+  });
+  if (!resources.length) return null;
+  return (
+    <div className="bg-muted/50 rounded-lg p-4 mb-6">
+      <h3 className="font-medium mb-3">Recursos del módulo</h3>
+      <div className="space-y-2">
+        {resources.map((r: any) => (
+          <a
+            key={r.id}
+            href={r.file_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-sm text-primary hover:underline"
+          >
+            <Download className="h-4 w-4" />
+            {r.title}
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}

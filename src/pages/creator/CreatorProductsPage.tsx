@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Eye, Users, BookOpen, FileText, Calendar } from 'lucide-react';
+import { Plus, Edit, Eye, Users, BookOpen, FileText, Calendar, Video } from 'lucide-react';
 import { formatPrice, getCourseUrl } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NewProductDialog } from '@/components/creator/NewProductDialog';

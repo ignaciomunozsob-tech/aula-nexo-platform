@@ -35,7 +35,7 @@ export default function SessionBookingSuccessPage() {
   const start = new Date(booking.start_at);
   const end = new Date(booking.end_at);
   const gcal = googleCalendarUrl({
-    title: booking.session?.title || "Sesión 1:1",
+    title: booking.session?.title || "Servicio",
     description: booking.meet_url ? `Link: ${booking.meet_url}` : "",
     location: booking.meet_url || "",
     start, end,

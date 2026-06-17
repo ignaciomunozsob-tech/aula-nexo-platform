@@ -97,7 +97,7 @@ export default function CreatorAvailabilityPage() {
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Disponibilidad</h1>
-        <p className="text-muted-foreground mt-1">Configura tus horarios para sesiones 1:1.</p>
+        <p className="text-muted-foreground mt-1">Configura tus horarios para servicios.</p>
       </div>
 
       {!connection && (
@@ -111,7 +111,7 @@ export default function CreatorAvailabilityPage() {
       <Card>
         <CardHeader>
           <CardTitle>Configuración general</CardTitle>
-          <CardDescription>Aplica a todas tus sesiones 1:1.</CardDescription>
+          <CardDescription>Aplica a todas tus servicios.</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>

@@ -19,27 +19,30 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE);
     const { data: sess, error: sessErr } = await admin
       .from('one_on_one_sessions')
-      .select('id, creator_id, duration_min, status')
+      .select('id, creator_id, duration_min, status, timezone, buffer_before_min, buffer_after_min, min_notice_hours, max_days_ahead')
       .eq('id', body.session_id)
       .maybeSingle();
     if (sessErr || !sess || sess.status !== 'published') return j({ error: 'session_not_found' }, 404);
 
-    const { data: settings } = await admin
-      .from('creator_availability_settings')
-      .select('*')
-      .eq('creator_id', sess.creator_id)
-      .maybeSingle();
-    const tz = settings?.timezone || 'America/Santiago';
+    const tz = sess.timezone || 'America/Santiago';
     const duration = sess.duration_min;
-    const bufBefore = settings?.buffer_before_min ?? 0;
-    const bufAfter = settings?.buffer_after_min ?? 0;
-    const minNoticeMs = (settings?.min_notice_hours ?? 12) * 3600 * 1000;
-    const maxDays = settings?.max_days_ahead ?? 30;
+    const bufBefore = sess.buffer_before_min ?? 0;
+    const bufAfter = sess.buffer_after_min ?? 0;
+    const minNoticeMs = (sess.min_notice_hours ?? 12) * 3600 * 1000;
+    const maxDays = sess.max_days_ahead ?? 30;
 
-    const { data: rules } = await admin
-      .from('creator_availability_rules')
+    // Per-service rules first; fallback to creator-global rules if none.
+    let { data: rules } = await admin
+      .from('session_availability_rules')
       .select('day_of_week, start_time, end_time')
-      .eq('creator_id', sess.creator_id);
+      .eq('session_id', sess.id);
+    if (!rules || rules.length === 0) {
+      const r = await admin
+        .from('creator_availability_rules')
+        .select('day_of_week, start_time, end_time')
+        .eq('creator_id', sess.creator_id);
+      rules = r.data || [];
+    }
 
     const from = new Date(body.from_date + 'T00:00:00Z');
     const toCap = new Date(Date.now() + maxDays * 86400000);

@@ -39,8 +39,8 @@ const productTypes = [
   {
     type: 'session' as ProductType,
     icon: Video,
-    title: 'Sesión 1:1',
-    description: 'Mentoría individual con agenda sincronizada a Google Calendar',
+    title: 'Servicio',
+    description: 'Sesiones individuales con agenda y Google Meet sincronizados',
   },
 ];
 

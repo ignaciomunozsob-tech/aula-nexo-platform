@@ -118,7 +118,7 @@ export default function SessionBookingPage() {
 
       <Card>
         <CardHeader>
-          <CardDescription>Sesión 1:1 con {session.creator_name}</CardDescription>
+          <CardDescription>Servicio con {session.creator_name}</CardDescription>
           <CardTitle className="text-2xl">{session.title}</CardTitle>
           <div className="flex items-center gap-3 text-sm text-muted-foreground pt-2">
             <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {session.duration_min} min</span>

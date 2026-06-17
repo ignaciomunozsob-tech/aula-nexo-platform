@@ -133,7 +133,15 @@ const App = () => (
                 <Route path="plan" element={<CreatorPlanPage />} />
                 <Route path="billing" element={<CreatorBillingPage />} />
                 <Route path="integrations" element={<CreatorIntegrationsPage />} />
+                <Route path="availability" element={<CreatorAvailabilityPage />} />
+                <Route path="bookings" element={<CreatorBookingsPage />} />
+                <Route path="sessions/new" element={<SessionEditorPage />} />
+                <Route path="sessions/:id/edit" element={<SessionEditorPage />} />
               </Route>
+
+              {/* 1:1 Booking public */}
+              <Route path="/c/:creatorSlug/sesion/:sessionId" element={<SessionBookingPage />} />
+              <Route path="/booking/success" element={<SessionBookingSuccessPage />} />
 
               {/* Admin routes */}
               <Route path="/admin" element={<AdminLayout />}>

@@ -14,21 +14,25 @@ export default function SessionBookingSuccessPage() {
 
   useEffect(() => {
     (async () => {
-      if (!id) return;
-      const { data } = await supabase
-        .from("session_bookings")
-        .select("id, start_at, end_at, meet_url, ics_token, session_id")
-        .eq("id", id)
-        .maybeSingle();
-      if (!data) return;
-      const { data: s } = await supabase
-        .from("one_on_one_sessions")
-        .select("title, description")
-        .eq("id", data.session_id)
-        .maybeSingle();
-      setBooking({ ...data, session: s });
+      if (!id || !token) return;
+      const { data } = await supabase.rpc("get_booking_by_token", {
+        _id: id,
+        _token: token,
+      });
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row) return;
+      setBooking({
+        id: row.id,
+        start_at: row.start_at,
+        end_at: row.end_at,
+        meet_url: row.meet_url,
+        ics_token: row.ics_token,
+        session_id: row.session_id,
+        session: { title: row.session_title, description: row.session_description },
+      });
     })();
-  }, [id]);
+  }, [id, token]);
+
 
   if (!booking) return <div className="p-12 text-center">Cargando…</div>;
 

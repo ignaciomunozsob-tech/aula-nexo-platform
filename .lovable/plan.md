@@ -1,101 +1,103 @@
 
-# Migración al modelo sin planes
+# Plan: emails NOVU + migración sin planes + favicon
 
-Cambio coordinado para eliminar el sistema de planes/trials y dejar el modelo único: NOVU cobra 10% por venta, sin mensualidad, add-on opcional de comunidad ($990 por venta).
+El dominio `notificaciones.soynovu.cl` ya está **verificado**, así que los emails saldrán inmediatamente al crearlos. Tres frentes en paralelo.
 
-## 1. Base de datos (1 migración)
+---
 
-- Eliminar trigger `enforce_course_publish_rules` (la lógica de límite de cursos por plan).
-- Reemplazar por un trigger nuevo `enforce_course_publish_requires_mp` que sólo valida la conexión MercadoPago cuando se publica un producto con precio (sin chequear plan).
-- Eliminar la columna/tabla `creator_plans` y la función `get_my_plan()` (o dejar `get_my_plan` retornando siempre `plan='novu'`, `comision=10` para no romper código en transición — preferimos eliminar).
-- Eliminar la tabla `subscription_requests` y `waitlist_pro`.
-- Agregar `app_settings` (tabla key/value) con defaults: `commission_pct=10`, `community_fee_clp=990`, `max_installments=3`, `support_whatsapp=https://wa.me/56933728004`. Sólo lectura para `authenticated`, escritura para admin.
+## 1. Favicon NOVU (bloqueado por imagen)
 
-## 2. Edge functions
+Necesito que subas el logo de NOVU como imagen cuadrada (PNG, idealmente 512×512). Cuando la tenga:
+- Copio el archivo a `public/favicon.png` (y `apple-touch-icon.png` 180×180)
+- Elimino `public/favicon.ico` actual (si existe) para que no lo sirva el navegador por defecto
+- Actualizo `index.html`:
+  - `<link rel="icon" href="/favicon.png" type="image/png">`
+  - `<link rel="apple-touch-icon" href="/apple-touch-icon.png">`
 
-- `create-payment`: ya descuenta `community_fee_clp` si el curso lo tiene activo. Actualizar para:
-  - Comisión siempre 10% (ignorar `creator_plans.comision`).
-  - Quitar cualquier branch que cobre planes.
-- `mercadopago-webhook`: al marcar la orden como `paid`, invocar las nuevas notificaciones por email (venta al admin + bienvenida si aplica). Sin cambios a comisión.
-- Crear/actualizar email templates:
-  - `creator-welcome` (al registrarse, ya disparado por `handle_new_user` vía hook que ya tenemos para auth — o por una función nueva `notify-new-creator` llamada desde el SignupPage; usaremos el envío transaccional con `send-transactional-email`).
-  - `admin-new-creator` (a `ignacio@raffamarketing.cl`).
-  - `admin-new-sale` (con desglose 10% + comunidad).
-- Eliminar funciones de cobro de suscripción si existen (no veo `subscription-*` en el árbol, sólo página de checkout — la quitamos del frontend).
+Si prefieres que lo genere a partir del logo de la web (icono GraduationCap amarillo `#fcc70e` sobre fondo oscuro), lo creo con imagegen.
 
-## 3. Frontend creador
+---
 
-- **Sidebar** (`CreatorSidebar.tsx`): renombrar "Mi Plan" → "Mi cuenta" y apuntar a `/creator-app/cuenta`.
-- **`CreatorPlanPage` → `CreatorAccountPage`**: nueva página simplificada con perfil, fecha de registro, total vendido, comisión pagada, botones editar perfil / cambiar contraseña. Conservar internamente las sub-vistas de Billing e Integrations pero accesibles desde Mi Cuenta como tabs (Datos personales, Datos de facturación, Integraciones).
-- **`LockedFeature.tsx`**: convertir en passthrough (siempre renderiza children). Conservar el componente para no romper imports.
-- **`useMyPlan.ts`**: hardcodear `{ plan: 'novu', comision: 10, isPro: true, isCreator: true }` para que todas las features pasen sus checks. Eliminar las llamadas a `get_my_plan`.
-- **`CourseEditorPage`**: el toggle de comunidad ya existe; mantener.
-- **`CreatorFinancesPage`**: el desglose por venta debe mostrar Precio / Comisión 10% / Comunidad / Total. Confirmar que el desglose por orden listado lo refleja.
+## 2. Emails transaccionales NOVU
 
-## 4. Frontend admin
+### Templates nuevos (en `supabase/functions/_shared/transactional-email-templates/`)
 
-- `/admin/creadores` (`AdminInstructorsPage`): quitar columnas plan/comisión y acciones de plan. Agregar columnas "Ventas totales" y "Comisión pagada" (suma agregada por creador).
-- `/admin/ventas` (`AdminDashboard` o vista correspondiente): agregar columna "Comunidad" ($990 o $0) y métrica "Ingresos por comunidades este mes".
-- `/admin/configuracion`: limitar a comisión por venta, cargo comunidad, máx. cuotas, link WhatsApp (lee/escribe `app_settings`).
+1. **`creator-welcome.tsx`** — Bienvenida al creador
+   - Asunto: "Bienvenido a NOVU"
+   - Saludo personalizado, próximos pasos (completar perfil, conectar MercadoPago, crear primer producto)
+   - CTA al panel `/creator-app`
+   - Branding: fondo `#ffffff`, acento `#fcc70e`, Inter
 
-## 5. Páginas públicas
+2. **`admin-new-creator.tsx`** — Notificación a admin
+   - Asunto: "Nuevo creador en NOVU: {name}"
+   - Email, nombre, fecha
+   - Destinatario fijo: `ignacio@raffamarketing.cl`
 
-- Eliminar ruta `/suscripcion/checkout` y `SubscripcionCheckoutPage.tsx`.
-- Borrar referencias a planes en `MiPlanPage` viejo, signup flujo "creador" (sin selección de plan).
-- `TerminosPage`: reescribir sección 6 con el texto del prompt.
+3. **`admin-new-sale.tsx`** — Notificación de venta
+   - Asunto: "Nueva venta: {product} - ${amount} CLP"
+   - Desglose: precio bruto, comisión 10% NOVU, add-on comunidad ($990 si aplica), neto al creador
+   - Creador, comprador, producto
 
-## 6. Emails
+### Registry
+- Actualizar `_shared/transactional-email-templates/registry.ts` con los 3 templates nuevos
 
-- Borrar templates de trial/renovación/pago fallido (si existen en `_shared/transactional-email-templates/`).
-- Crear/actualizar: `creator-welcome.tsx`, `admin-new-creator.tsx`, `admin-new-sale.tsx` con los textos del prompt.
-- Trigger de bienvenida creador: invocar `send-transactional-email` desde `SignupPage` cuando `role=creator` (idempotency key = user.id).
-- Trigger admin-new-creator: misma invocación en SignupPage (segundo invoke).
-- Trigger admin-new-sale: invocar desde `mercadopago-webhook` después de marcar `paid`.
-- Requiere: infraestructura de emails ya inicializada (`setup_email_infra` + `scaffold_transactional_email`). Si no está, lo levantamos en este mismo deploy.
+### Triggers (sin crear nuevas edge functions — usar `send-transactional-email`)
 
-## 7. Detalles técnicos
+- **Bienvenida creador + admin-new-creator**: invocar desde `SignupPage.tsx` tras `signUp` exitoso con `role=creator`. Dos `supabase.functions.invoke('send-transactional-email', ...)` con `idempotencyKey = user.id + '-welcome'` y `+'-admin-notify'`.
+- **admin-new-sale**: invocar desde `supabase/functions/mercadopago-webhook/index.ts` justo después de marcar la orden como `paid`. `idempotencyKey = order.id + '-admin-sale'`.
 
-```text
-DB
-├─ DROP TRIGGER enforce_course_publish_rules
-├─ CREATE TRIGGER enforce_course_publish_requires_mp (solo MP check)
-├─ DROP TABLE creator_plans, subscription_requests, waitlist_pro
-├─ DROP FUNCTION get_my_plan
-└─ CREATE TABLE app_settings (key text PK, value jsonb)
+### Deploy
+- `send-transactional-email` ya está deployado, sólo redeploy tras editar templates/registry.
+- Redeploy `mercadopago-webhook` para activar el trigger de venta.
 
-Edge
-├─ create-payment: commission_pct=10 fijo
-├─ mercadopago-webhook: dispara admin-new-sale email
-└─ send-transactional-email (existente o nuevo)
+---
 
-Front creador
-├─ Sidebar: Mi cuenta
-├─ CreatorAccountPage (nueva, reemplaza CreatorPlanPage)
-├─ useMyPlan: hardcoded novu
-└─ LockedFeature: passthrough
+## 3. Migración "sin planes"
 
-Front admin
-├─ AdminInstructorsPage: nuevas columnas
-├─ AdminDashboard /ventas: columna Comunidad + métrica
-└─ AdminSettings: solo 4 campos
+### Migración SQL
+- `DROP TRIGGER` y código de `enforce_course_publish_rules` (ya existe `enforce_course_publish_requires_mp` — confirmar que está aplicado a todos los productos)
+- `DROP TABLE creator_plans, subscription_requests, waitlist_pro` (CASCADE)
+- `DROP FUNCTION get_my_plan()` si existe
+- `CREATE TABLE public.app_settings (key text PRIMARY KEY, value jsonb NOT NULL)` con seeds: `commission_pct=10`, `community_fee_clp=990`, `max_installments=3`, `support_whatsapp`
+  - GRANT SELECT a `authenticated`, GRANT ALL a `service_role`
+  - RLS: lectura para todos los autenticados, escritura sólo admin (via `has_role`)
 
-Públicas
-├─ ELIMINAR /suscripcion/checkout
-├─ ELIMINAR PreciosPage menciones de planes (ya rehecho)
-└─ TerminosPage sección 6
-```
+### Frontend creador
+- `src/hooks/useMyPlan.ts` → hardcodear `{ plan: 'novu', comision: 10, isPro: true, isCreator: true }`, quitar llamadas a `get_my_plan`
+- `src/components/creator/LockedFeature.tsx` → passthrough (siempre renderiza children)
+- `src/components/layout/CreatorSidebar.tsx` → renombrar "Mi Plan" → "Mi cuenta", ruta `/creator-app/cuenta`
+- `src/pages/creator/CreatorPlanPage.tsx` → reemplazar contenido con `CreatorAccountPage`: tabs (Datos personales, Facturación, Integraciones) reutilizando componentes existentes
+- Agregar ruta `/creator-app/cuenta` en `App.tsx`, mantener `/creator-app/plan` redirigiendo
 
-## Fuera de alcance
+### Frontend público
+- Eliminar (si existen) referencias a `/suscripcion/checkout`
+- `PreciosPage.tsx` — verificar que ya está sin planes
+- `TerminosPage.tsx` — actualizar sección 6 con texto del modelo único 10% + comunidad opcional
 
-- Reembolsos automáticos del add-on de comunidad si se desactiva.
-- Migración retroactiva de ventas históricas (la columna `community_fee_clp` queda 0 para ventas previas).
-- Migración de datos de `creator_plans` a otro destino (se borra; no se usa más).
-- Cambio de visual/branding (la UI sólo cambia donde se mencionan los textos).
+### Edge functions
+- `create-payment` — fijar `commission_pct = 10` (ignorar `creator_plans.comision`)
 
-## Preguntas antes de implementar
+### Fuera de alcance (confirmado en plan.md)
+- No reembolsos automáticos del add-on de comunidad
+- No migración retroactiva de ventas históricas
+- No archivo de datos de `creator_plans` (se borra)
 
-1. **¿Confirmas borrar la tabla `creator_plans` y `subscription_requests`?** Pierde el histórico de planes anteriores. Alternativa: dejarlas como archivo de solo lectura.
-2. **Bienvenida al creador**: ¿OK enviarla desde el cliente (`SignupPage` tras signup exitoso) o prefieres una función nueva `notify-new-creator` invocada por webhook?
-3. **Email infraestructura**: si todavía no está configurada en este proyecto, ¿avanzo con el setup (requiere completar el diálogo de dominio de email)?
+---
 
-Si las tres respuestas son "sí, dale", procedo sin más preguntas.
+## Orden de ejecución
+
+1. Migración SQL (requiere tu aprobación)
+2. Templates + registry + redeploy `send-transactional-email`
+3. Triggers en `SignupPage` y `mercadopago-webhook`
+4. Frontend creador (useMyPlan, LockedFeature, Sidebar, CreatorAccountPage)
+5. `create-payment` fix comisión
+6. TerminosPage sección 6
+7. Favicon (cuando subas la imagen)
+
+---
+
+## Confirmaciones antes de implementar
+
+1. ¿Confirmas borrar `creator_plans`, `subscription_requests`, `waitlist_pro` (sin backup)?
+2. ¿Email admin notificaciones → `ignacio@raffamarketing.cl`? ¿Otro adicional?
+3. **Favicon**: ¿subes el logo NOVU o quieres que lo genere con imagegen (GraduationCap amarillo `#fcc70e` sobre fondo oscuro `#0a0a0a`)?

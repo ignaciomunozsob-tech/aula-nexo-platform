@@ -15,7 +15,7 @@ interface NewProductDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type ProductType = 'course' | 'ebook' | 'event';
+type ProductType = 'course' | 'ebook' | 'event' | 'session';
 
 const productTypes = [
   {
@@ -35,6 +35,12 @@ const productTypes = [
     icon: Calendar,
     title: 'Evento Online',
     description: 'Programa un evento en vivo con cupos limitados',
+  },
+  {
+    type: 'session' as ProductType,
+    icon: Video,
+    title: 'Sesión 1:1',
+    description: 'Mentoría individual con agenda sincronizada a Google Calendar',
   },
 ];
 

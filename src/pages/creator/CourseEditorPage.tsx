@@ -1170,6 +1170,30 @@ export default function CourseEditorPage() {
         <TabsContent value="students">
           {id && <StudentManagement productId={id} productType="course" />}
         </TabsContent>
+
+        {/* Tab: Comunidad */}
+        <TabsContent value="community">
+          {id && (
+            <CourseCommunityManager
+              courseId={id}
+              communityEnabled={form.community_enabled}
+              onToggle={(v) => {
+                setForm((p) => ({ ...p, community_enabled: v }));
+                setTimeout(() => saveMutation.mutate(), 0);
+              }}
+            />
+          )}
+        </TabsContent>
+
+        {/* Tab: Evaluaciones */}
+        <TabsContent value="reviews">
+          <CreatorReviewsPage />
+        </TabsContent>
+
+        {/* Tab: Páginas de pago */}
+        <TabsContent value="checkout">
+          <CheckoutPagesPage />
+        </TabsContent>
       </Tabs>
     </div>
   );

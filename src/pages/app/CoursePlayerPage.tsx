@@ -19,9 +19,11 @@ import {
   BookOpen,
   Eye,
   Menu,
+  MessagesSquare,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
+import CourseCommunityFeed from '@/components/community/CourseCommunityFeed';
 
 export default function CoursePlayerPage() {
   const { id } = useParams<{ id: string }>();

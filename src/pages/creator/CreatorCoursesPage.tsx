@@ -81,8 +81,8 @@ export default function CreatorCoursesPage() {
   });
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6 sm:mb-8">
         <h1 className="text-2xl font-bold">Mis Cursos</h1>
         <Button asChild>
           <Link to="/creator-app/courses/new"><Plus className="h-4 w-4 mr-2" />Nuevo Curso</Link>
@@ -92,8 +92,8 @@ export default function CreatorCoursesPage() {
       {isLoading ? (
         <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />)}</div>
       ) : courses?.length ? (
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
-          <table className="w-full">
+        <div className="bg-card border border-border rounded-lg overflow-x-auto">
+          <table className="w-full min-w-[640px]">
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left p-4 font-medium">Curso</th>

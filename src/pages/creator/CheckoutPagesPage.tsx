@@ -50,7 +50,7 @@ export default function CheckoutPagesPage() {
   };
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-bold">Páginas de pago</h1>

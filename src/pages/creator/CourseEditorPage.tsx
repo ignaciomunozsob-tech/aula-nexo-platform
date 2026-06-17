@@ -589,7 +589,7 @@ export default function CourseEditorPage() {
 
   if (loading && !id) {
     return (
-      <div className="p-8 flex justify-center items-center gap-3">
+      <div className="p-4 sm:p-6 lg:p-8 flex justify-center items-center gap-3">
         <Loader2 className="h-6 w-6 animate-spin" />
         <span className="text-sm text-muted-foreground">Creando curso…</span>
       </div>
@@ -598,14 +598,14 @@ export default function CourseEditorPage() {
 
   if (loading && id) {
     return (
-      <div className="p-8 flex justify-center">
+      <div className="p-4 sm:p-6 lg:p-8 flex justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
       {/* Diálogo de confirmación para publicar */}
       <AlertDialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
         <AlertDialogContent>
@@ -629,9 +629,9 @@ export default function CourseEditorPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold">Editar Curso</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {course?.id && (
             <>
               <Button variant="outline" asChild>

@@ -167,8 +167,8 @@ export default function CreatorProductsPage() {
   );
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-8">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6 sm:mb-8">
         <h1 className="text-2xl font-bold">Mis Productos</h1>
         <Button onClick={() => setNewProductOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
@@ -177,31 +177,33 @@ export default function CreatorProductsPage() {
       </div>
 
       <Tabs defaultValue="courses" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="courses" className="gap-2">
-            <BookOpen className="h-4 w-4" />
-            Cursos ({courses?.length || 0})
-          </TabsTrigger>
-          <TabsTrigger value="ebooks" className="gap-2">
-            <FileText className="h-4 w-4" />
-            E-books ({ebooks?.length || 0})
-          </TabsTrigger>
-          <TabsTrigger value="events" className="gap-2">
-            <Calendar className="h-4 w-4" />
-            Eventos ({events?.length || 0})
-          </TabsTrigger>
-          <TabsTrigger value="sessions" className="gap-2">
-            <Video className="h-4 w-4" />
-            Servicios ({sessions?.length || 0})
-          </TabsTrigger>
-        </TabsList>
+        <div className="-mx-4 sm:mx-0 overflow-x-auto px-4 sm:px-0">
+          <TabsList className="w-max sm:w-auto">
+            <TabsTrigger value="courses" className="gap-2">
+              <BookOpen className="h-4 w-4" />
+              Cursos ({courses?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="ebooks" className="gap-2">
+              <FileText className="h-4 w-4" />
+              E-books ({ebooks?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="events" className="gap-2">
+              <Calendar className="h-4 w-4" />
+              Eventos ({events?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="sessions" className="gap-2">
+              <Video className="h-4 w-4" />
+              Servicios ({sessions?.length || 0})
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="sessions">
           {loadingSessions ? (
             <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />)}</div>
           ) : sessions?.length ? (
-            <div className="bg-card border border-border rounded-lg overflow-hidden">
-              <table className="w-full">
+            <div className="bg-card border border-border rounded-lg overflow-x-auto">
+              <table className="w-full min-w-[640px]">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left p-4 font-medium">Sesión</th>
@@ -241,8 +243,8 @@ export default function CreatorProductsPage() {
           {loadingCourses ? (
             <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />)}</div>
           ) : courses?.length ? (
-            <div className="bg-card border border-border rounded-lg overflow-hidden">
-              <table className="w-full">
+            <div className="bg-card border border-border rounded-lg overflow-x-auto">
+              <table className="w-full min-w-[640px]">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left p-4 font-medium">Producto</th>
@@ -294,8 +296,8 @@ export default function CreatorProductsPage() {
           {loadingEbooks ? (
             <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />)}</div>
           ) : ebooks?.length ? (
-            <div className="bg-card border border-border rounded-lg overflow-hidden">
-              <table className="w-full">
+            <div className="bg-card border border-border rounded-lg overflow-x-auto">
+              <table className="w-full min-w-[640px]">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left p-4 font-medium">Producto</th>
@@ -335,8 +337,8 @@ export default function CreatorProductsPage() {
           {loadingEvents ? (
             <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />)}</div>
           ) : events?.length ? (
-            <div className="bg-card border border-border rounded-lg overflow-hidden">
-              <table className="w-full">
+            <div className="bg-card border border-border rounded-lg overflow-x-auto">
+              <table className="w-full min-w-[640px]">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left p-4 font-medium">Evento</th>

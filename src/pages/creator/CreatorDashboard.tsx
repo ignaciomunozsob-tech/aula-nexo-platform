@@ -188,7 +188,7 @@ export default function CreatorDashboard() {
 
   if (!user) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <Card>
           <CardHeader>
             <CardTitle>Debes iniciar sesión</CardTitle>
@@ -207,7 +207,7 @@ export default function CreatorDashboard() {
   }
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -217,15 +217,15 @@ export default function CreatorDashboard() {
           </p>
         </div>
 
-        <div className="flex gap-2">
-          <Button asChild>
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+          <Button asChild className="w-full sm:w-auto">
             <Link to="/creator-app/courses/new">
               <Plus className="h-4 w-4 mr-2" />
               Nuevo curso
             </Link>
           </Button>
 
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className="w-full sm:w-auto">
             <Link to="/creator-app/courses">
               <BookOpen className="h-4 w-4 mr-2" />
               Mis cursos
@@ -286,10 +286,10 @@ export default function CreatorDashboard() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
             <Select value={range} onValueChange={(v) => setRange(v as RangeKey)}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full md:w-[200px]">
                 <SelectValue placeholder="Rango" />
               </SelectTrigger>
               <SelectContent>
@@ -375,7 +375,8 @@ export default function CreatorDashboard() {
                   Aún no tienes ventas en este rango. Cuando alguien compre, aquí verás el registro.
                 </div>
               ) : (
-                <div className="rounded-lg border overflow-hidden">
+                <div className="rounded-lg border overflow-x-auto">
+                  <div className="min-w-[640px]">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -433,6 +434,7 @@ export default function CreatorDashboard() {
                       })}
                     </TableBody>
                   </Table>
+                  </div>
                 </div>
               )}
 

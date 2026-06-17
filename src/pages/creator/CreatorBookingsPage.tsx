@@ -136,26 +136,28 @@ export default function CreatorBookingsPage() {
   );
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Reservas</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">Reservas</h1>
         <p className="text-muted-foreground text-sm mt-1">
           Tus servicios agendados y eventos de Google Calendar.
         </p>
       </div>
 
       <Tabs defaultValue="calendar">
-        <TabsList>
-          <TabsTrigger value="calendar"><CalendarDays className="h-4 w-4 mr-1" /> Calendario</TabsTrigger>
-          <TabsTrigger value="list"><List className="h-4 w-4 mr-1" /> Lista</TabsTrigger>
-          <TabsTrigger value="availability"><Clock className="h-4 w-4 mr-1" /> Disponibilidad default</TabsTrigger>
-        </TabsList>
+        <div className="-mx-4 sm:mx-0 overflow-x-auto px-4 sm:px-0">
+          <TabsList className="w-max sm:w-auto">
+            <TabsTrigger value="calendar"><CalendarDays className="h-4 w-4 mr-1" /> Calendario</TabsTrigger>
+            <TabsTrigger value="list"><List className="h-4 w-4 mr-1" /> Lista</TabsTrigger>
+            <TabsTrigger value="availability"><Clock className="h-4 w-4 mr-1" /> Disponibilidad</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="calendar" className="mt-4">
           <Card>
             <CardContent className="p-2 sm:p-4">
               {loadingCal && <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto" /></div>}
-              <div style={{ height: 650 }}>
+              <div className="h-[500px] sm:h-[650px]">
                 <Calendar
                   localizer={localizer}
                   events={events}

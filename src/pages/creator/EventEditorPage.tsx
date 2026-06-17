@@ -176,14 +176,14 @@ export default function EventEditorPage() {
 
   if (isEditing && isLoading) {
     return (
-      <div className="p-8 flex items-center justify-center">
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="p-8 max-w-3xl">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl">
       <Button variant="ghost" onClick={() => navigate('/creator-app/products')} className="mb-6">
         <ArrowLeft className="h-4 w-4 mr-2" />
         Volver a Productos

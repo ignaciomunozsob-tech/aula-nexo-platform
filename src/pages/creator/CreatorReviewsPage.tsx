@@ -49,14 +49,14 @@ export default function CreatorReviewsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8 flex justify-center">
+      <div className="p-4 sm:p-6 lg:p-8 flex justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <h1 className="text-2xl font-bold mb-6">Evaluaciones</h1>
 
       {/* Stats */}

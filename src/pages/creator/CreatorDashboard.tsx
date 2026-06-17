@@ -188,7 +188,7 @@ export default function CreatorDashboard() {
 
   if (!user) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <Card>
           <CardHeader>
             <CardTitle>Debes iniciar sesión</CardTitle>
@@ -207,7 +207,7 @@ export default function CreatorDashboard() {
   }
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>

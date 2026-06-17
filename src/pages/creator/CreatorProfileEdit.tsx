@@ -188,7 +188,7 @@ export default function CreatorProfileEdit() {
   });
 
   return (
-    <div className="p-8 max-w-2xl">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-2xl">
       <h1 className="text-2xl font-bold mb-6">Mi Perfil Público</h1>
 
       <form onSubmit={(e) => { e.preventDefault(); updateMutation.mutate(); }} className="space-y-6">

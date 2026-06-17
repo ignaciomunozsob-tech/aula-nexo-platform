@@ -190,7 +190,51 @@ export default function CreatorProductsPage() {
             <Calendar className="h-4 w-4" />
             Eventos ({events?.length || 0})
           </TabsTrigger>
+          <TabsTrigger value="sessions" className="gap-2">
+            <Video className="h-4 w-4" />
+            Sesiones 1:1 ({sessions?.length || 0})
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="sessions">
+          {loadingSessions ? (
+            <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />)}</div>
+          ) : sessions?.length ? (
+            <div className="bg-card border border-border rounded-lg overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="text-left p-4 font-medium">Sesión</th>
+                    <th className="text-left p-4 font-medium">Duración</th>
+                    <th className="text-left p-4 font-medium">Estado</th>
+                    <th className="text-right p-4 font-medium">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {sessions.map((s: any) => (
+                    <tr key={s.id}>
+                      <td className="p-4 font-medium">{s.title}</td>
+                      <td className="p-4">{s.duration_min} min</td>
+                      <td className="p-4"><StatusBadge status={s.status} /></td>
+                      <td className="p-4 text-right">
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link to={`/creator-app/sessions/${s.id}/edit`}><Edit className="h-4 w-4" /></Link>
+                        </Button>
+                        {s.status === 'published' && profile?.creator_slug && (
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link to={`/c/${profile.creator_slug}/sesion/${s.id}`} target="_blank"><Eye className="h-4 w-4" /></Link>
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <EmptyState type="sesiones 1:1" onCreate={() => setNewProductOpen(true)} />
+          )}
+        </TabsContent>
 
         {/* Courses Tab */}
         <TabsContent value="courses">

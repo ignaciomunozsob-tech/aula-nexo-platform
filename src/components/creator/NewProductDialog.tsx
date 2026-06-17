@@ -64,6 +64,9 @@ export function NewProductDialog({ open, onOpenChange }: NewProductDialogProps) 
       case 'event':
         navigate('/creator-app/events/new');
         break;
+      case 'session':
+        navigate('/creator-app/sessions/new');
+        break;
     }
   };
 

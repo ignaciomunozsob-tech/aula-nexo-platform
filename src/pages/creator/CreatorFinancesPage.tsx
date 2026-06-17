@@ -246,36 +246,38 @@ export default function CreatorFinancesPage() {
         <CardHeader>
           <CardTitle>Transacciones Recientes</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-0 sm:px-6">
           {data?.enrollments && data.enrollments.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Alumno</TableHead>
-                  <TableHead>Curso</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Monto</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.enrollments.slice(0, 20).map((enrollment: any) => (
-                  <TableRow key={enrollment.id}>
-                    <TableCell>{formatDate(enrollment.purchased_at)}</TableCell>
-                    <TableCell>{enrollment.profiles?.name || "Usuario"}</TableCell>
-                    <TableCell>{enrollment.courseTitle}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="bg-green-100 text-green-800">
-                        Completado
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCLP(enrollment.amount)}
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table className="min-w-[640px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Alumno</TableHead>
+                    <TableHead>Curso</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="text-right">Monto</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {data.enrollments.slice(0, 20).map((enrollment: any) => (
+                    <TableRow key={enrollment.id}>
+                      <TableCell className="whitespace-nowrap">{formatDate(enrollment.purchased_at)}</TableCell>
+                      <TableCell>{enrollment.profiles?.name || "Usuario"}</TableCell>
+                      <TableCell>{enrollment.courseTitle}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="bg-green-100 text-green-800">
+                          Completado
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-medium whitespace-nowrap">
+                        {formatCLP(enrollment.amount)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           ) : (
             <p className="text-muted-foreground text-center py-8">No hay transacciones aún</p>
           )}

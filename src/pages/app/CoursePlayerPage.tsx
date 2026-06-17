@@ -19,9 +19,11 @@ import {
   BookOpen,
   Eye,
   Menu,
+  MessagesSquare,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
+import CourseCommunityFeed from '@/components/community/CourseCommunityFeed';
 
 export default function CoursePlayerPage() {
   const { id } = useParams<{ id: string }>();
@@ -34,6 +36,7 @@ export default function CoursePlayerPage() {
   const queryClient = useQueryClient();
   
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
+  const [view, setView] = useState<'lesson' | 'community'>('lesson');
 
   // Check enrollment (skip if preview mode)
   const { data: enrollment, isLoading: enrollmentLoading } = useQuery({
@@ -266,9 +269,9 @@ export default function CoursePlayerPage() {
                 return (
                   <button
                     key={lesson.id}
-                    onClick={() => setSelectedLessonId(lesson.id)}
+                    onClick={() => { setSelectedLessonId(lesson.id); setView('lesson'); }}
                     className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors ${
-                      isActive ? 'bg-muted border-l-2 border-primary' : ''
+                      isActive && view === 'lesson' ? 'bg-muted border-l-2 border-primary' : ''
                     }`}
                   >
                     {isComplete ? (
@@ -291,6 +294,18 @@ export default function CoursePlayerPage() {
             </div>
           </div>
         ))}
+
+        {course?.community_enabled && !isPreviewMode && (
+          <button
+            onClick={() => setView('community')}
+            className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors border-t border-sidebar-border ${
+              view === 'community' ? 'bg-muted border-l-2 border-primary' : ''
+            }`}
+          >
+            <MessagesSquare className={`h-5 w-5 flex-shrink-0 ${view === 'community' ? 'text-primary' : 'text-muted-foreground'}`} />
+            <span className={`text-sm font-medium ${view === 'community' ? 'text-primary' : ''}`}>Comunidad</span>
+          </button>
+        )}
       </div>
     </>
   );
@@ -346,7 +361,11 @@ export default function CoursePlayerPage() {
 
         {/* Main content */}
         <main className="flex-1 bg-background min-w-0">
-          {currentLesson ? (
+          {view === 'community' && course?.community_enabled && id ? (
+            <div className="p-4 md:p-8">
+              <CourseCommunityFeed courseId={id} isCreator={!!isCreator} />
+            </div>
+          ) : currentLesson ? (
             <div className="max-w-4xl mx-auto p-4 md:p-8">
             {/* Video or Text content */}
             {currentLesson.type === 'video' && currentLesson.video_url ? (
@@ -429,6 +448,13 @@ export default function CoursePlayerPage() {
               </div>
             )}
 
+            {/* Module resources */}
+            {currentLesson?.module_id && (
+              <ModuleResourcesList moduleId={currentLesson.module_id} />
+            )}
+
+
+
             {/* Actions */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
               <div>
@@ -479,6 +505,41 @@ export default function CoursePlayerPage() {
           </div>
         )}
       </main>
+      </div>
+    </div>
+  );
+}
+
+function ModuleResourcesList({ moduleId }: { moduleId: string }) {
+  const { toast } = useToast();
+  const { data: resources = [] } = useQuery({
+    queryKey: ['module-resources-player', moduleId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('module_resources').select('*')
+        .eq('module_id', moduleId).order('order_index');
+      if (error) throw error;
+      return data as any[];
+    },
+    enabled: !!moduleId,
+  });
+  if (!resources.length) return null;
+  return (
+    <div className="bg-muted/50 rounded-lg p-4 mb-6">
+      <h3 className="font-medium mb-3">Recursos del módulo</h3>
+      <div className="space-y-2">
+        {resources.map((r: any) => (
+          <a
+            key={r.id}
+            href={r.file_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-sm text-primary hover:underline"
+          >
+            <Download className="h-4 w-4" />
+            {r.title}
+          </a>
+        ))}
       </div>
     </div>
   );

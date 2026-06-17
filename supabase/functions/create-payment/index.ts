@@ -13,8 +13,8 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 async function fetchProduct(admin: any, type: ProductType, id: string) {
   if (type === 'course') {
     const { data } = await admin.from('courses')
-      .select('id, title, price_clp, creator_id, cover_image_url').eq('id', id).maybeSingle();
-    return data ? { title: data.title, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_image_url } : null;
+      .select('id, title, price_clp, creator_id, cover_image_url, community_enabled, community_fee_clp').eq('id', id).maybeSingle();
+    return data ? { title: data.title, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_image_url, community_enabled: !!data.community_enabled, community_fee_clp: data.community_fee_clp ?? 0 } : null;
   }
   if (type === 'ebook') {
     const { data } = await admin.from('ebooks')
@@ -129,7 +129,8 @@ Deno.serve(async (req) => {
       }
     }
     const platformAmount = Math.round(totalAmount * comisionPct / 100);
-    const creatorAmount = totalAmount - platformAmount;
+    const communityFee = (body.product_type === 'course' && (main as any).community_enabled) ? Math.max(0, (main as any).community_fee_clp || 0) : 0;
+    const creatorAmount = totalAmount - platformAmount - communityFee;
 
     // Marketplace: use the creator's MercadoPago access token + take 10% as marketplace_fee.
     // Falls back to NOVU's own MP token only if marketplace is not configured for this creator.
@@ -155,6 +156,7 @@ Deno.serve(async (req) => {
       amount_clp: totalAmount,
       creator_amount_clp: creatorAmount,
       platform_amount_clp: platformAmount,
+      community_fee_clp: communityFee,
       status: 'pending',
       metadata: { title: main.title, has_bump: !!bumpInfo, is_new_user: isNewUser, marketplace: true },
       checkout_page_id: body.checkout_page_id ?? null,

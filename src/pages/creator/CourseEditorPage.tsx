@@ -248,6 +248,7 @@ export default function CourseEditorPage() {
     format: "recorded",
     certificate_enabled: false,
     certificate_template_url: "",
+    community_enabled: false,
   });
 
   const [modules, setModules] = useState<ModuleForm[]>([]);
@@ -366,6 +367,7 @@ export default function CourseEditorPage() {
       format: (course as any).format ?? "recorded",
       certificate_enabled: !!(course as any).certificate_enabled,
       certificate_template_url: (course as any).certificate_template_url ?? "",
+      community_enabled: !!(course as any).community_enabled,
     };
     
     setForm(initialForm);
@@ -412,6 +414,7 @@ export default function CourseEditorPage() {
         certificate_template_url: form.certificate_enabled
           ? form.certificate_template_url || null
           : null,
+        community_enabled: form.community_enabled,
         updated_at: nowIso,
       };
 
@@ -687,18 +690,30 @@ export default function CourseEditorPage() {
       </div>
 
       <Tabs defaultValue="info" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
+        <TabsList className="flex flex-wrap w-full gap-1 h-auto mb-6">
           <TabsTrigger value="info" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
-            Información del Curso
+            Información
           </TabsTrigger>
           <TabsTrigger value="modules" className="flex items-center gap-2">
             <BookOpen className="h-4 w-4" />
-            Módulos y Lecciones
+            Módulos
           </TabsTrigger>
           <TabsTrigger value="students" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            Gestión de Alumnos
+            Alumnos
+          </TabsTrigger>
+          <TabsTrigger value="community" className="flex items-center gap-2">
+            <MessagesSquare className="h-4 w-4" />
+            Comunidad
+          </TabsTrigger>
+          <TabsTrigger value="reviews" className="flex items-center gap-2">
+            <Star className="h-4 w-4" />
+            Evaluaciones
+          </TabsTrigger>
+          <TabsTrigger value="checkout" className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            Páginas de pago
           </TabsTrigger>
         </TabsList>
 
@@ -1120,6 +1135,12 @@ export default function CourseEditorPage() {
                               <Plus className="h-4 w-4 mr-1" />
                               Agregar Lección
                             </Button>
+
+                            {id && !mod.id?.startsWith("new-") && (
+                              <div className="mt-3">
+                                <ModuleResourcesEditor moduleId={mod.id} courseId={id} />
+                              </div>
+                            )}
                           </div>
                         </div>
                       </CollapsibleContent>
@@ -1148,6 +1169,30 @@ export default function CourseEditorPage() {
         {/* Tab: Gestión de Alumnos */}
         <TabsContent value="students">
           {id && <StudentManagement productId={id} productType="course" />}
+        </TabsContent>
+
+        {/* Tab: Comunidad */}
+        <TabsContent value="community">
+          {id && (
+            <CourseCommunityManager
+              courseId={id}
+              communityEnabled={form.community_enabled}
+              onToggle={(v) => {
+                setForm((p) => ({ ...p, community_enabled: v }));
+                setTimeout(() => saveMutation.mutate(), 0);
+              }}
+            />
+          )}
+        </TabsContent>
+
+        {/* Tab: Evaluaciones */}
+        <TabsContent value="reviews">
+          <CreatorReviewsPage />
+        </TabsContent>
+
+        {/* Tab: Páginas de pago */}
+        <TabsContent value="checkout">
+          <CheckoutPagesPage />
         </TabsContent>
       </Tabs>
     </div>

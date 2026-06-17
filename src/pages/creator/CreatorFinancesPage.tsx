@@ -57,6 +57,14 @@ export default function CreatorFinancesPage() {
 
       if (enrollErr) throw enrollErr;
 
+      // Get community fee totals from orders
+      const { data: orders } = await supabase
+        .from("orders")
+        .select("community_fee_clp, created_at, product_type")
+        .eq("creator_id", user.id)
+        .eq("status", "paid");
+      const totalCommunityFee = (orders || []).reduce((acc: number, o: any) => acc + (o.community_fee_clp || 0), 0);
+
       // Calculate totals
       const salesByMonth: Record<string, number> = {};
       let totalRevenue = 0;
@@ -101,6 +109,7 @@ export default function CreatorFinancesPage() {
         weeklyRevenue,
         monthlyRevenue,
         salesByMonth,
+        totalCommunityFee,
       };
     },
     enabled: !!user?.id,
@@ -172,6 +181,23 @@ export default function CreatorFinancesPage() {
           </CardContent>
         </Card>
       </div>
+
+      {(data?.totalCommunityFee ?? 0) > 0 && (
+        <Card className="mb-8 border-primary/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-primary" />
+              Cargos por Comunidades de cursos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">- {formatCLP(data!.totalCommunityFee)}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Descuento aplicado a tu payout por cada venta de cursos con comunidad activa ($990 por venta).
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Sales by Course */}
       <Card className="mb-8">

@@ -60,9 +60,6 @@ export function PublicNavbar() {
             <Link to="/precios" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Precios
             </Link>
-            <Link to="/comisiones" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Comisiones
-            </Link>
 
             {user ? (
               <Button
@@ -103,7 +100,7 @@ export function PublicNavbar() {
                   className="novu-btn-primary text-sm"
                   style={{ padding: '10px 22px' }}
                 >
-                  Crear cuenta
+                  Crear cuenta gratis
                 </button>
               </div>
             )}

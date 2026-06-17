@@ -129,7 +129,8 @@ Deno.serve(async (req) => {
       }
     }
     const platformAmount = Math.round(totalAmount * comisionPct / 100);
-    const creatorAmount = totalAmount - platformAmount;
+    const communityFee = (body.product_type === 'course' && (main as any).community_enabled) ? Math.max(0, (main as any).community_fee_clp || 0) : 0;
+    const creatorAmount = totalAmount - platformAmount - communityFee;
 
     // Marketplace: use the creator's MercadoPago access token + take 10% as marketplace_fee.
     // Falls back to NOVU's own MP token only if marketplace is not configured for this creator.

@@ -217,15 +217,15 @@ export default function CreatorDashboard() {
           </p>
         </div>
 
-        <div className="flex gap-2">
-          <Button asChild>
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+          <Button asChild className="w-full sm:w-auto">
             <Link to="/creator-app/courses/new">
               <Plus className="h-4 w-4 mr-2" />
               Nuevo curso
             </Link>
           </Button>
 
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className="w-full sm:w-auto">
             <Link to="/creator-app/courses">
               <BookOpen className="h-4 w-4 mr-2" />
               Mis cursos

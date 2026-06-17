@@ -1,17 +1,19 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CheckCircle2, Calculator, CreditCard, Sparkles } from 'lucide-react';
+import { ArrowLeft, MessagesSquare, Wallet } from 'lucide-react';
 import { SEO } from '@/components/SEO';
+
+const SUPPORT_WA = 'https://wa.me/56933728004';
 
 export default function ComisionesPage() {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="Comisiones — Cómo cobra NOVU por cada venta"
-        description="Conoce el modelo de comisiones de NOVU: 10% en Plan Gratis, 5% en Plan Creador. Solo cobramos cuando tú vendes."
+        title="Comisiones y costos — NOVU"
+        description="Una sola comisión del 10% por venta, con procesamiento de MercadoPago incluido. Sin letra chica."
         path="/comisiones"
       />
-      {/* Header */}
+
       <header className="border-b border-border bg-background sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center h-16">
@@ -25,120 +27,94 @@ export default function ComisionesPage() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Title */}
-        <div className="text-center mb-12">
-          <span
-            className="inline-block px-4 py-1.5 rounded-full text-sm font-semibold mb-4"
-            style={{ backgroundColor: '#fcc70e', color: '#000' }}
-          >
-            Comisiones por plan
-          </span>
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Cobramos cuando tú cobras
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16">
+        <div className="text-center">
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight text-foreground">
+            Comisiones y costos
           </h1>
-          <p className="text-lg text-muted-foreground">
-            Sin mensualidades obligatorias. La comisión depende del plan que elijas.
-          </p>
+          <p className="mt-3 text-lg text-muted-foreground">Sin letra chica. Sin sorpresas.</p>
         </div>
 
-        {/* Plans summary */}
-        <section className="grid md:grid-cols-3 gap-4 mb-12">
-          <div className="bg-card border border-border rounded-2xl p-6 text-center">
-            <p className="text-sm font-semibold text-muted-foreground mb-1">Plan Gratis</p>
-            <div className="text-4xl font-bold text-foreground mb-2">10%</div>
-            <p className="text-sm text-muted-foreground">por cada venta</p>
-          </div>
-          <div className="bg-card border-2 rounded-2xl p-6 text-center relative" style={{ borderColor: '#fcc70e' }}>
-            <span
-              className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-xs font-bold"
-              style={{ backgroundColor: '#fcc70e', color: '#000' }}
-            >
-              Más popular
-            </span>
-            <p className="text-sm font-semibold text-muted-foreground mb-1">Plan Creador</p>
-            <div className="text-4xl font-bold text-foreground mb-2">5%</div>
-            <p className="text-sm text-muted-foreground">por cada venta</p>
-          </div>
-          <div className="bg-card border border-border rounded-2xl p-6 text-center">
-            <p className="text-sm font-semibold text-muted-foreground mb-1">Plan Pro</p>
-            <div className="text-4xl font-bold text-foreground mb-2">Por definir</div>
-            <p className="text-sm text-muted-foreground">enterprise</p>
+        {/* 1 */}
+        <section>
+          <h2 className="text-2xl font-black text-foreground mb-5 text-center">Una sola comisión</h2>
+          <div className="max-w-[600px] mx-auto rounded-3xl p-10 text-center" style={{ background: '#0a0a0a', color: '#fff' }}>
+            <div className="text-3xl md:text-4xl font-black">10% por venta · todo incluido</div>
+            <p className="mt-4 text-sm" style={{ color: 'rgba(255,255,255,0.65)' }}>
+              Incluye costos de procesamiento de MercadoPago. Sin cargos adicionales.
+            </p>
           </div>
         </section>
 
-        <div className="text-center mb-12">
-          <Button size="lg" asChild>
-            <Link to="/precios">
-              <Sparkles className="h-4 w-4 mr-2" />
-              Ver detalle completo de planes
-            </Link>
-          </Button>
-        </div>
-
-        {/* Example */}
-        <section className="bg-muted/50 border border-border rounded-2xl p-8 mb-12">
-          <div className="flex items-center gap-3 mb-6">
-            <Calculator className="h-6 w-6" style={{ color: '#fcc70e' }} />
-            <h2 className="text-xl font-bold">Ejemplo con números</h2>
-          </div>
-
-          <p className="text-muted-foreground mb-4">
-            Si vendes un curso a <strong className="text-foreground">$10.000 CLP</strong>:
+        {/* 2 */}
+        <section className="max-w-3xl mx-auto">
+          <h2 className="text-2xl font-black text-foreground mb-3 text-center">Cuotas sin interés</h2>
+          <p className="text-muted-foreground text-center mb-6">
+            Tus alumnos pueden pagar en hasta 3 cuotas sin interés. Incluido en la comisión del 10%.
           </p>
-
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="bg-background rounded-lg p-4 space-y-2">
-              <p className="text-sm font-semibold text-muted-foreground">Plan Gratis (10%)</p>
-              <div className="flex justify-between text-sm"><span>Tú recibes</span><span className="font-bold">$9.000</span></div>
-              <div className="flex justify-between text-sm text-muted-foreground"><span>NOVU</span><span>$1.000</span></div>
-            </div>
-            <div className="bg-background rounded-lg p-4 space-y-2 border-2" style={{ borderColor: '#fcc70e' }}>
-              <p className="text-sm font-semibold text-muted-foreground">Plan Creador (5%)</p>
-              <div className="flex justify-between text-sm"><span>Tú recibes</span><span className="font-bold">$9.500</span></div>
-              <div className="flex justify-between text-sm text-muted-foreground"><span>NOVU</span><span>$500</span></div>
-            </div>
+          <div className="overflow-x-auto rounded-2xl border border-border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ background: '#f3f4f6', color: '#1a1a1a' }}>
+                  <th className="text-left px-5 py-3 font-bold">Cuotas</th>
+                  <th className="text-left px-5 py-3 font-bold">Lo que paga el alumno</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { c: '1 cuota', t: 'Precio completo' },
+                  { c: '2 cuotas', t: 'Precio / 2 por mes' },
+                  { c: '3 cuotas', t: 'Precio / 3 por mes' },
+                ].map((r, i) => (
+                  <tr key={r.c} className={i % 2 === 1 ? 'bg-muted/40' : ''}>
+                    <td className="px-5 py-3 font-medium text-foreground">{r.c}</td>
+                    <td className="px-5 py-3 text-foreground/90">{r.t}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-
-          <p className="text-xs text-muted-foreground mt-4">
-            * Ejemplo ilustrativo. A esto se suma la comisión de MercadoPago según el método de pago.
-          </p>
         </section>
 
-        {/* Key points */}
-        <section className="space-y-4 mb-12">
-          <div className="flex gap-4 p-4 bg-card border border-border rounded-xl">
-            <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(252,199,14,0.15)' }}>
-              <CreditCard className="h-5 w-5" style={{ color: '#fcc70e' }} />
+        {/* 3 */}
+        <section className="max-w-3xl mx-auto">
+          <h2 className="text-2xl font-black text-foreground mb-5 text-center">Cargos adicionales opcionales</h2>
+          <div className="rounded-2xl border border-border bg-card p-6 flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'hsl(var(--novu-accent) / 0.18)' }}>
+              <MessagesSquare className="h-6 w-6" style={{ color: 'hsl(var(--novu-accent))' }} />
             </div>
             <div>
-              <h3 className="font-semibold mb-1">Empezar es gratis</h3>
-              <p className="text-sm text-muted-foreground">
-                Crear tu cuenta y subir productos no cuesta nada. El Plan Creador es opcional y solo cobra si te conviene reducir la comisión.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-4 p-4 bg-card border border-border rounded-xl">
-            <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(252,199,14,0.15)' }}>
-              <CheckCircle2 className="h-5 w-5" style={{ color: '#fcc70e' }} />
-            </div>
-            <div>
-              <h3 className="font-semibold mb-1">Solo cobramos cuando vendes</h3>
-              <p className="text-sm text-muted-foreground">
-                La comisión se aplica únicamente sobre ventas reales. Si no vendes, no pagas.
+              <h3 className="font-bold text-foreground">Comunidad por curso</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                $990 por cada venta del curso donde actives la comunidad.
               </p>
             </div>
           </div>
         </section>
 
-        {/* CTA */}
+        {/* 4 */}
+        <section className="max-w-3xl mx-auto">
+          <h2 className="text-2xl font-black text-foreground mb-5 text-center">¿Cuándo recibo mi dinero?</h2>
+          <div className="rounded-2xl border border-border bg-card p-6 flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'hsl(var(--novu-accent) / 0.18)' }}>
+              <Wallet className="h-6 w-6" style={{ color: 'hsl(var(--novu-accent))' }} />
+            </div>
+            <p className="text-foreground/90">
+              Los pagos se acreditan en aproximadamente 10 días hábiles. Lo configuras desde MercadoPago.
+            </p>
+          </div>
+        </section>
+
         <section className="text-center">
-          <h2 className="text-2xl font-bold mb-4">¿Listo para empezar?</h2>
-          <p className="text-muted-foreground mb-6">Crea tu cuenta gratis y sube tu primer producto hoy.</p>
-          <Button size="lg" asChild>
-            <Link to="/signup?role=creator">Crear mi cuenta gratis</Link>
-          </Button>
+          <a
+            href={SUPPORT_WA}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center px-7 py-3.5 rounded-full font-bold text-base transition-transform hover:scale-105"
+            style={{ background: '#fcc70e', color: '#1a1a1a' }}
+          >
+            Escribir al soporte
+          </a>
         </section>
       </main>
 

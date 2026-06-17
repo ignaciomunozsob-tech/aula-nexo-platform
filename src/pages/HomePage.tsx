@@ -30,13 +30,13 @@ import mockupStudent from '@/assets/home-mockup-student.jpg';
 import mockupFinance from '@/assets/home-mockup-finance.jpg';
 import mockupPublic from '@/assets/home-mockup-public.jpg';
 
-const features = [
+const features: Array<{ icon: any; title: string; desc: string; soon?: boolean }> = [
   { icon: Layout, title: 'Página de curso lista', desc: 'Sin diseñar nada desde cero' },
-  { icon: ShieldCheck, title: 'Pagos seguros', desc: 'Tus alumnos pagan, tú cobras' },
+  { icon: ShieldCheck, title: 'Pagos seguros · 10% de comisión', desc: 'Procesamiento incluido' },
   { icon: Users, title: 'Gestión de alumnos', desc: 'Ve el progreso de cada uno' },
   { icon: LineChart, title: 'Finanzas en tiempo real', desc: 'Ingresos y ventas al día' },
   { icon: Award, title: 'Certificados automáticos', desc: 'Se generan solos al completar' },
-  { icon: Handshake, title: 'Comisiones para afiliados', desc: 'Multiplica tus ventas con afiliados', soon: true },
+  { icon: Handshake, title: 'Comunidad por curso · add-on $990', desc: 'Activa un foro privado por curso' },
 ];
 
 const productTypes = [
@@ -48,21 +48,25 @@ const productTypes = [
 
 const faqs = [
   {
-    q: '¿Cuánto cobra NOVU por cada venta?',
-    a: 'La comisión de NOVU depende del plan que elijas: 10% en el Plan Gratis, 5% en el Plan Creador y planes Pro a medida. A eso se suma la comisión de MercadoPago, que varía según el método de pago y las cuotas. Revisa el detalle en /precios.',
+    q: '¿Cuánto cobra NOVU?',
+    a: 'NOVU cobra un 10% por cada venta. Eso incluye todos los costos de procesamiento de pago. Sin mensualidad, sin letra chica.',
   },
   {
     q: '¿Cuándo recibo mi dinero?',
-    a: 'Los pagos se acreditan en aproximadamente 10 días. El plazo exacto y la configuración de retiros la manejas directamente desde tu cuenta de MercadoPago.',
+    a: 'Los pagos se acreditan en aproximadamente 10 días. El plazo lo configuras desde tu cuenta de MercadoPago.',
   },
   {
-    q: '¿Tienen soporte si necesito ayuda?',
-    a: 'Sí. Puedes escribirnos directo por WhatsApp y te ayudamos a configurar tu cuenta y publicar tu primer curso.',
+    q: '¿Tienen soporte?',
+    a: 'Sí. Escríbenos por WhatsApp.',
     whatsapp: true,
   },
   {
-    q: '¿Puedo vender más de un curso?',
-    a: 'Sí, puedes crear y publicar todos los productos que quieras. Sin límites.',
+    q: '¿Puedo vender más de un producto?',
+    a: 'Sí. Cursos, ebooks, plantillas, eventos, agenda 1:1. Sin límites.',
+  },
+  {
+    q: '¿Qué es el add-on de comunidad?',
+    a: 'Si activas la comunidad en tu curso, se descuenta $990 por cada venta de ese curso. Es un cargo único por venta, no mensual.',
   },
 ];
 
@@ -237,9 +241,9 @@ export default function HomePage() {
             </Link>
           </div>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4" style={{ color: 'hsl(var(--novu-accent))' }} /> Gratis para empezar</span>
-            <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4" style={{ color: 'hsl(var(--novu-accent))' }} /> 5 min para publicar</span>
-            <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4" style={{ color: 'hsl(var(--novu-accent))' }} /> Pagos seguros</span>
+            <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4" style={{ color: 'hsl(var(--novu-accent))' }} /> Gratis para siempre</span>
+            <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4" style={{ color: 'hsl(var(--novu-accent))' }} /> Solo pagas cuando vendes</span>
+            <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4" style={{ color: 'hsl(var(--novu-accent))' }} /> 10% de comisión · todo incluido</span>
           </div>
 
           {/* Mockup dashboard creador */}
@@ -501,7 +505,7 @@ export default function HomePage() {
       <section className="px-4 sm:px-6 lg:px-8 py-20 md:py-28" style={{ background: '#000000' }}>
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-6xl font-black tracking-tight" style={{ color: '#ffffff' }}>
-            Empieza hoy. Es gratis
+            Empieza gratis. Solo pagamos cuando tú vendes.
           </h2>
           <p className="mt-5 text-lg md:text-xl max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.6)' }}>
             Tu conocimiento tiene valor. NOVU te ayuda a monetizarlo

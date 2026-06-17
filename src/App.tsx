@@ -51,6 +51,11 @@ import CheckoutPage from "@/pages/CheckoutPage";
 import CheckoutPagesPage from "@/pages/creator/CheckoutPagesPage";
 import CheckoutPageEditorPage from "@/pages/creator/CheckoutPageEditorPage";
 import CreatorIntegrationsPage from "@/pages/creator/CreatorIntegrationsPage";
+import CreatorAvailabilityPage from "@/pages/creator/CreatorAvailabilityPage";
+import CreatorBookingsPage from "@/pages/creator/CreatorBookingsPage";
+import SessionEditorPage from "@/pages/creator/SessionEditorPage";
+import SessionBookingPage from "@/pages/SessionBookingPage";
+import SessionBookingSuccessPage from "@/pages/SessionBookingSuccessPage";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { MetaPixelTracker } from "@/components/MetaPixelTracker";
 import DebugPage from "@/pages/DebugPage";
@@ -128,7 +133,15 @@ const App = () => (
                 <Route path="plan" element={<CreatorPlanPage />} />
                 <Route path="billing" element={<CreatorBillingPage />} />
                 <Route path="integrations" element={<CreatorIntegrationsPage />} />
+                <Route path="availability" element={<CreatorAvailabilityPage />} />
+                <Route path="bookings" element={<CreatorBookingsPage />} />
+                <Route path="sessions/new" element={<SessionEditorPage />} />
+                <Route path="sessions/:id/edit" element={<SessionEditorPage />} />
               </Route>
+
+              {/* 1:1 Booking public */}
+              <Route path="/c/:creatorSlug/sesion/:sessionId" element={<SessionBookingPage />} />
+              <Route path="/booking/success" element={<SessionBookingSuccessPage />} />
 
               {/* Admin routes */}
               <Route path="/admin" element={<AdminLayout />}>

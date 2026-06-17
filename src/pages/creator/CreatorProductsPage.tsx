@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Eye, Users, BookOpen, FileText, Calendar } from 'lucide-react';
+import { Plus, Edit, Eye, Users, BookOpen, FileText, Calendar, Video } from 'lucide-react';
 import { formatPrice, getCourseUrl } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NewProductDialog } from '@/components/creator/NewProductDialog';
@@ -67,6 +67,21 @@ export default function CreatorProductsPage() {
         .select('id, title, description, price_clp, category_id, status, cover_image_url, duration_minutes, max_attendees, event_date, event_type, creator_id, slug, is_novu_official, created_at, updated_at')
         .eq('creator_id', user!.id)
         .order('event_date', { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  // Fetch 1:1 sessions
+  const { data: sessions, isLoading: loadingSessions } = useQuery({
+    queryKey: ['creator-sessions', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('one_on_one_sessions')
+        .select('*')
+        .eq('creator_id', user!.id)
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -175,7 +190,51 @@ export default function CreatorProductsPage() {
             <Calendar className="h-4 w-4" />
             Eventos ({events?.length || 0})
           </TabsTrigger>
+          <TabsTrigger value="sessions" className="gap-2">
+            <Video className="h-4 w-4" />
+            Sesiones 1:1 ({sessions?.length || 0})
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="sessions">
+          {loadingSessions ? (
+            <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />)}</div>
+          ) : sessions?.length ? (
+            <div className="bg-card border border-border rounded-lg overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="text-left p-4 font-medium">Sesión</th>
+                    <th className="text-left p-4 font-medium">Duración</th>
+                    <th className="text-left p-4 font-medium">Estado</th>
+                    <th className="text-right p-4 font-medium">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {sessions.map((s: any) => (
+                    <tr key={s.id}>
+                      <td className="p-4 font-medium">{s.title}</td>
+                      <td className="p-4">{s.duration_min} min</td>
+                      <td className="p-4"><StatusBadge status={s.status} /></td>
+                      <td className="p-4 text-right">
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link to={`/creator-app/sessions/${s.id}/edit`}><Edit className="h-4 w-4" /></Link>
+                        </Button>
+                        {s.status === 'published' && profile?.creator_slug && (
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link to={`/c/${profile.creator_slug}/sesion/${s.id}`} target="_blank"><Eye className="h-4 w-4" /></Link>
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <EmptyState type="sesiones 1:1" onCreate={() => setNewProductOpen(true)} />
+          )}
+        </TabsContent>
 
         {/* Courses Tab */}
         <TabsContent value="courses">

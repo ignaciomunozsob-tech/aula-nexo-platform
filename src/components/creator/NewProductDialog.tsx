@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, FileText, Calendar } from 'lucide-react';
+import { BookOpen, FileText, Calendar, Video } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ interface NewProductDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type ProductType = 'course' | 'ebook' | 'event';
+type ProductType = 'course' | 'ebook' | 'event' | 'session';
 
 const productTypes = [
   {
@@ -35,6 +35,12 @@ const productTypes = [
     icon: Calendar,
     title: 'Evento Online',
     description: 'Programa un evento en vivo con cupos limitados',
+  },
+  {
+    type: 'session' as ProductType,
+    icon: Video,
+    title: 'Sesión 1:1',
+    description: 'Mentoría individual con agenda sincronizada a Google Calendar',
   },
 ];
 
@@ -57,6 +63,9 @@ export function NewProductDialog({ open, onOpenChange }: NewProductDialogProps) 
         break;
       case 'event':
         navigate('/creator-app/events/new');
+        break;
+      case 'session':
+        navigate('/creator-app/sessions/new');
         break;
     }
   };

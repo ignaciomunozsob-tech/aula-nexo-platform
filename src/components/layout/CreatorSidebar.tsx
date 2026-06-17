@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, User, LogOut, Home, DollarSign, Star, ChevronDown, Users, CreditCard, Receipt, Sparkles, Lock, BarChart3, Share2, Plug } from 'lucide-react';
+import { LayoutDashboard, BookOpen, User, LogOut, Home, DollarSign, Star, ChevronDown, Users, CreditCard, Receipt, Sparkles, Lock, BarChart3, Share2, Plug, CalendarClock, CalendarCheck } from 'lucide-react';
 import { useMyPlan } from '@/hooks/useMyPlan';
 import { LockedFeature } from '@/components/creator/LockedFeature';
 import { useAuth } from '@/lib/auth';
@@ -69,6 +69,8 @@ export function CreatorSidebar() {
   const navItems = [
     { to: '/creator-app', icon: LayoutDashboard, label: 'Dashboard', end: true },
     { to: '/creator-app/products', icon: BookOpen, label: 'Mis Productos', end: false },
+    { to: '/creator-app/availability', icon: CalendarClock, label: 'Disponibilidad', end: false },
+    { to: '/creator-app/bookings', icon: CalendarCheck, label: 'Reservas 1:1', end: false },
     { to: '/creator-app/communities', icon: Users, label: 'Comunidades', end: false },
     { to: '/creator-app/checkout-pages', icon: CreditCard, label: 'Páginas de pago', end: false },
     { to: '/creator-app/finances', icon: DollarSign, label: 'Finanzas', end: false },

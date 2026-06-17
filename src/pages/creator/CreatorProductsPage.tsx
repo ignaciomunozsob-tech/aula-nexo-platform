@@ -73,6 +73,21 @@ export default function CreatorProductsPage() {
     enabled: !!user,
   });
 
+  // Fetch 1:1 sessions
+  const { data: sessions, isLoading: loadingSessions } = useQuery({
+    queryKey: ['creator-sessions', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('one_on_one_sessions')
+        .select('*')
+        .eq('creator_id', user!.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
   // Get enrollment counts for courses
   const { data: enrollmentCounts } = useQuery({
     queryKey: ['creator-courses-enrollments', user?.id],

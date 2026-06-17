@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, FileText, Calendar } from 'lucide-react';
+import { BookOpen, FileText, Calendar, Video } from 'lucide-react';
 import {
   Dialog,
   DialogContent,

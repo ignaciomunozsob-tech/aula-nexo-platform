@@ -557,6 +557,45 @@ export type Database = {
           },
         ]
       }
+      creator_google_accounts: {
+        Row: {
+          access_token: string
+          calendar_id: string
+          connected_at: string
+          creator_id: string
+          expires_at: string
+          google_email: string | null
+          google_sub: string
+          refresh_token: string
+          scope: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          calendar_id?: string
+          connected_at?: string
+          creator_id: string
+          expires_at: string
+          google_email?: string | null
+          google_sub: string
+          refresh_token: string
+          scope?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          calendar_id?: string
+          connected_at?: string
+          creator_id?: string
+          expires_at?: string
+          google_email?: string | null
+          google_sub?: string
+          refresh_token?: string
+          scope?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       creator_mercadopago_accounts: {
         Row: {
           access_token: string
@@ -1322,6 +1361,14 @@ export type Database = {
           registered_at: string
           status: string
           user_id: string
+        }[]
+      }
+      get_my_google_connection: {
+        Args: never
+        Returns: {
+          calendar_id: string
+          connected_at: string
+          google_email: string
         }[]
       }
       get_my_meta_pixel_id: { Args: never; Returns: string }

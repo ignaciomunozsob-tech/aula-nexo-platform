@@ -50,6 +50,7 @@ import PaymentResultPage from "@/pages/PaymentResultPage";
 import CheckoutPage from "@/pages/CheckoutPage";
 import CheckoutPagesPage from "@/pages/creator/CheckoutPagesPage";
 import CheckoutPageEditorPage from "@/pages/creator/CheckoutPageEditorPage";
+import CreatorIntegrationsPage from "@/pages/creator/CreatorIntegrationsPage";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { MetaPixelTracker } from "@/components/MetaPixelTracker";
 import DebugPage from "@/pages/DebugPage";
@@ -126,6 +127,7 @@ const App = () => (
                 <Route path="profile" element={<CreatorProfileEdit />} />
                 <Route path="plan" element={<CreatorPlanPage />} />
                 <Route path="billing" element={<CreatorBillingPage />} />
+                <Route path="integrations" element={<CreatorIntegrationsPage />} />
               </Route>
 
               {/* Admin routes */}

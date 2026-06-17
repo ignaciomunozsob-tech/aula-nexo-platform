@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -867,39 +885,6 @@ export type Database = {
         }
         Relationships: []
       }
-      creator_plans: {
-        Row: {
-          comision: number
-          created_at: string
-          creator_id: string
-          id: string
-          plan: string
-          plan_inicio: string
-          plan_vence: string | null
-          updated_at: string
-        }
-        Insert: {
-          comision?: number
-          created_at?: string
-          creator_id: string
-          id?: string
-          plan?: string
-          plan_inicio?: string
-          plan_vence?: string | null
-          updated_at?: string
-        }
-        Update: {
-          comision?: number
-          created_at?: string
-          creator_id?: string
-          id?: string
-          plan?: string
-          plan_inicio?: string
-          plan_vence?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       creator_reviews: {
         Row: {
           comment: string | null
@@ -1647,63 +1632,6 @@ export type Database = {
         }
         Relationships: []
       }
-      subscription_requests: {
-        Row: {
-          amount_neto_clp: number
-          amount_total_clp: number
-          ciclo: string
-          created_at: string
-          creator_id: string
-          direccion: string | null
-          documento: string
-          giro: string | null
-          id: string
-          metodo: string
-          notes: string | null
-          plan: string
-          razon_social: string | null
-          rut_empresa: string | null
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          amount_neto_clp: number
-          amount_total_clp: number
-          ciclo: string
-          created_at?: string
-          creator_id: string
-          direccion?: string | null
-          documento: string
-          giro?: string | null
-          id?: string
-          metodo: string
-          notes?: string | null
-          plan: string
-          razon_social?: string | null
-          rut_empresa?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          amount_neto_clp?: number
-          amount_total_clp?: number
-          ciclo?: string
-          created_at?: string
-          creator_id?: string
-          direccion?: string | null
-          documento?: string
-          giro?: string | null
-          id?: string
-          metodo?: string
-          notes?: string | null
-          plan?: string
-          razon_social?: string | null
-          rut_empresa?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       user_roles: {
         Row: {
           id: string
@@ -1719,27 +1647,6 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
-        }
-        Relationships: []
-      }
-      waitlist_pro: {
-        Row: {
-          created_at: string
-          email: string
-          id: string
-          source: string | null
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          id?: string
-          source?: string | null
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
-          source?: string | null
         }
         Relationships: []
       }
@@ -1861,14 +1768,6 @@ export type Database = {
         }[]
       }
       get_my_meta_pixel_id: { Args: never; Returns: string }
-      get_my_plan: {
-        Args: never
-        Returns: {
-          comision: number
-          plan: string
-          plan_vence: string
-        }[]
-      }
       get_my_review_for_creator: {
         Args: { _creator_id: string }
         Returns: {

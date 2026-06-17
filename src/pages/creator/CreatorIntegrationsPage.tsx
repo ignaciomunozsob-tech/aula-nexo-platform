@@ -76,7 +76,7 @@ export default function CreatorIntegrationsPage() {
                 )}
               </CardTitle>
               <CardDescription className="mt-1">
-                Necesario para ofrecer sesiones 1:1 y bloquear horarios. También sincroniza tus eventos online y crea links de Google Meet automáticamente.
+                Necesario para ofrecer servicios y bloquear horarios. También sincroniza tus eventos online y crea links de Google Meet automáticamente.
               </CardDescription>
             </div>
           </div>

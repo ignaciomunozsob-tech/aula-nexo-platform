@@ -192,7 +192,7 @@ export default function CreatorProductsPage() {
           </TabsTrigger>
           <TabsTrigger value="sessions" className="gap-2">
             <Video className="h-4 w-4" />
-            Sesiones 1:1 ({sessions?.length || 0})
+            Servicios ({sessions?.length || 0})
           </TabsTrigger>
         </TabsList>
 
@@ -232,7 +232,7 @@ export default function CreatorProductsPage() {
               </table>
             </div>
           ) : (
-            <EmptyState type="sesiones 1:1" onCreate={() => setNewProductOpen(true)} />
+            <EmptyState type="servicios" onCreate={() => setNewProductOpen(true)} />
           )}
         </TabsContent>
 

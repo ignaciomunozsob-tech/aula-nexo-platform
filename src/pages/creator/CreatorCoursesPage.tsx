@@ -92,8 +92,8 @@ export default function CreatorCoursesPage() {
       {isLoading ? (
         <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />)}</div>
       ) : courses?.length ? (
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
-          <table className="w-full">
+        <div className="bg-card border border-border rounded-lg overflow-x-auto">
+          <table className="w-full min-w-[640px]">
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left p-4 font-medium">Curso</th>

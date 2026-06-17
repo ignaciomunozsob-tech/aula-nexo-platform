@@ -60,25 +60,25 @@ function AccountOverview() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardContent className="p-6 flex items-center gap-5">
-          <Avatar className="h-20 w-20">
+        <CardContent className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5">
+          <Avatar className="h-20 w-20 shrink-0">
             <AvatarImage src={profile?.avatar_url || ''} alt={profile?.name || 'Creador'} />
             <AvatarFallback className="text-2xl font-bold bg-primary/10">{initials}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <h2 className="text-2xl font-bold truncate">{profile?.name || 'Creador'}</h2>
-            <p className="text-muted-foreground flex items-center gap-1.5 text-sm mt-1">
-              <Mail className="h-4 w-4" /> {user?.email}
+            <h2 className="text-xl sm:text-2xl font-bold truncate">{profile?.name || 'Creador'}</h2>
+            <p className="text-muted-foreground flex items-center gap-1.5 text-sm mt-1 break-all">
+              <Mail className="h-4 w-4 shrink-0" /> {user?.email}
             </p>
             <p className="text-sm text-muted-foreground mt-1">Miembro desde {registered}</p>
           </div>
-          <div className="flex flex-col gap-2 shrink-0">
-            <Button asChild variant="outline" size="sm">
+          <div className="flex flex-row sm:flex-col gap-2 sm:shrink-0">
+            <Button asChild variant="outline" size="sm" className="flex-1 sm:flex-none">
               <Link to="/creator-app/profile">
                 <Pencil className="h-4 w-4 mr-1.5" /> Editar perfil
               </Link>
             </Button>
-            <Button onClick={handleResetPassword} variant="outline" size="sm" disabled={sendingReset}>
+            <Button onClick={handleResetPassword} variant="outline" size="sm" disabled={sendingReset} className="flex-1 sm:flex-none">
               <KeyRound className="h-4 w-4 mr-1.5" /> Cambiar contraseña
             </Button>
           </div>

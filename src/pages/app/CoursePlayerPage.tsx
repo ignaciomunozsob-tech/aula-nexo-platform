@@ -361,7 +361,11 @@ export default function CoursePlayerPage() {
 
         {/* Main content */}
         <main className="flex-1 bg-background min-w-0">
-          {currentLesson ? (
+          {view === 'community' && course?.community_enabled && id ? (
+            <div className="p-4 md:p-8">
+              <CourseCommunityFeed courseId={id} isCreator={!!isCreator} />
+            </div>
+          ) : currentLesson ? (
             <div className="max-w-4xl mx-auto p-4 md:p-8">
             {/* Video or Text content */}
             {currentLesson.type === 'video' && currentLesson.video_url ? (

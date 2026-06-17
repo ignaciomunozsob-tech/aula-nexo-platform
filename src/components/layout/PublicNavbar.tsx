@@ -151,7 +151,7 @@ export function PublicNavbar() {
                     Iniciar como creador
                   </Button>
                   <button
-                    onClick={() => { navigate('/signup'); setMobileMenuOpen(false); }}
+                    onClick={() => { navigate('/signup?role=creator'); setMobileMenuOpen(false); }}
                     className="novu-btn-primary text-sm"
                   >
                     Crear cuenta

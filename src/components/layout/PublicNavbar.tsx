@@ -96,7 +96,7 @@ export function PublicNavbar() {
                 </DropdownMenu>
 
                 <button
-                  onClick={() => navigate('/signup')}
+                  onClick={() => navigate('/signup?role=creator')}
                   className="novu-btn-primary text-sm"
                   style={{ padding: '10px 22px' }}
                 >

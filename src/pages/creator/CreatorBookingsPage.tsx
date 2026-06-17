@@ -175,14 +175,22 @@ export default function CreatorBookingsPage() {
                   culture="es"
                   popup
                   onSelectEvent={(e) => setSelected(e as CalEvent)}
-                  eventPropGetter={(event: any) => ({
-                    style: {
-                      backgroundColor: event.resource.kind === "novu" ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))",
-                      color: event.resource.kind === "novu" ? "hsl(var(--primary-foreground))" : "white",
-                      border: "none",
-                      fontSize: "0.8rem",
-                    },
-                  })}
+                  eventPropGetter={(event: any) => {
+                    const isNovu = event.resource.kind === "novu";
+                    return {
+                      style: isNovu ? {
+                        backgroundColor: "hsl(var(--primary))",
+                        color: "hsl(var(--primary-foreground))",
+                        borderLeft: "3px solid hsl(var(--primary))",
+                        fontWeight: 600,
+                      } : {
+                        backgroundColor: "hsl(var(--muted))",
+                        color: "hsl(var(--muted-foreground))",
+                        borderLeft: "3px solid hsl(var(--muted-foreground) / 0.6)",
+                        fontWeight: 500,
+                      },
+                    };
+                  }}
                   messages={{
                     today: "Hoy", previous: "Atrás", next: "Siguiente",
                     month: "Mes", week: "Semana", day: "Día", agenda: "Agenda",

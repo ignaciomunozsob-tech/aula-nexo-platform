@@ -142,11 +142,13 @@ export default function CreatorPlanPage() {
       </div>
 
       <Tabs defaultValue="account">
-        <TabsList>
-          <TabsTrigger value="account">Datos personales</TabsTrigger>
-          <TabsTrigger value="billing">Datos de facturación</TabsTrigger>
-          <TabsTrigger value="integrations">Integraciones</TabsTrigger>
-        </TabsList>
+        <div className="-mx-4 sm:mx-0 overflow-x-auto px-4 sm:px-0">
+          <TabsList className="w-max sm:w-auto">
+            <TabsTrigger value="account">Datos personales</TabsTrigger>
+            <TabsTrigger value="billing">Facturación</TabsTrigger>
+            <TabsTrigger value="integrations">Integraciones</TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="account" className="mt-6">
           <AccountOverview />
         </TabsContent>

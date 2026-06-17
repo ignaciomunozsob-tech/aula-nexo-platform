@@ -47,11 +47,19 @@ export default function TerminosPage() {
           condiciones.
         </p>
 
-        <h2>4. Pagos y comisiones</h2>
+        <h2>4. Pagos</h2>
         <p>
-          Los pagos se procesan a través de MercadoPago. NOVU cobra una comisión por cada venta cuyo
-          porcentaje depende del plan del creador (ver <Link to="/precios">/precios</Link>). MercadoPago
-          aplica sus propias comisiones de procesamiento de forma independiente.
+          Los pagos se procesan a través de MercadoPago. Los detalles de comisión están en la sección 6.
+        </p>
+
+        <h2>6. Comisiones y pagos</h2>
+        <p>
+          NOVU cobra un 10% por cada venta procesada en la plataforma. Esta comisión incluye todos los
+          costos de procesamiento de pago. No existe mensualidad ni costo fijo por usar la plataforma.
+        </p>
+        <p>
+          El add-on de comunidad tiene un costo adicional de $990 por venta del curso donde esté
+          activado.
         </p>
 
         <h2>5. Devoluciones</h2>

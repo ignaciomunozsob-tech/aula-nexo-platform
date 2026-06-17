@@ -115,21 +115,24 @@ Deno.serve(async (req) => {
 
     const totalAmount = main.amount + (bumpInfo?.amount ?? 0);
 
-    // Resolve the creator's current plan commission (defaults to 10% if no row).
+    // NOVU ya no usa planes: comisión fija del 10% sobre cada venta.
+    // Lee de app_settings para permitir que el admin la ajuste a futuro sin redeploy.
     let comisionPct = 10;
+    let communityFeeDefault = 990;
     {
-      const { data: planRow } = await admin
-        .from('creator_plans')
-        .select('comision, plan_vence')
-        .eq('creator_id', main.creator_id)
-        .maybeSingle();
-      if (planRow && typeof planRow.comision === 'number') {
-        const notExpired = !planRow.plan_vence || new Date(planRow.plan_vence as any) > new Date();
-        if (notExpired) comisionPct = Math.max(0, Math.min(100, planRow.comision));
+      const { data: settings } = await admin
+        .from('app_settings')
+        .select('key, value')
+        .in('key', ['commission_pct', 'community_fee_clp']);
+      for (const row of settings || []) {
+        if (row.key === 'commission_pct' && typeof row.value === 'number') comisionPct = row.value;
+        if (row.key === 'community_fee_clp' && typeof row.value === 'number') communityFeeDefault = row.value;
       }
     }
     const platformAmount = Math.round(totalAmount * comisionPct / 100);
-    const communityFee = (body.product_type === 'course' && (main as any).community_enabled) ? Math.max(0, (main as any).community_fee_clp || 0) : 0;
+    const communityFee = (body.product_type === 'course' && (main as any).community_enabled)
+      ? Math.max(0, (main as any).community_fee_clp || communityFeeDefault)
+      : 0;
     const creatorAmount = totalAmount - platformAmount - communityFee;
 
     // Marketplace: use the creator's MercadoPago access token + take 10% as marketplace_fee.

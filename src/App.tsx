@@ -16,6 +16,7 @@ import HomePage from "@/pages/HomePage";
 import ComisionesPage from "@/pages/ComisionesPage";
 import TerminosPage from "@/pages/TerminosPage";
 import UnsubscribePage from "@/pages/UnsubscribePage";
+import TrustPage from "@/pages/TrustPage";
 import PrivacidadPage from "@/pages/PrivacidadPage";
 import CreatorPlanPage from "@/pages/creator/CreatorPlanPage";
 import PreciosPage from "@/pages/PreciosPage";
@@ -89,6 +90,7 @@ const App = () => (
               <Route path="/terminos" element={<TerminosPage />} />
               <Route path="/privacidad" element={<PrivacidadPage />} />
               <Route path="/unsubscribe" element={<UnsubscribePage />} />
+              <Route path="/trust" element={<TrustPage />} />
               
 
               {/* Debug route - dev only */}

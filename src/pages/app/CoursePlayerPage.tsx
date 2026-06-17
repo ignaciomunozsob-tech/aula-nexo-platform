@@ -36,6 +36,7 @@ export default function CoursePlayerPage() {
   const queryClient = useQueryClient();
   
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
+  const [view, setView] = useState<'lesson' | 'community'>('lesson');
 
   // Check enrollment (skip if preview mode)
   const { data: enrollment, isLoading: enrollmentLoading } = useQuery({

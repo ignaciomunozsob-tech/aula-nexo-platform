@@ -177,24 +177,26 @@ export default function CreatorProductsPage() {
       </div>
 
       <Tabs defaultValue="courses" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="courses" className="gap-2">
-            <BookOpen className="h-4 w-4" />
-            Cursos ({courses?.length || 0})
-          </TabsTrigger>
-          <TabsTrigger value="ebooks" className="gap-2">
-            <FileText className="h-4 w-4" />
-            E-books ({ebooks?.length || 0})
-          </TabsTrigger>
-          <TabsTrigger value="events" className="gap-2">
-            <Calendar className="h-4 w-4" />
-            Eventos ({events?.length || 0})
-          </TabsTrigger>
-          <TabsTrigger value="sessions" className="gap-2">
-            <Video className="h-4 w-4" />
-            Servicios ({sessions?.length || 0})
-          </TabsTrigger>
-        </TabsList>
+        <div className="-mx-4 sm:mx-0 overflow-x-auto px-4 sm:px-0">
+          <TabsList className="w-max sm:w-auto">
+            <TabsTrigger value="courses" className="gap-2">
+              <BookOpen className="h-4 w-4" />
+              Cursos ({courses?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="ebooks" className="gap-2">
+              <FileText className="h-4 w-4" />
+              E-books ({ebooks?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="events" className="gap-2">
+              <Calendar className="h-4 w-4" />
+              Eventos ({events?.length || 0})
+            </TabsTrigger>
+            <TabsTrigger value="sessions" className="gap-2">
+              <Video className="h-4 w-4" />
+              Servicios ({sessions?.length || 0})
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="sessions">
           {loadingSessions ? (

@@ -483,6 +483,69 @@ export type Database = {
         }
         Relationships: []
       }
+      creator_availability_rules: {
+        Row: {
+          created_at: string
+          creator_id: string
+          day_of_week: number
+          end_time: string
+          id: string
+          start_time: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          start_time: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          start_time?: string
+        }
+        Relationships: []
+      }
+      creator_availability_settings: {
+        Row: {
+          buffer_after_min: number
+          buffer_before_min: number
+          created_at: string
+          creator_id: string
+          max_days_ahead: number
+          min_notice_hours: number
+          session_duration_min: number
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          buffer_after_min?: number
+          buffer_before_min?: number
+          created_at?: string
+          creator_id: string
+          max_days_ahead?: number
+          min_notice_hours?: number
+          session_duration_min?: number
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          buffer_after_min?: number
+          buffer_before_min?: number
+          created_at?: string
+          creator_id?: string
+          max_days_ahead?: number
+          min_notice_hours?: number
+          session_duration_min?: number
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       creator_billing_info: {
         Row: {
           address: string | null
@@ -1032,6 +1095,45 @@ export type Database = {
           },
         ]
       }
+      one_on_one_sessions: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          creator_id: string
+          description: string | null
+          duration_min: number
+          id: string
+          price_clp: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          duration_min?: number
+          id?: string
+          price_clp?: number
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          duration_min?: number
+          id?: string
+          price_clp?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           amount_clp: number
@@ -1198,6 +1300,65 @@ export type Database = {
         }
         Relationships: []
       }
+      session_bookings: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string
+          creator_id: string
+          end_at: string
+          google_event_id: string | null
+          guest_email: string | null
+          guest_name: string | null
+          ics_token: string
+          id: string
+          meet_url: string | null
+          session_id: string
+          start_at: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string
+          creator_id: string
+          end_at: string
+          google_event_id?: string | null
+          guest_email?: string | null
+          guest_name?: string | null
+          ics_token?: string
+          id?: string
+          meet_url?: string | null
+          session_id: string
+          start_at: string
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string
+          creator_id?: string
+          end_at?: string
+          google_event_id?: string | null
+          guest_email?: string | null
+          guest_name?: string | null
+          ics_token?: string
+          id?: string
+          meet_url?: string | null
+          session_id?: string
+          start_at?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_bookings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "one_on_one_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_creation_logs: {
         Row: {
           created_at: string
@@ -1335,6 +1496,14 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_creator_availability: {
+        Args: { _creator_id: string }
+        Returns: {
+          day_of_week: number
+          end_time: string
+          start_time: string
+        }[]
+      }
       get_creator_pixel_id: { Args: { _creator_slug: string }; Returns: string }
       get_creator_pixel_id_by_id: {
         Args: { _creator_id: string }
@@ -1349,6 +1518,21 @@ export type Database = {
           rating: number
           reviewer_avatar_url: string
           reviewer_name: string
+        }[]
+      }
+      get_creator_session_bookings: {
+        Args: never
+        Returns: {
+          attendee_email: string
+          attendee_name: string
+          end_at: string
+          id: string
+          meet_url: string
+          session_id: string
+          session_title: string
+          start_at: string
+          status: string
+          user_id: string
         }[]
       }
       get_ebook_file_url: { Args: { _ebook_id: string }; Returns: string }
@@ -1387,6 +1571,21 @@ export type Database = {
           created_at: string
           id: string
           rating: number
+        }[]
+      }
+      get_my_session_bookings: {
+        Args: never
+        Returns: {
+          creator_id: string
+          creator_name: string
+          end_at: string
+          ics_token: string
+          id: string
+          meet_url: string
+          session_id: string
+          session_title: string
+          start_at: string
+          status: string
         }[]
       }
       get_order_public: {
@@ -1439,6 +1638,26 @@ export type Database = {
           creator_slug: string
           id: string
           name: string
+        }[]
+      }
+      get_public_session: {
+        Args: { _creator_slug: string; _session_id: string }
+        Returns: {
+          buffer_after_min: number
+          buffer_before_min: number
+          cover_url: string
+          creator_avatar_url: string
+          creator_id: string
+          creator_name: string
+          creator_slug: string
+          description: string
+          duration_min: number
+          id: string
+          max_days_ahead: number
+          min_notice_hours: number
+          price_clp: number
+          timezone: string
+          title: string
         }[]
       }
       get_user_role: {

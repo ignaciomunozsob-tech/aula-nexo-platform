@@ -30,7 +30,7 @@ import mockupStudent from '@/assets/home-mockup-student.jpg';
 import mockupFinance from '@/assets/home-mockup-finance.jpg';
 import mockupPublic from '@/assets/home-mockup-public.jpg';
 
-const features = [
+const features: Array<{ icon: any; title: string; desc: string; soon?: boolean }> = [
   { icon: Layout, title: 'Página de curso lista', desc: 'Sin diseñar nada desde cero' },
   { icon: ShieldCheck, title: 'Pagos seguros · 10% de comisión', desc: 'Procesamiento incluido' },
   { icon: Users, title: 'Gestión de alumnos', desc: 'Ve el progreso de cada uno' },

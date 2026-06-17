@@ -88,6 +88,7 @@ const App = () => (
               <Route path="/comisiones" element={<ComisionesPage />} />
               <Route path="/terminos" element={<TerminosPage />} />
               <Route path="/privacidad" element={<PrivacidadPage />} />
+              <Route path="/unsubscribe" element={<UnsubscribePage />} />
               
 
               {/* Debug route - dev only */}

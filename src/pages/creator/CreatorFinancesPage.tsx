@@ -57,6 +57,14 @@ export default function CreatorFinancesPage() {
 
       if (enrollErr) throw enrollErr;
 
+      // Get community fee totals from orders
+      const { data: orders } = await supabase
+        .from("orders")
+        .select("community_fee_clp, created_at, product_type")
+        .eq("creator_id", user.id)
+        .eq("status", "paid");
+      const totalCommunityFee = (orders || []).reduce((acc: number, o: any) => acc + (o.community_fee_clp || 0), 0);
+
       // Calculate totals
       const salesByMonth: Record<string, number> = {};
       let totalRevenue = 0;
@@ -101,6 +109,7 @@ export default function CreatorFinancesPage() {
         weeklyRevenue,
         monthlyRevenue,
         salesByMonth,
+        totalCommunityFee,
       };
     },
     enabled: !!user?.id,

@@ -164,6 +164,46 @@ Deno.serve(async (req) => {
           console.error('reset email error', e);
         }
       }
+
+      // Notify admin of new sale (best-effort, idempotent)
+      try {
+        let productTitle = '—';
+        if (order.product_type === 'course') {
+          const { data } = await admin.from('courses').select('title').eq('id', order.product_id).maybeSingle();
+          productTitle = data?.title ?? productTitle;
+        } else if (order.product_type === 'ebook') {
+          const { data } = await admin.from('ebooks').select('title').eq('id', order.product_id).maybeSingle();
+          productTitle = data?.title ?? productTitle;
+        } else if (order.product_type === 'event') {
+          const { data } = await admin.from('events').select('title').eq('id', order.product_id).maybeSingle();
+          productTitle = data?.title ?? productTitle;
+        }
+        let creatorName = '—';
+        if (order.creator_id) {
+          const { data } = await admin.from('profiles').select('name').eq('id', order.creator_id).maybeSingle();
+          creatorName = data?.name ?? creatorName;
+        }
+        const amountClp: number = order.amount_clp ?? 0;
+        const commissionClp = Math.round(amountClp * 0.10);
+        const communityFeeClp: number = order.community_fee_clp ?? 0;
+        const netClp = amountClp - commissionClp - communityFeeClp;
+        const buyer: string = order.guest_email ?? buyerEmail ?? '—';
+
+        await admin.functions.invoke('send-transactional-email', {
+          body: {
+            templateName: 'admin-new-sale',
+            idempotencyKey: `${order.id}-admin-sale`,
+            templateData: {
+              productTitle, productType: order.product_type,
+              creatorName, buyerEmail: buyer,
+              amountClp, commissionClp, communityFeeClp, netClp,
+              orderId: order.id,
+            },
+          },
+        });
+      } catch (e) {
+        console.warn('admin-new-sale email error', e);
+      }
     }
 
     return new Response('ok', { status: 200, headers: corsHeaders });

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -79,6 +80,32 @@ export default function SignupPage() {
       title: '¡Cuenta creada!',
       description: 'Bienvenido a NOVU',
     });
+
+    // Fire-and-forget welcome + admin notifications (creator signups only)
+    if (role === 'creator') {
+      try {
+        const { data: { user: newUser } } = await supabase.auth.getUser();
+        const uid = newUser?.id ?? crypto.randomUUID();
+        const signedUpAt = new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' });
+        void supabase.functions.invoke('send-transactional-email', {
+          body: {
+            templateName: 'creator-welcome',
+            recipientEmail: email,
+            idempotencyKey: `${uid}-welcome`,
+            templateData: { name },
+          },
+        });
+        void supabase.functions.invoke('send-transactional-email', {
+          body: {
+            templateName: 'admin-new-creator',
+            idempotencyKey: `${uid}-admin-notify`,
+            templateData: { name, email, signedUpAt },
+          },
+        });
+      } catch (e) {
+        console.warn('[signup] notify error', e);
+      }
+    }
 
     // Validate next parameter to prevent open redirect attacks
     // Only allow relative paths that start with / and don't contain protocol schemes

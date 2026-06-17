@@ -414,6 +414,7 @@ export default function CourseEditorPage() {
         certificate_template_url: form.certificate_enabled
           ? form.certificate_template_url || null
           : null,
+        community_enabled: form.community_enabled,
         updated_at: nowIso,
       };
 

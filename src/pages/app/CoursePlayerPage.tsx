@@ -448,6 +448,13 @@ export default function CoursePlayerPage() {
               </div>
             )}
 
+            {/* Module resources */}
+            {currentLesson?.module_id && (
+              <ModuleResourcesList moduleId={currentLesson.module_id} />
+            )}
+
+
+
             {/* Actions */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
               <div>

@@ -38,6 +38,7 @@ Deno.serve(async (req) => {
 
     // Google events
     let google_events: Array<{ id: string; title: string; start: string; end: string; html_link?: string }> = [];
+    let google_status: string = 'no_connection';
     const tok = await getValidAccessToken(admin, userId, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET);
     if (tok) {
       const calId = tok.row.calendar_id || 'primary';
@@ -48,8 +49,11 @@ Deno.serve(async (req) => {
       url.searchParams.set('orderBy', 'startTime');
       url.searchParams.set('maxResults', '250');
       const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${tok.accessToken}` } });
-      if (res.ok) {
-        const data = await res.json();
+      const data = await res.json();
+      if (!res.ok) {
+        console.error('google events fetch failed', res.status, JSON.stringify(data));
+        google_status = `error_${res.status}`;
+      } else {
         google_events = (data.items || [])
           .filter((e: any) => e.start?.dateTime && e.end?.dateTime)
           .map((e: any) => ({
@@ -59,10 +63,12 @@ Deno.serve(async (req) => {
             end: e.end.dateTime,
             html_link: e.htmlLink,
           }));
+        google_status = `ok_${google_events.length}`;
+        console.log('google events ok', google_events.length, 'cal', calId);
       }
     }
 
-    return j({ novu_bookings: bookings || [], google_events });
+    return j({ novu_bookings: bookings || [], google_events, google_status });
   } catch (e) {
     console.error('creator-calendar-events error', e);
     return j({ error: 'unexpected' }, 500);

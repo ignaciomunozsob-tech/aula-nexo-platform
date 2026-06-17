@@ -11,6 +11,7 @@ import { Calendar, dateFnsLocalizer, Views, View } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, startOfMonth, endOfMonth, addDays } from "date-fns";
 import { es } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
+import "@/styles/calendar.css";
 
 const locales = { es };
 const localizer = dateFnsLocalizer({
@@ -87,10 +88,19 @@ export default function CreatorBookingsPage() {
       if (b.status !== "confirmed") return;
       out.push({
         id: `novu-${b.id}`,
-        title: `🟡 ${b.one_on_one_sessions?.title || "Servicio"} · ${b.guest_name || b.guest_email || ""}`,
+        title: `${b.one_on_one_sessions?.title || "Servicio"} · ${b.guest_name || b.guest_email || ""}`,
         start: new Date(b.start_at),
         end: new Date(b.end_at),
         resource: { kind: "novu", raw: b },
+      });
+    });
+    (calData?.google_events || []).forEach((e: any) => {
+      out.push({
+        id: `g-${e.id}`,
+        title: e.title,
+        start: new Date(e.start),
+        end: new Date(e.end),
+        resource: { kind: "google", raw: e },
       });
     });
     (calData?.google_events || []).forEach((e: any) => {
@@ -165,14 +175,22 @@ export default function CreatorBookingsPage() {
                   culture="es"
                   popup
                   onSelectEvent={(e) => setSelected(e as CalEvent)}
-                  eventPropGetter={(event: any) => ({
-                    style: {
-                      backgroundColor: event.resource.kind === "novu" ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))",
-                      color: event.resource.kind === "novu" ? "hsl(var(--primary-foreground))" : "white",
-                      border: "none",
-                      fontSize: "0.8rem",
-                    },
-                  })}
+                  eventPropGetter={(event: any) => {
+                    const isNovu = event.resource.kind === "novu";
+                    return {
+                      style: isNovu ? {
+                        backgroundColor: "hsl(var(--primary))",
+                        color: "hsl(var(--primary-foreground))",
+                        borderLeft: "3px solid hsl(var(--primary))",
+                        fontWeight: 600,
+                      } : {
+                        backgroundColor: "hsl(var(--muted))",
+                        color: "hsl(var(--muted-foreground))",
+                        borderLeft: "3px solid hsl(var(--muted-foreground) / 0.6)",
+                        fontWeight: 500,
+                      },
+                    };
+                  }}
                   messages={{
                     today: "Hoy", previous: "Atrás", next: "Siguiente",
                     month: "Mes", week: "Semana", day: "Día", agenda: "Agenda",

@@ -96,7 +96,7 @@ export function PublicNavbar() {
                 </DropdownMenu>
 
                 <button
-                  onClick={() => navigate('/signup')}
+                  onClick={() => navigate('/signup?role=creator')}
                   className="novu-btn-primary text-sm"
                   style={{ padding: '10px 22px' }}
                 >
@@ -151,7 +151,7 @@ export function PublicNavbar() {
                     Iniciar como creador
                   </Button>
                   <button
-                    onClick={() => { navigate('/signup'); setMobileMenuOpen(false); }}
+                    onClick={() => { navigate('/signup?role=creator'); setMobileMenuOpen(false); }}
                     className="novu-btn-primary text-sm"
                   >
                     Crear cuenta

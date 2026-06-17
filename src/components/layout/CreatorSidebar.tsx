@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, User, LogOut, Home, DollarSign, Star, ChevronDown, Users, CreditCard, Receipt, Sparkles, Lock, BarChart3, Share2, Plug } from 'lucide-react';
+import { LayoutDashboard, BookOpen, User, LogOut, Home, DollarSign, Star, ChevronDown, Users, CreditCard, Receipt, Sparkles, Lock, BarChart3, Share2, Plug, CalendarClock, CalendarCheck } from 'lucide-react';
 import { useMyPlan } from '@/hooks/useMyPlan';
 import { LockedFeature } from '@/components/creator/LockedFeature';
 import { useAuth } from '@/lib/auth';

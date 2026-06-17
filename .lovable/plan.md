@@ -1,152 +1,124 @@
-# Integración Google Calendar + Sesiones 1:1 con agendamiento
+# Build 2 — Sesiones 1:1 (sin pagos, gratuitas)
 
-Sistema completo para que creadores ofrezcan sesiones 1:1 pagas con sincronización bidireccional a su Google Calendar, más "Add to Calendar" universal para compradores de cualquier producto con fecha (1:1 y eventos).
+Implementa sesiones 1:1 que el creador ofrece desde su perfil. El comprador elige fecha/hora dentro de la disponibilidad semanal del creador, se valida contra Google Calendar (freebusy) y se crea un evento con Google Meet en ambos calendarios (el del creador por OAuth; el del comprador vía link "Add to Google Calendar" + archivo `.ics`).
+
+Pagos quedan fuera de este build (se agregan en Build 3).
+
+## Qué construir
+
+### 1. Disponibilidad del creador
+- Página **Creator → Disponibilidad** (`/creator-app/availability`).
+- Editor de horario semanal recurrente: para cada día (Lun–Dom), N bloques `HH:MM–HH:MM` en la timezone del creador.
+- Campos globales: `timezone` (default `America/Santiago`), `session_duration_min` (15/30/45/60/90), `buffer_min` antes/después, `min_notice_hours` (anticipación mínima), `max_days_ahead` (ventana visible para reservar).
+
+### 2. Producto "Sesión 1:1"
+- Nuevo tipo en `NewProductDialog`: **Sesión 1:1**.
+- Página de edición **Creator → Sesión 1:1 Editor**: título, descripción (rich text con DOMPurify), duración, portada, estado (draft/published).
+- Aparece en el perfil público del creador y en su marketplace junto a cursos/ebooks/eventos.
+- Sin precio en este build (etiqueta "Gratis").
+
+### 3. Página pública de booking
+- Ruta: `/c/:creatorSlug/sesion/:sessionId`.
+- Calendario que muestra los próximos `max_days_ahead` días.
+- Al elegir día → lista de slots disponibles (genera slots a partir del horario recurrente, resta los del rango `freebusy` del creador en Google Calendar, respeta `buffer`, `min_notice`, y reservas ya existentes en NOVU).
+- Si el visitante no tiene cuenta → captura email/nombre (guest, como ya hace MercadoPago checkout).
+- Confirmación → crea reserva, crea evento en Google Calendar del creador con Meet, envía al comprador la página de éxito con link Meet, link "Add to Google Calendar" y descarga `.ics`.
+
+### 4. Sincronización Google Calendar (lado creador)
+- Al confirmar reserva: `events.insert` en `calendar_id='primary'` con `conferenceData` para generar Meet automáticamente, invita al email del comprador como attendee.
+- Al cancelar reserva: `events.delete`.
+- Bloqueo automático: si el creador tiene otro evento en Calendar en ese slot, no aparece como disponible (vía `freebusy.query`).
+
+### 5. Página del comprador "Mi reserva"
+- Si el comprador tiene cuenta NOVU, ver reserva en **Mis Productos** con link Meet, "Add to Google Calendar" (URL universal `https://calendar.google.com/calendar/render?action=TEMPLATE&...`), descarga `.ics`, y botón cancelar (con `min_notice` configurable).
+- Guest: misma info en la página de éxito + email de confirmación con los mismos links.
 
 ---
 
-## Fase 0 — Credenciales Google (única vez, manual del usuario)
+## Detalles técnicos
 
-Hay que crear un **OAuth Client** en Google Cloud Console (no se puede automatizar). Pasos que tendrás que hacer:
+### Tablas nuevas (migración única, todas con GRANTs + RLS)
 
-1. Crear proyecto en Google Cloud Console.
-2. Habilitar **Google Calendar API**.
-3. Configurar **OAuth consent screen** (External, agregar dominios `lovable.app`, dominio custom de NOVU).
-4. Scopes requeridos:
-   - `https://www.googleapis.com/auth/calendar.events` (crear/editar eventos en su calendario)
-   - `https://www.googleapis.com/auth/calendar.freebusy` (leer disponibilidad)
-5. Crear **OAuth Client ID** tipo "Web application".
-6. Authorized redirect URI: `https://<project>.supabase.co/functions/v1/google-oauth-callback`.
-7. Pegar `client_id` y `client_secret` cuando los pida.
+**`creator_availability_settings`** (1 fila por creador)
+- `creator_id` PK FK → auth.users
+- `timezone` text default `America/Santiago`
+- `session_duration_min` int default 30
+- `buffer_before_min`, `buffer_after_min` int default 0
+- `min_notice_hours` int default 12
+- `max_days_ahead` int default 30
+- `created_at`, `updated_at`
 
-Secretos nuevos: `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`.
+**`creator_availability_rules`** (bloques recurrentes semanales)
+- `id`, `creator_id` FK, `day_of_week` smallint 0–6, `start_time` time, `end_time` time
+- Índice por `(creator_id, day_of_week)`
 
----
+**`one_on_one_sessions`** (producto)
+- `id`, `creator_id`, `title`, `description`, `cover_url`, `duration_min`, `status` ('draft'|'published'), `created_at`, `updated_at`
+- Hereda patrón de `events` / `ebooks`.
 
-## Fase 1 — Conexión Google del creador (OAuth)
+**`session_bookings`** (reserva)
+- `id`, `session_id` FK, `creator_id`, `user_id` nullable, `guest_email`, `guest_name`
+- `start_at` timestamptz, `end_at` timestamptz, `status` ('confirmed'|'cancelled')
+- `google_event_id` text, `meet_url` text
+- `created_at`, `cancelled_at`
+- Constraint: no doble booking confirmado en el mismo slot del mismo creador (índice único parcial).
 
-### Backend
-- Tabla `creator_google_accounts`: `creator_id`, `google_email`, `access_token`, `refresh_token`, `expires_at`, `calendar_id` (default `'primary'`), `connected_at`. RLS: solo el dueño lee; service_role escribe.
-- Edge function **`google-oauth-start`**: genera URL de Google con `state` firmado y `access_type=offline + prompt=consent` (clave para obtener refresh_token).
-- Edge function **`google-oauth-callback`**: intercambia code por tokens, guarda en `creator_google_accounts`, redirige al panel.
-- Edge function **`google-disconnect`**: revoca token en Google y borra fila.
-- Helper interno **`google-token-refresh`** (módulo compartido en `_shared/google.ts`): si `expires_at < now()+60s`, llama a Google `oauth2/token` con refresh_token y actualiza la fila. Usado por todas las funciones que tocan Calendar.
+RLS:
+- Settings/rules: solo el creador dueño puede leer/escribir.
+- `one_on_one_sessions`: SELECT público para `status='published'`; INSERT/UPDATE/DELETE solo el creador.
+- `session_bookings`: el creador ve sus reservas; el `user_id` ve las suyas; `service_role` para edge functions.
+
+RPCs:
+- `get_public_session(creator_slug, session_id)` → datos públicos del producto.
+- `get_my_session_bookings()` → reservas del usuario logueado.
+- `get_creator_session_bookings()` → reservas del creador (próximas/pasadas).
+
+### Edge functions nuevas
+
+- **`calendar-availability`** (POST, público): input `{ session_id, from_date, to_date }`. Genera slots desde las reglas semanales, llama Google `freebusy.query` con el `access_token` del creador (usando `getValidAccessToken` ya existente), resta bookings de NOVU, devuelve slots libres.
+- **`booking-create`** (POST): input `{ session_id, start_at, guest_email?, guest_name? }`. Verifica que el slot siga libre, crea row en `session_bookings`, llama Google `events.insert` con `conferenceData.createRequest` para Meet, guarda `google_event_id` y `meet_url`. Devuelve booking + links (.ics generado on-the-fly, URL Add-to-Calendar).
+- **`booking-cancel`** (POST): valida ownership (user o creador), llama `events.delete`, marca `cancelled`.
+- **`booking-ics`** (GET, público con token firmado): devuelve el `.ics` para descargar.
 
 ### Frontend
-- En `CreatorPlanPage` o nueva tab **"Integraciones"** dentro del panel creador: card "Google Calendar" con estado conectado/desconectado, email mostrado, botones "Conectar" / "Desconectar".
+
+Nuevos archivos:
+- `src/pages/creator/CreatorAvailabilityPage.tsx` — editor semanal + settings.
+- `src/pages/creator/SessionEditorPage.tsx` — CRUD del producto.
+- `src/pages/creator/CreatorBookingsPage.tsx` — listado de reservas próximas/pasadas con link Meet.
+- `src/pages/SessionBookingPage.tsx` — página pública de booking (calendario + slots + confirm).
+- `src/pages/SessionBookingSuccessPage.tsx` — confirmación con links.
+- `src/components/booking/WeeklyScheduleEditor.tsx`, `SlotPicker.tsx`, `AddToCalendarButtons.tsx`.
+- `src/hooks/useAvailability.ts`, `useBooking.ts`.
+- `src/lib/ics.ts` — helper para construir el archivo .ics y la URL universal de Google Calendar.
+
+Cambios:
+- `CreatorSidebar.tsx`: agregar "Disponibilidad" y "Reservas".
+- `NewProductDialog.tsx`: agregar tipo "Sesión 1:1".
+- `CreatorProductsPage.tsx`: listar sesiones 1:1.
+- `CreatorProfilePage.tsx` / marketplace: mostrar sesiones publicadas.
+- `MyCoursesPage.tsx` o nueva tab en "Mis Productos": mostrar bookings del usuario.
+- `App.tsx`: registrar rutas.
+
+### Flujo de bloqueo bidireccional
+
+- **NOVU → Calendar**: la reserva crea evento en Calendar del creador → cualquier otro tool que consulte su Calendar lo ve ocupado.
+- **Calendar → NOVU**: `calendar-availability` llama `freebusy.query` en tiempo real al pintar slots, por lo que cualquier evento manual del creador en Google Calendar bloquea automáticamente (no requiere webhooks ni sync push en este build).
+
+### Fuera de alcance (Build 3 / posterior)
+- Pagos MercadoPago en sesiones 1:1.
+- Sincronización de eventos online ya existentes (`events` table) con Calendar.
+- Reprogramación (solo cancelar + reservar nuevo por ahora).
+- Recordatorios por email automáticos (Resend) — la confirmación inicial sí va.
+- Webhooks push de Google Calendar (no necesarios mientras `freebusy` se consulte on-demand).
 
 ---
 
-## Fase 2 — Disponibilidad recurrente del creador
+## Orden de implementación
 
-### Backend
-- Tabla `creator_availability_rules`: `creator_id`, `day_of_week` (0-6), `start_time` (`time`), `end_time` (`time`), `timezone` (default `'America/Santiago'`). RLS: dueño full, anon SELECT (para mostrar slots públicos).
-- Tabla `creator_booking_settings`: `creator_id` (PK), `slot_duration_minutes` (15/30/45/60/90), `buffer_minutes_before`, `buffer_minutes_after`, `min_notice_hours` (default 24), `max_advance_days` (default 30), `timezone`.
-
-### Frontend
-- Nueva página `/creator-app/agenda` con:
-  - Grid semanal Lun-Dom para marcar bloques disponibles (tipo Calendly).
-  - Settings: duración default, buffers, antelación mínima, ventana de reserva.
-  - Requiere Google conectado para activar (CTA si no).
-
----
-
-## Fase 3 — Producto "Sesión 1:1"
-
-Cuarto tipo de producto (`product_type='one_on_one'`), reutilizando toda la infra de pagos/órdenes/comisión.
-
-### Backend (migración)
-- Tabla `one_on_one_services`: `id`, `creator_id`, `title`, `description`, `slug`, `duration_minutes`, `price_clp`, `cover_image_url`, `status` (`draft`/`published`), `meeting_provider` (default `'google_meet'`), `instructions_pre_call`, `category_id`, `is_novu_official`, timestamps. RLS: dueño full, público lee `published`.
-- Trigger `enforce_paid_publish_requires_mp` también aplica.
-- Tabla `bookings`: `id`, `service_id`, `creator_id`, `customer_id`, `customer_email`, `customer_name`, `start_at` (`timestamptz`), `end_at`, `status` (`pending_payment`/`confirmed`/`cancelled`/`completed`), `order_id` (FK a `orders`), `google_event_id`, `google_meet_url`, `customer_notes`, `cancellation_reason`, timestamps. RLS: customer ve las suyas, creator ve las suyas, service_role full.
-- Extender enum `product_type` en `orders` con `'one_on_one'`.
-- Actualizar `enforce_course_publish_rules` para incluir 1:1 en los límites del plan (gratis: 2 productos publicados totales / creador: 10 / pro: ilimitado).
-
-### Edge functions
-- **`booking-availability`** (público): input `{ service_id, date }` → devuelve slots disponibles del día. Lógica:
-  1. Lee `creator_availability_rules` del día.
-  2. Genera slots de `slot_duration_minutes` con buffers.
-  3. Filtra los pasados / fuera de `min_notice_hours` / fuera de `max_advance_days`.
-  4. Llama a Google Calendar **freebusy** del creador para ese rango → elimina solapamientos.
-  5. Elimina slots con `bookings.status='confirmed'` (doble seguro).
-- **`booking-create`** (público, soporta guest): input `{ service_id, slot_start, customer_email, customer_name, notes }`. Reserva slot con `status='pending_payment'`, crea `order` y preferencia MercadoPago igual que cursos/eventos. TTL: si no se paga en 15 min, expira (cron).
-- **`mercadopago-webhook`** (modificar): al recibir `paid` en orden de `product_type='one_on_one'`:
-  1. Marca `booking.status='confirmed'`.
-  2. Crea evento en Google Calendar del creador vía API con `conferenceData.createRequest` → genera link Google Meet automático.
-  3. Guarda `google_event_id` y `google_meet_url` en `bookings`.
-  4. Encola emails de confirmación al creador y al cliente (con link Meet + Add to Calendar).
-- **`booking-cancel`**: cliente o creador cancela → borra evento Google + marca `cancelled` (política de reembolso fuera de alcance).
-- **`expire-pending-bookings`** (cron 5min): libera reservas `pending_payment` con más de 15 min.
-
-### Frontend
-- **`/creator-app/one-on-one`**: lista, crear, editar (similar a EbookEditorPage).
-- **`/{creator_slug}/sesion/{slug}`** público: descripción + selector de fecha (calendario) + slots disponibles del día → "Reservar" → checkout MercadoPago (login o guest).
-- En **marketplace**: nuevo tab "Sesiones 1:1".
-- En **"Mis Productos"** del alumno: nueva tab "Sesiones" con próximas reservas + botón "Unirme" (link Meet) + "Add to Calendar".
-- En **panel creador**: tab "Reservas" con calendario/lista.
-
----
-
-## Fase 4 — Sincronización con eventos online existentes
-
-Cuando el creador con Google conectado **publica un `events`**, también crear el evento en su Google Calendar (con Meet si `event_type='online'` y no hay `meeting_url`).
-
-- Modificar `EventEditorPage` o trigger: al publicar/editar/eliminar evento → llamar nueva edge function **`sync-event-to-google`** que crea/actualiza/borra el evento en Google.
-- Guardar `google_event_id` y opcionalmente `google_meet_url` en `events`.
-- Si el creador NO tiene Google conectado, se omite silenciosamente (no es bloqueante).
-
----
-
-## Fase 5 — "Add to Calendar" universal para compradores
-
-No requiere OAuth del cliente. Funciona para cualquier producto con fecha (eventos + sesiones 1:1).
-
-### Implementación
-- Utilidad `src/lib/addToCalendar.ts` con:
-  - `buildGoogleCalendarUrl({ title, description, start, end, location })` → URL `https://calendar.google.com/calendar/render?action=TEMPLATE&...`
-  - `buildIcsFile(...)` → string `.ics` válido (BEGIN:VCALENDAR...) descargable como blob.
-- Componente `<AddToCalendarButton event={...} />` con dropdown: "Google Calendar" / "Apple/Outlook (.ics)".
-- Integrado en:
-  - Email de confirmación de inscripción (link `Add to Google Calendar`).
-  - Email de confirmación de booking 1:1.
-  - Tab "Eventos" y "Sesiones" en `MyCoursesPage`.
-  - Página de éxito post-pago (`PaymentResultPage`).
-
----
-
-## Resumen de archivos
-
-**Nuevos**:
-- Migración con tablas `creator_google_accounts`, `creator_availability_rules`, `creator_booking_settings`, `one_on_one_services`, `bookings` + extensiones.
-- Edge functions: `google-oauth-start`, `google-oauth-callback`, `google-disconnect`, `booking-availability`, `booking-create`, `booking-cancel`, `sync-event-to-google`, `expire-pending-bookings` + helper `_shared/google.ts`.
-- Frontend: `CreatorAgendaPage`, `CreatorOneOnOnePage`, `OneOnOneEditorPage`, `OneOnOneDetailPage`, `CreatorIntegrationsPage` (o tab), `AddToCalendarButton`, `lib/addToCalendar.ts`, hook `useGoogleConnection`.
-
-**Modificados**:
-- `mercadopago-webhook` (handler 1:1).
-- `EventEditorPage` (sync Google).
-- `CreatorSidebar` (links Agenda, 1:1, Integraciones).
-- `MarketplaceView` (tab Sesiones).
-- `MyCoursesPage` (tab Sesiones + Add to Calendar).
-- `App.tsx` (rutas nuevas).
-- `enforce_course_publish_rules` (cuenta 1:1 en límites).
-
----
-
-## Fuera de alcance (para iterar después)
-- OAuth del cliente para sincronización automática a su Google.
-- Reagendamiento (solo cancelar+reservar de nuevo).
-- Múltiples calendarios por creador (siempre `primary`).
-- Recurrencia de sesiones (paquetes de 4 sesiones, etc.).
-- Política de reembolso automático al cancelar.
-- Pasarela alternativa Zoom (siempre Google Meet por ahora).
-- Recordatorios de 1:1 (heredarán el sistema cuando configures el dominio de email).
-
----
-
-## Orden de ejecución sugerido
-
-Por el tamaño, sugiero implementar por fases en builds separados:
-1. **Build 1**: Fase 0 (te pido credenciales) + Fase 1 (conexión OAuth + UI Integraciones).
-2. **Build 2**: Fase 2 + Fase 3 (sesiones 1:1 completas).
-3. **Build 3**: Fase 4 (sync eventos) + Fase 5 (Add to Calendar).
-
-¿Procedo así o lo quieres todo en un solo build?
+1. Migración SQL (tablas + RLS + RPCs).
+2. Edge functions: `calendar-availability`, `booking-create`, `booking-cancel`, `booking-ics`.
+3. Frontend creador: Disponibilidad + Editor de Sesión 1:1 + listado en Productos + Reservas.
+4. Frontend público: página de booking + success + integración en perfil de creador.
+5. Frontend comprador: bookings en "Mis Productos" + cancelar.
+6. QA end-to-end con tu cuenta ya conectada a Google.

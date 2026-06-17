@@ -248,6 +248,7 @@ export default function CourseEditorPage() {
     format: "recorded",
     certificate_enabled: false,
     certificate_template_url: "",
+    community_enabled: false,
   });
 
   const [modules, setModules] = useState<ModuleForm[]>([]);

@@ -294,6 +294,18 @@ export default function CoursePlayerPage() {
             </div>
           </div>
         ))}
+
+        {course?.community_enabled && !isPreviewMode && (
+          <button
+            onClick={() => setView('community')}
+            className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors border-t border-sidebar-border ${
+              view === 'community' ? 'bg-muted border-l-2 border-primary' : ''
+            }`}
+          >
+            <MessagesSquare className={`h-5 w-5 flex-shrink-0 ${view === 'community' ? 'text-primary' : 'text-muted-foreground'}`} />
+            <span className={`text-sm font-medium ${view === 'community' ? 'text-primary' : ''}`}>Comunidad</span>
+          </button>
+        )}
       </div>
     </>
   );

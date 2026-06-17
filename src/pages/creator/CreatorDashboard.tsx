@@ -286,10 +286,10 @@ export default function CreatorDashboard() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
             <Select value={range} onValueChange={(v) => setRange(v as RangeKey)}>
-              <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full md:w-[200px]">
                 <SelectValue placeholder="Rango" />
               </SelectTrigger>
               <SelectContent>

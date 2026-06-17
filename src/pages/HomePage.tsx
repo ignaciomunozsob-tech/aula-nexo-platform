@@ -511,7 +511,7 @@ export default function HomePage() {
             Tu conocimiento tiene valor. NOVU te ayuda a monetizarlo
           </p>
           <div className="mt-9 flex flex-wrap gap-3 justify-center">
-            <Link to="/signup" className="novu-btn-primary">
+            <Link to="/signup?role=creator" className="novu-btn-primary">
               Crear mi cuenta gratis
             </Link>
             <Link

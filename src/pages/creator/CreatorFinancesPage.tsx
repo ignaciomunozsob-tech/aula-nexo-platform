@@ -207,32 +207,34 @@ export default function CreatorFinancesPage() {
             Ventas por Curso
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-0 sm:px-6">
           {data?.courses && data.courses.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Curso</TableHead>
-                  <TableHead className="text-right">Precio</TableHead>
-                  <TableHead className="text-right">Ventas</TableHead>
-                  <TableHead className="text-right">Ingresos</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.courses.map((course: any) => {
-                  const sales = data.enrollments.filter((e: any) => e.course_id === course.id).length;
-                  const revenue = sales * (course.price_clp || 0);
-                  return (
-                    <TableRow key={course.id}>
-                      <TableCell className="font-medium">{course.title}</TableCell>
-                      <TableCell className="text-right">{formatCLP(course.price_clp || 0)}</TableCell>
-                      <TableCell className="text-right">{sales}</TableCell>
-                      <TableCell className="text-right font-semibold">{formatCLP(revenue)}</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <div className="overflow-x-auto">
+              <Table className="min-w-[560px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Curso</TableHead>
+                    <TableHead className="text-right">Precio</TableHead>
+                    <TableHead className="text-right">Ventas</TableHead>
+                    <TableHead className="text-right">Ingresos</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.courses.map((course: any) => {
+                    const sales = data.enrollments.filter((e: any) => e.course_id === course.id).length;
+                    const revenue = sales * (course.price_clp || 0);
+                    return (
+                      <TableRow key={course.id}>
+                        <TableCell className="font-medium">{course.title}</TableCell>
+                        <TableCell className="text-right">{formatCLP(course.price_clp || 0)}</TableCell>
+                        <TableCell className="text-right">{sales}</TableCell>
+                        <TableCell className="text-right font-semibold">{formatCLP(revenue)}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           ) : (
             <p className="text-muted-foreground text-center py-8">No tienes cursos aún</p>
           )}

@@ -13,8 +13,8 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 async function fetchProduct(admin: any, type: ProductType, id: string) {
   if (type === 'course') {
     const { data } = await admin.from('courses')
-      .select('id, title, price_clp, creator_id, cover_image_url').eq('id', id).maybeSingle();
-    return data ? { title: data.title, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_image_url } : null;
+      .select('id, title, price_clp, creator_id, cover_image_url, community_enabled, community_fee_clp').eq('id', id).maybeSingle();
+    return data ? { title: data.title, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_image_url, community_enabled: !!data.community_enabled, community_fee_clp: data.community_fee_clp ?? 0 } : null;
   }
   if (type === 'ebook') {
     const { data } = await admin.from('ebooks')

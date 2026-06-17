@@ -434,6 +434,7 @@ export default function CreatorDashboard() {
                       })}
                     </TableBody>
                   </Table>
+                  </div>
                 </div>
               )}
 

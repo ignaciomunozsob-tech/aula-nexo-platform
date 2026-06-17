@@ -156,6 +156,7 @@ Deno.serve(async (req) => {
       amount_clp: totalAmount,
       creator_amount_clp: creatorAmount,
       platform_amount_clp: platformAmount,
+      community_fee_clp: communityFee,
       status: 'pending',
       metadata: { title: main.title, has_bump: !!bumpInfo, is_new_user: isNewUser, marketplace: true },
       checkout_page_id: body.checkout_page_id ?? null,

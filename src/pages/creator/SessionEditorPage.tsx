@@ -78,7 +78,10 @@ export default function SessionEditorPage() {
   const save = useMutation({
     mutationFn: async () => {
       if (!title.trim()) throw new Error("Título requerido");
-      const payload = {
+      // Generate slug for new sessions, keep existing slug on edit
+      const { generateSlug } = await import("@/lib/utils");
+      const baseSlug = generateSlug(title.trim()) || `sesion-${Date.now().toString(36)}`;
+      const payload: any = {
         creator_id: user!.id,
         title: title.trim(),
         description: description.trim() || null,
@@ -97,6 +100,7 @@ export default function SessionEditorPage() {
         const { error } = await supabase.from("one_on_one_sessions").update(payload).eq("id", id!);
         if (error) throw error;
       } else {
+        payload.slug = `${baseSlug}-${Date.now().toString(36).slice(-4)}`;
         const { data, error } = await supabase
           .from("one_on_one_sessions")
           .insert(payload).select("id").single();

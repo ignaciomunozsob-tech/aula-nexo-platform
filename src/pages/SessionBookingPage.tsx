@@ -11,8 +11,14 @@ import { Loader2, Clock, Calendar as CalIcon, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import DOMPurify from "dompurify";
 
-export default function SessionBookingPage() {
-  const { creatorSlug, sessionId } = useParams();
+interface Props {
+  sessionIdOverride?: string;
+}
+
+export default function SessionBookingPage({ sessionIdOverride }: Props = {}) {
+  const params = useParams();
+  const creatorSlug = params.creatorSlug;
+  const sessionId = sessionIdOverride || params.sessionId;
   const navigate = useNavigate();
   const { user, profile } = useAuth();
 

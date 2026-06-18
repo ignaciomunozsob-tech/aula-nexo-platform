@@ -230,10 +230,6 @@ export default function LoginPage() {
           {loading ? "Ingresando..." : "Ingresar"}
         </Button>
       </form>
-
-      <p className="text-xs text-muted-foreground mt-6">
-        Si te sigue diciendo "incorrectos", abre consola y mira <code>[LOGIN_ERROR]</code> para ver el motivo real.
-      </p>
     </div>
   );
 }

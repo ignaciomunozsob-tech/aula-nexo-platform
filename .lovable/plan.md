@@ -1,40 +1,28 @@
-## Diagnóstico
+## Limpieza de textos provisionales (MVP / Webpay / debug)
 
-El test de email en Cloud → Emails funciona porque usa otro path, pero la cola real (`process-email-queue`) falla al despachar al proveedor con:
+Encontré 5 textos visibles para el usuario que claramente son notas de desarrollo y deben eliminarse o reescribirse. No tocaré los badges "Próximamente" del Home y Precios porque son etiquetas legítimas de producto, ni los placeholders de formularios.
 
-```
-Email API error: 403 lovable_api_key_not_registered
-"LOVABLE_API_KEY is not registered for this project"
-```
+### Cambios
 
-Flujo verificado en logs (último intento de login a las 01:01 UTC):
-1. `send-2fa-code` → ✅ booted, ejecuta sin error
-2. `send-transactional-email` → ✅ "Transactional email enqueued" (templateName `2fa-code`, recipient correcto)
-3. `process-email-queue` → ❌ 403 al llamar al Email API porque la `LOVABLE_API_KEY` actual del proyecto no está registrada en el registry de Lovable
+**1. `src/pages/creator/CreatorDashboard.tsx`**
+- Línea 216 — Subtítulo del header. Reemplazar:
+  > "Cursos + ventas (MVP). Luego sumamos payouts/retiros cuando metas Webpay."
+  
+  Por: "Resumen de tus cursos, ventas e ingresos."
+- Línea 320 — Texto bajo "Ingresos". Reemplazar `Estimado (MVP)` por `Ingresos brutos del período`.
+- Línea 370 — Eliminar el `<Badge variant="outline">MVP</Badge>` de la sección "Ventas recientes".
+- Líneas 441-443 — Eliminar el párrafo:
+  > "Próximo paso: agregar 'payouts/retiros' y separar 'saldo disponible' vs 'en tránsito'."
 
-Por eso el código se encola, el frontend dice "código enviado", pero nunca sale del worker → no llega al inbox.
+**2. `src/pages/auth/LoginPage.tsx`**
+- Líneas 234-236 — Eliminar el párrafo de ayuda con `[LOGIN_ERROR]`:
+  > "Si te sigue diciendo 'incorrectos', abre consola y mira [LOGIN_ERROR] para ver el motivo real."
+  
+  Se mantiene el `console.error("[LOGIN_ERROR]", error)` en línea 59 (solo para diagnóstico interno, no visible al usuario).
 
-## Causa
+### Verificación
+Tras los cambios, correré `rg -i "MVP|Webpay|LOGIN_ERROR|payouts/retiros" src/` para confirmar que no queda ninguna referencia visible.
 
-La `LOVABLE_API_KEY` del proyecto está desincronizada con el registry (causa típica: la key se generó/copió en un estado anterior y no quedó registrada activa para este workspace). El fix oficial es **rotar la key** — esto regenera y reregistra la key, y actualiza el secret automáticamente.
-
-## Plan
-
-1. **Rotar `LOVABLE_API_KEY`** con la herramienta `lovable_api_key--rotate_lovable_api_key` (idempotente, actualiza el secret del proyecto solo).
-2. **Redeploy de `process-email-queue`** para que el worker tome la key nueva en su próximo boot (los edge functions leen secrets al arrancar).
-3. **Reintentar los mensajes en cola**: los mensajes 7 y 8 quedaron en la queue con `failed_attempts: 0`. Con visibility timeout, el cron los reintenta automáticamente cada ~5s una vez la key sea válida. No hace falta acción manual.
-4. **Verificación**:
-   - Pedirte que intentes login de nuevo (genera un código fresco).
-   - Revisar logs de `process-email-queue` → debe aparecer "Email sent" en vez del 403.
-   - Confirmar recepción en `ignaciomunozsob@gmail.com`.
-
-## Fuera de alcance
-
-- No tocar templates, RLS, ni la lógica de `send-2fa-code` (todo eso funciona).
-- No tocar DNS (`notificaciones.soynovu.cl` está OK, si no, el test tampoco enviaría).
-- No vaciar la cola manualmente.
-
-## Detalles técnicos
-
-- La rotación reemplaza la key activa; la anterior se invalida en hasta 1 hora, pero el worker usará la nueva apenas redeployemos.
-- Si tras rotar + redeploy el 403 persiste con `lovable_api_key_not_registered`, escalamos a soporte (no hay otro fix del lado del proyecto).
+### Fuera de alcance (no se tocan)
+- Badges "Próximamente" de email marketing, dominio propio y comunidades de pago en HomePage, PreciosPage y CreatorCommunitiesPage — son features anunciadas, no notas de desarrollo.
+- `console.error("[LOGIN_ERROR]", error)` interno en LoginPage.

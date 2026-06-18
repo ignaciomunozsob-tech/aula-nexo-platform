@@ -48,9 +48,7 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
   const eventUrl = creator?.creator_slug && event.slug ? `/${creator.creator_slug}/${event.slug}` : `/`;
 
   const handleBuy = async () => {
-    await startCheckout({
-      productType: "event",
-      productId: event.id,
+    await startCheckout("event", event.id, {
       title: event.title,
       priceClp: event.price_clp || 0,
     });

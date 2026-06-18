@@ -46,9 +46,7 @@ export default function EbookDetailPage({ ebookId: ebookIdProp }: Props) {
   const url = creator?.creator_slug && ebook.slug ? `/${creator.creator_slug}/${ebook.slug}` : `/`;
 
   const handleBuy = async () => {
-    await startCheckout({
-      productType: "ebook",
-      productId: ebook.id,
+    await startCheckout("ebook", ebook.id, {
       title: ebook.title,
       priceClp: ebook.price_clp || 0,
     });

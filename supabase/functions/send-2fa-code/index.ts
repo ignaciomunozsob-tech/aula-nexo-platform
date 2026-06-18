@@ -93,21 +93,39 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const { data: profile } = await supabaseAdmin
       .from("profiles").select("name").eq("id", userId).maybeSingle();
 
-    const code = generateCode();
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-
-    await supabaseAdmin.from("creator_2fa_codes")
-      .update({ used: true }).eq("user_id", userId).eq("used", false);
-
-    const { error: insertError } = await supabaseAdmin
+    const { data: activeCodes, error: activeCodeError } = await supabaseAdmin
       .from("creator_2fa_codes")
-      .insert({ user_id: userId, code, expires_at: expiresAt.toISOString(), used: false });
+      .select("code, expires_at")
+      .eq("user_id", userId)
+      .eq("used", false)
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1);
 
-    if (insertError) {
-      console.error("[send-2fa-code] Error inserting code:", insertError);
+    if (activeCodeError) {
+      console.error("[send-2fa-code] Error loading active code:", activeCodeError);
       return new Response(JSON.stringify({ error: "Error al generar código de verificación" }), {
         status: 500, headers: { "Content-Type": "application/json", ...corsHeaders },
       });
+    }
+
+    const existingCode = activeCodes?.[0];
+    const code = existingCode?.code ?? generateCode();
+    const expiresAt = existingCode?.expires_at
+      ? new Date(existingCode.expires_at)
+      : new Date(Date.now() + 30 * 60 * 1000);
+
+    if (!existingCode) {
+      const { error: insertError } = await supabaseAdmin
+        .from("creator_2fa_codes")
+        .insert({ user_id: userId, code, expires_at: expiresAt.toISOString(), used: false });
+
+      if (insertError) {
+        console.error("[send-2fa-code] Error inserting code:", insertError);
+        return new Response(JSON.stringify({ error: "Error al generar código de verificación" }), {
+          status: 500, headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
     }
 
     // Send through Lovable Emails (queued, branded)

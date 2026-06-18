@@ -70,7 +70,7 @@ export default function Verify2FAPage() {
       if (error || !data?.success) {
         toast({
           title: "Código inválido o expirado",
-          description: "Por favor, solicita un nuevo código",
+          description: data?.error || error?.message || "Usa el último código recibido o solicita uno nuevo.",
           variant: "destructive",
         });
         return;

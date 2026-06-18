@@ -417,7 +417,7 @@ export default function CoursePlayerPage() {
                       type="button"
                       onClick={async () => {
                         try {
-                          const url = await resolveProtectedUrl(resource.file_url);
+                          const url = await resolveProtectedUrl('lesson_resource', resource.id);
                           window.open(url, '_blank', 'noopener,noreferrer');
                         } catch (err: any) {
                           toast({

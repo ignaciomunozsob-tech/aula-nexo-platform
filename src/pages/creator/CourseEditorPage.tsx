@@ -418,8 +418,10 @@ export default function CourseEditorPage() {
         updated_at: nowIso,
       };
 
-      // Status is already handled in the payload
-      if (!course?.slug) payload.slug = `${generateSlug(form.title || "curso")}-${Date.now().toString(36)}`;
+      // Regenerate slug from title if missing or still a temporary draft slug
+      if (!course?.slug || course.slug.startsWith("draft-")) {
+        payload.slug = `${generateSlug(form.title || "curso")}-${Date.now().toString(36).slice(-4)}`;
+      }
 
       // 1. Actualización directa
       const { error } = await supabase.from("courses").update(payload).eq("id", id);

@@ -22,6 +22,15 @@ export default function Verify2FAPage() {
   const userEmail = location.state?.email;
   const userName = location.state?.name;
 
+  const getAccessToken = async () => {
+    const { data } = await supabase.auth.getSession();
+    const accessToken = data.session?.access_token;
+    if (!accessToken) {
+      throw new Error("No se pudo validar tu sesión. Inicia sesión nuevamente.");
+    }
+    return accessToken;
+  };
+
   useEffect(() => {
     // If no user info, redirect to login
     if (!userId || !userEmail) {
@@ -52,8 +61,10 @@ export default function Verify2FAPage() {
     setLoading(true);
 
     try {
+      const accessToken = await getAccessToken();
       const { data, error } = await supabase.functions.invoke("verify-2fa-code", {
         body: { code },
+        headers: { Authorization: `Bearer ${accessToken}` },
       });
 
       if (error || !data?.success) {
@@ -83,8 +94,11 @@ export default function Verify2FAPage() {
     setResending(true);
 
     try {
-      // Call 2FA function - user info is extracted from the auth token on server-side
-      const { error } = await supabase.functions.invoke("send-2fa-code");
+      const accessToken = await getAccessToken();
+      // Call 2FA function with an explicit auth token so the backend can identify the user.
+      const { error } = await supabase.functions.invoke("send-2fa-code", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
 
       if (error) {
         throw error;

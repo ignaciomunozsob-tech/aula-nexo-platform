@@ -366,17 +366,17 @@ export default function CoursePlayerPage() {
           ) : currentLesson ? (
             <div className="max-w-4xl mx-auto p-4 md:p-8">
             {/* Video or Text content */}
-            {currentLesson.type === 'video' && currentLesson.video_url ? (
+            {currentLesson.type === 'video' ? (
               <div className="aspect-video bg-black rounded-lg overflow-hidden mb-6">
-                {currentLesson.video_url.includes('youtube.com') || currentLesson.video_url.includes('youtu.be') ? (
-                  <iframe
-                    src={currentLesson.video_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                ) : protectedVideoPath ? (
-                  signedVideoUrl ? (
+                {signedVideoUrl ? (
+                  isYouTubeUrl ? (
+                    <iframe
+                      src={signedVideoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
                     <video
                       src={signedVideoUrl}
                       controls
@@ -385,20 +385,11 @@ export default function CoursePlayerPage() {
                     >
                       Tu navegador no soporta la reproducción de video.
                     </video>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white">
-                      <Loader2 className="h-6 w-6 animate-spin" />
-                    </div>
                   )
                 ) : (
-                  <video
-                    src={currentLesson.video_url}
-                    controls
-                    className="w-full h-full"
-                    controlsList="nodownload"
-                  >
-                    Tu navegador no soporta la reproducción de video.
-                  </video>
+                  <div className="w-full h-full flex items-center justify-center text-white">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
                 )}
               </div>
             ) : currentLesson.type === 'text' && currentLesson.content_text ? (

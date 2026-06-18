@@ -95,43 +95,9 @@ export default function LoginPage() {
         .single();
 
       if (profile?.role === "creator") {
-        // Send 2FA code for creators
-        toast({ 
-          title: "Verificación de seguridad",
-          description: "Enviando código de verificación a tu correo..." 
-        });
-
-        const { data: sessionData } = await supabase.auth.getSession();
-        const accessToken = sessionData.session?.access_token;
-
-        if (!accessToken) {
-          toast({
-            title: "Sesión no válida",
-            description: "Inicia sesión nuevamente para recibir el código de verificación.",
-            variant: "destructive",
-          });
-          await supabase.auth.signOut();
-          return;
-        }
-
-        // Call 2FA function with an explicit auth token so the backend can identify the user.
-        const { error: sendError } = await supabase.functions.invoke("send-2fa-code", {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-
-        if (sendError) {
-          console.error("[2FA] Error sending code:", sendError);
-          toast({
-            title: "Error al enviar código",
-            description: "No se pudo enviar el código de verificación. Intenta de nuevo.",
-            variant: "destructive",
-          });
-          // Sign out since 2FA failed
-          await supabase.auth.signOut();
-          return;
-        }
-
-        // Navigate to 2FA verification page
+        // Navigate to 2FA verification page; the code is sent from there
+        // to avoid a race where this component unmounts (due to auth state
+        // change) and the in-flight invoke gets aborted before completing.
         navigate("/verify-2fa", {
           state: {
             userId: user.id,

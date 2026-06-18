@@ -50,7 +50,7 @@ function AccountOverview() {
     if (!user?.email) return;
     setSendingReset(true);
     const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-      redirectTo: `${window.location.origin}/#/reset-password`,
+      redirectTo: `${window.location.origin}/reset-password`,
     });
     setSendingReset(false);
     if (error) toast.error('No pudimos enviar el correo');

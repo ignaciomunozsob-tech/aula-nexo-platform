@@ -46,8 +46,8 @@ export function getSessionId(): string {
 }
 
 /**
- * Public URL for a course landing page.
- * Prefer the creator-namespaced URL (/:creatorSlug/:courseSlug); fall back to /course/:slug.
+ * Pretty public URL helpers. All products live under /:creatorSlug/:productSlug.
+ * Falls back to product-type prefixed legacy URL when creator slug is missing.
  */
 export function getCourseUrl(
   creatorSlug: string | null | undefined,
@@ -56,3 +56,32 @@ export function getCourseUrl(
   if (creatorSlug && courseSlug) return `/${creatorSlug}/${courseSlug}`;
   return `/course/${courseSlug ?? ''}`;
 }
+
+export function getEventUrl(
+  creatorSlug: string | null | undefined,
+  eventSlug: string | null | undefined,
+  eventId?: string | null,
+): string {
+  if (creatorSlug && eventSlug) return `/${creatorSlug}/${eventSlug}`;
+  return `/event/${eventId ?? eventSlug ?? ''}`;
+}
+
+export function getEbookUrl(
+  creatorSlug: string | null | undefined,
+  ebookSlug: string | null | undefined,
+  ebookId?: string | null,
+): string {
+  if (creatorSlug && ebookSlug) return `/${creatorSlug}/${ebookSlug}`;
+  return `/ebook/${ebookId ?? ebookSlug ?? ''}`;
+}
+
+export function getSessionUrl(
+  creatorSlug: string | null | undefined,
+  sessionSlug: string | null | undefined,
+  sessionId?: string | null,
+): string {
+  if (creatorSlug && sessionSlug) return `/${creatorSlug}/${sessionSlug}`;
+  if (creatorSlug && sessionId) return `/c/${creatorSlug}/sesion/${sessionId}`;
+  return `/`;
+}
+

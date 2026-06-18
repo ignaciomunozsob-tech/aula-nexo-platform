@@ -30,7 +30,7 @@ export default function CreatorIntegrationsPage() {
   const handleConnect = async () => {
     setBusy(true);
     try {
-      const returnTo = `${window.location.origin}/#/creator-app/integrations`;
+      const returnTo = `${window.location.origin}/creator-app/integrations`;
       await connect(returnTo);
     } catch (e: any) {
       toast.error("No se pudo iniciar la conexión", { description: e?.message });

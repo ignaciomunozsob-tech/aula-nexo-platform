@@ -30,9 +30,9 @@ export default function CheckoutPagesPage() {
   const creatorSlug = profile?.creator_slug;
 
   const publicUrl = (slug: string) =>
-    `${window.location.origin}/#/p/${creatorSlug}/${slug}`;
+    `${window.location.origin}/p/${creatorSlug}/${slug}`;
   const embedUrl = (slug: string) =>
-    `${window.location.origin}/#/embed/${creatorSlug}/${slug}`;
+    `${window.location.origin}/embed/${creatorSlug}/${slug}`;
   const embedSnippet = (slug: string) => `<iframe src="${embedUrl(slug)}"
   style="width:100%;border:0;min-height:900px"
   id="novu-checkout"></iframe>

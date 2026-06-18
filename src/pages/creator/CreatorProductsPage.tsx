@@ -224,7 +224,7 @@ export default function CreatorProductsPage() {
                         </Button>
                         {s.status === 'published' && profile?.creator_slug && (
                           <Button variant="ghost" size="sm" asChild>
-                            <Link to={`/c/${profile.creator_slug}/sesion/${s.id}`} target="_blank"><Eye className="h-4 w-4" /></Link>
+                            <Link to={s.slug ? `/${profile.creator_slug}/${s.slug}` : `/c/${profile.creator_slug}/sesion/${s.id}`} target="_blank"><Eye className="h-4 w-4" /></Link>
                           </Button>
                         )}
                       </td>

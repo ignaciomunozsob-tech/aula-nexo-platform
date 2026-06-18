@@ -24,7 +24,7 @@ const Email = ({ name }: Props) => (
           <Text style={step}><strong>3.</strong> Crea tu primer producto (curso, ebook, evento o sesión 1:1).</Text>
         </Section>
         <Section style={ctaBox}>
-          <Button href="https://soynovu.cl/#/creator-app" style={ctaButton}>
+          <Button href="https://soynovu.cl/creator-app" style={ctaButton}>
             Ir a mi panel
           </Button>
         </Section>

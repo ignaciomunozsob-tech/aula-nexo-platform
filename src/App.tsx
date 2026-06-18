@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/lib/auth";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { StudentLayout } from "@/components/layout/StudentLayout";
@@ -58,6 +58,9 @@ import CreatorBookingsPage from "@/pages/creator/CreatorBookingsPage";
 import SessionEditorPage from "@/pages/creator/SessionEditorPage";
 import SessionBookingPage from "@/pages/SessionBookingPage";
 import SessionBookingSuccessPage from "@/pages/SessionBookingSuccessPage";
+import EventDetailPage from "@/pages/EventDetailPage";
+import EbookDetailPage from "@/pages/EbookDetailPage";
+import ProductResolverPage from "@/pages/ProductResolverPage";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { MetaPixelTracker } from "@/components/MetaPixelTracker";
 import DebugPage from "@/pages/DebugPage";
@@ -73,7 +76,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <ErrorBoundary>
-          <HashRouter>
+          <BrowserRouter>
             <MetaPixelTracker />
             <Routes>
               {/* Public routes */}
@@ -82,6 +85,8 @@ const App = () => (
                 <Route path="/courses" element={<CoursesPage />} />
                 <Route path="/precios" element={<PreciosPage />} />
                 <Route path="/course/:slug" element={<CourseDetailPage />} />
+                <Route path="/event/:slug" element={<EventDetailPage />} />
+                <Route path="/ebook/:slug" element={<EbookDetailPage />} />
                 <Route path="/creator/:slug" element={<CreatorProfilePage />} />
               </Route>
 
@@ -169,14 +174,14 @@ const App = () => (
 
 
 
-              {/* Public course URL using creator slug: /:creatorSlug/:courseSlug */}
+              {/* Public product URL — resolves any product type: /:creatorSlug/:slug */}
               <Route element={<PublicLayout />}>
-                <Route path="/:creatorSlug/:courseSlug" element={<CourseDetailPage />} />
+                <Route path="/:creatorSlug/:slug" element={<ProductResolverPage />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </HashRouter>
+          </BrowserRouter>
         </ErrorBoundary>
       </TooltipProvider>
     </AuthProvider>

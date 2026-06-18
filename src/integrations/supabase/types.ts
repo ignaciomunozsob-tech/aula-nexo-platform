@@ -1394,6 +1394,7 @@ export type Database = {
           max_days_ahead: number
           min_notice_hours: number
           price_clp: number
+          slug: string
           status: string
           timezone: string
           title: string
@@ -1411,6 +1412,7 @@ export type Database = {
           max_days_ahead?: number
           min_notice_hours?: number
           price_clp?: number
+          slug: string
           status?: string
           timezone?: string
           title: string
@@ -1428,6 +1430,7 @@ export type Database = {
           max_days_ahead?: number
           min_notice_hours?: number
           price_clp?: number
+          slug?: string
           status?: string
           timezone?: string
           title?: string
@@ -2057,6 +2060,16 @@ export type Database = {
           read_ct: number
         }[]
       }
+      resolve_creator_product: {
+        Args: { _creator_slug: string; _product_slug: string }
+        Returns: {
+          creator_id: string
+          product_id: string
+          product_slug: string
+          product_type: string
+        }[]
+      }
+      slugify: { Args: { _text: string }; Returns: string }
       unban_user_from_course: {
         Args: { _course_id: string; _user_id: string }
         Returns: undefined

@@ -635,13 +635,13 @@ export default function CourseEditorPage() {
           {course?.id && (
             <>
               <Button variant="outline" asChild>
-                <a href={`${window.location.origin}/#${getCourseUrl(profile?.creator_slug, course.slug)}`} target="_blank" rel="noreferrer">
+                <a href={`${window.location.origin}${getCourseUrl(profile?.creator_slug, course.slug)}`} target="_blank" rel="noreferrer">
                   <Link2 className="h-4 w-4 mr-2" />
                   Ver página pública
                 </a>
               </Button>
               <Button variant="outline" asChild>
-                <a href={`${window.location.origin}/#/preview/course/${course.id}?preview=true`} target="_blank" rel="noreferrer">
+                <a href={`${window.location.origin}/preview/course/${course.id}?preview=true`} target="_blank" rel="noreferrer">
                   <Users className="h-4 w-4 mr-2" />
                   Vista previa alumno
                 </a>

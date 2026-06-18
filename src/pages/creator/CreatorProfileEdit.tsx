@@ -58,7 +58,7 @@ export default function CreatorProfileEdit() {
   const sendResetEmail = async () => {
     if (!user?.email) return;
     const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-      redirectTo: `${window.location.origin}/#/reset-password`,
+      redirectTo: `${window.location.origin}/reset-password`,
     });
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });

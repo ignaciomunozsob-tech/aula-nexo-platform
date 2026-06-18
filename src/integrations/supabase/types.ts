@@ -1833,6 +1833,15 @@ export type Database = {
           is_creator: boolean
         }[]
       }
+      get_course_editor_paths: {
+        Args: { _course_id: string }
+        Returns: {
+          lesson_id: string
+          resource_file_url: string
+          resource_id: string
+          video_url: string
+        }[]
+      }
       get_course_students: {
         Args: { _course_id: string }
         Returns: {
@@ -1893,6 +1902,14 @@ export type Database = {
           status: string
           user_id: string
         }[]
+      }
+      get_lesson_resource_path_for_owner: {
+        Args: { _resource_id: string }
+        Returns: string
+      }
+      get_lesson_video_path_for_owner: {
+        Args: { _lesson_id: string }
+        Returns: string
       }
       get_my_google_connection: {
         Args: never

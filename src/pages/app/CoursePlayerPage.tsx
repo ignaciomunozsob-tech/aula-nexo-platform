@@ -131,21 +131,19 @@ export default function CoursePlayerPage() {
   });
 
   // Compute current lesson early so we can sign protected URLs as a hook (must be top-level).
+  // Video URLs (YouTube absolute or storage path) are resolved server-side via the
+  // `get-protected-url` edge function — the client never reads `lessons.video_url` directly.
   const allLessonsPre = modules?.flatMap((m: any) => (m.lessons as any[]) || []) || [];
   const currentLessonForUrl = allLessonsPre.find((l: any) => l.id === selectedLessonId);
-  const protectedVideoPath =
-    currentLessonForUrl?.type === 'video' &&
-    currentLessonForUrl?.video_url &&
-    !/^https?:\/\//i.test(currentLessonForUrl.video_url)
-      ? (currentLessonForUrl.video_url as string)
-      : null;
+  const isVideoLesson = currentLessonForUrl?.type === 'video';
 
   const { data: signedVideoUrl } = useQuery({
-    queryKey: ['signed-video', protectedVideoPath],
-    queryFn: () => resolveProtectedUrl(protectedVideoPath!),
-    enabled: !!protectedVideoPath && (!!enrollment || isPreviewMode),
+    queryKey: ['signed-video', currentLessonForUrl?.id],
+    queryFn: () => resolveProtectedUrl('lesson_video', currentLessonForUrl!.id),
+    enabled: !!isVideoLesson && !!currentLessonForUrl?.id && (!!enrollment || isPreviewMode),
     staleTime: 50 * 60 * 1000, // refresh before the 60-min TTL
   });
+  const isYouTubeUrl = !!signedVideoUrl && /youtube\.com|youtu\.be/i.test(signedVideoUrl);
 
   // Select first lesson by default
   useEffect(() => {
@@ -368,17 +366,17 @@ export default function CoursePlayerPage() {
           ) : currentLesson ? (
             <div className="max-w-4xl mx-auto p-4 md:p-8">
             {/* Video or Text content */}
-            {currentLesson.type === 'video' && currentLesson.video_url ? (
+            {currentLesson.type === 'video' ? (
               <div className="aspect-video bg-black rounded-lg overflow-hidden mb-6">
-                {currentLesson.video_url.includes('youtube.com') || currentLesson.video_url.includes('youtu.be') ? (
-                  <iframe
-                    src={currentLesson.video_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                ) : protectedVideoPath ? (
-                  signedVideoUrl ? (
+                {signedVideoUrl ? (
+                  isYouTubeUrl ? (
+                    <iframe
+                      src={signedVideoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
                     <video
                       src={signedVideoUrl}
                       controls
@@ -387,20 +385,11 @@ export default function CoursePlayerPage() {
                     >
                       Tu navegador no soporta la reproducción de video.
                     </video>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white">
-                      <Loader2 className="h-6 w-6 animate-spin" />
-                    </div>
                   )
                 ) : (
-                  <video
-                    src={currentLesson.video_url}
-                    controls
-                    className="w-full h-full"
-                    controlsList="nodownload"
-                  >
-                    Tu navegador no soporta la reproducción de video.
-                  </video>
+                  <div className="w-full h-full flex items-center justify-center text-white">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
                 )}
               </div>
             ) : currentLesson.type === 'text' && currentLesson.content_text ? (
@@ -428,7 +417,7 @@ export default function CoursePlayerPage() {
                       type="button"
                       onClick={async () => {
                         try {
-                          const url = await resolveProtectedUrl(resource.file_url);
+                          const url = await resolveProtectedUrl('lesson_resource', resource.id);
                           window.open(url, '_blank', 'noopener,noreferrer');
                         } catch (err: any) {
                           toast({

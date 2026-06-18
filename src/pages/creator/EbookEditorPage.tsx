@@ -320,7 +320,7 @@ export default function EbookEditorPage() {
                     onClick={async () => {
                       try {
                         const { resolveProtectedUrl } = await import('@/lib/protectedMedia');
-                        const url = await resolveProtectedUrl(fileUrl);
+                        const url = await resolveProtectedUrl('ebook', id);
                         window.open(url, '_blank', 'noopener,noreferrer');
                       } catch (err: any) {
                         toast({ title: 'No se pudo abrir el archivo', description: err?.message, variant: 'destructive' });

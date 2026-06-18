@@ -49,8 +49,8 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
 
   const handleBuy = async () => {
     await startCheckout("event", event.id, {
-      title: event.title,
-      priceClp: event.price_clp || 0,
+      contentName: event.title,
+      value: event.price_clp || 0,
     });
   };
 

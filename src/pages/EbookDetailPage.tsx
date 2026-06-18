@@ -47,8 +47,8 @@ export default function EbookDetailPage({ ebookId: ebookIdProp }: Props) {
 
   const handleBuy = async () => {
     await startCheckout("ebook", ebook.id, {
-      title: ebook.title,
-      priceClp: ebook.price_clp || 0,
+      contentName: ebook.title,
+      value: ebook.price_clp || 0,
     });
   };
 

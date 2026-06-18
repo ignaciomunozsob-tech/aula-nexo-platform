@@ -131,21 +131,19 @@ export default function CoursePlayerPage() {
   });
 
   // Compute current lesson early so we can sign protected URLs as a hook (must be top-level).
+  // Video URLs (YouTube absolute or storage path) are resolved server-side via the
+  // `get-protected-url` edge function — the client never reads `lessons.video_url` directly.
   const allLessonsPre = modules?.flatMap((m: any) => (m.lessons as any[]) || []) || [];
   const currentLessonForUrl = allLessonsPre.find((l: any) => l.id === selectedLessonId);
-  const protectedVideoPath =
-    currentLessonForUrl?.type === 'video' &&
-    currentLessonForUrl?.video_url &&
-    !/^https?:\/\//i.test(currentLessonForUrl.video_url)
-      ? (currentLessonForUrl.video_url as string)
-      : null;
+  const isVideoLesson = currentLessonForUrl?.type === 'video';
 
   const { data: signedVideoUrl } = useQuery({
-    queryKey: ['signed-video', protectedVideoPath],
-    queryFn: () => resolveProtectedUrl(protectedVideoPath!),
-    enabled: !!protectedVideoPath && (!!enrollment || isPreviewMode),
+    queryKey: ['signed-video', currentLessonForUrl?.id],
+    queryFn: () => resolveProtectedUrl('lesson_video', currentLessonForUrl!.id),
+    enabled: !!isVideoLesson && !!currentLessonForUrl?.id && (!!enrollment || isPreviewMode),
     staleTime: 50 * 60 * 1000, // refresh before the 60-min TTL
   });
+  const isYouTubeUrl = !!signedVideoUrl && /youtube\.com|youtu\.be/i.test(signedVideoUrl);
 
   // Select first lesson by default
   useEffect(() => {

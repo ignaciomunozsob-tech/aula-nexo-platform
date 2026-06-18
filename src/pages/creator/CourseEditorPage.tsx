@@ -367,8 +367,12 @@ export default function CourseEditorPage() {
   });
 
   // cargar curso
+  // Initialize form ONLY the first time the course loads (or after a save resets the flag).
+  // Otherwise a background refetch would wipe the creator's in-progress edits and leave the
+  // "Guardar Cambios" button disabled because hasChanges would be reset to false.
   useEffect(() => {
     if (!course) return;
+    if (initialFormRef.current) return; // already initialized
 
     const initialForm = {
       title: course.title ?? "",
@@ -382,19 +386,19 @@ export default function CourseEditorPage() {
       certificate_template_url: (course as any).certificate_template_url ?? "",
       community_enabled: !!(course as any).community_enabled,
     };
-    
+
     setForm(initialForm);
     initialFormRef.current = initialForm;
   }, [course]);
 
   useEffect(() => {
-    if (existingModules) {
-      setModules(existingModules as any);
-      initialModulesRef.current = JSON.parse(JSON.stringify(existingModules));
-      setDeletedModuleIds([]);
-      setDeletedLessonIds([]);
-      setHasChanges(false);
-    }
+    if (!existingModules) return;
+    if (initialModulesRef.current) return; // already initialized
+    setModules(existingModules as any);
+    initialModulesRef.current = JSON.parse(JSON.stringify(existingModules));
+    setDeletedModuleIds([]);
+    setDeletedLessonIds([]);
+    setHasChanges(false);
   }, [existingModules]);
 
   // Detectar cambios

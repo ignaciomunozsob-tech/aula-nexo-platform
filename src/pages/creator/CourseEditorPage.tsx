@@ -338,6 +338,15 @@ export default function CourseEditorPage() {
         .order("order_index");
       if (error) throw error;
 
+      // video_url / file_url are hidden from regular SELECT; fetch via SECURITY DEFINER RPC.
+      const { data: paths } = await supabase.rpc("get_course_editor_paths", { _course_id: id! });
+      const videoByLesson = new Map<string, string | null>();
+      const fileByResource = new Map<string, string | null>();
+      for (const row of (paths as any[]) || []) {
+        if (row.lesson_id) videoByLesson.set(row.lesson_id, row.video_url ?? null);
+        if (row.resource_id) fileByResource.set(row.resource_id, row.resource_file_url ?? null);
+      }
+
       return (
         data?.map((m: any) => ({
           ...m,
@@ -345,7 +354,11 @@ export default function CourseEditorPage() {
             .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
             .map((l: any) => ({
               ...l,
-              resources: (l.lesson_resources as any[]) || [],
+              video_url: videoByLesson.get(l.id) ?? l.video_url ?? null,
+              resources: ((l.lesson_resources as any[]) || []).map((r: any) => ({
+                ...r,
+                file_url: fileByResource.get(r.id) ?? r.file_url ?? "",
+              })),
             })),
         })) || []
       );

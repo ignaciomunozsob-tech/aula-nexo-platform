@@ -213,7 +213,7 @@ export default function CreatorDashboard() {
         <div>
           <h1 className="text-2xl font-bold">Dashboard Creador</h1>
           <p className="text-sm text-muted-foreground">
-            Cursos + ventas (MVP). Luego sumamos payouts/retiros cuando metas Webpay.
+            Resumen de tus cursos, ventas e ingresos.
           </p>
         </div>
 
@@ -317,7 +317,7 @@ export default function CreatorDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{formatCLP(stats.revenue)}</div>
-                    <p className="text-xs text-muted-foreground mt-1">Estimado (MVP)</p>
+                    <p className="text-xs text-muted-foreground mt-1">Ingresos brutos del período</p>
                   </CardContent>
                 </Card>
 
@@ -362,12 +362,9 @@ export default function CreatorDashboard() {
 
               <Separator />
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold">Ventas recientes</h3>
-                  <p className="text-sm text-muted-foreground">Últimas inscripciones registradas.</p>
-                </div>
-                <Badge variant="outline">MVP</Badge>
+              <div>
+                <h3 className="font-semibold">Ventas recientes</h3>
+                <p className="text-sm text-muted-foreground">Últimas inscripciones registradas.</p>
               </div>
 
               {(sales || []).length === 0 ? (
@@ -438,9 +435,6 @@ export default function CreatorDashboard() {
                 </div>
               )}
 
-              <p className="text-xs text-muted-foreground">
-                Próximo paso: agregar "payouts/retiros" y separar "saldo disponible" vs "en tránsito".
-              </p>
             </>
           )}
         </CardContent>

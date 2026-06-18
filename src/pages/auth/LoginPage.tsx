@@ -101,8 +101,23 @@ export default function LoginPage() {
           description: "Enviando código de verificación a tu correo..." 
         });
 
-        // Call 2FA function - user info is extracted from the auth token on server-side
-        const { error: sendError } = await supabase.functions.invoke("send-2fa-code");
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+
+        if (!accessToken) {
+          toast({
+            title: "Sesión no válida",
+            description: "Inicia sesión nuevamente para recibir el código de verificación.",
+            variant: "destructive",
+          });
+          await supabase.auth.signOut();
+          return;
+        }
+
+        // Call 2FA function with an explicit auth token so the backend can identify the user.
+        const { error: sendError } = await supabase.functions.invoke("send-2fa-code", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
 
         if (sendError) {
           console.error("[2FA] Error sending code:", sendError);

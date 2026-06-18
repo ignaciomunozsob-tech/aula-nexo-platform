@@ -105,7 +105,13 @@ export default function LoginPage() {
         const accessToken = sessionData.session?.access_token;
 
         if (!accessToken) {
-          throw new Error("No se pudo validar tu sesión. Inicia sesión nuevamente.");
+          toast({
+            title: "Sesión no válida",
+            description: "Inicia sesión nuevamente para recibir el código de verificación.",
+            variant: "destructive",
+          });
+          await supabase.auth.signOut();
+          return;
         }
 
         // Call 2FA function with an explicit auth token so the backend can identify the user.

@@ -35,8 +35,44 @@ export default function Verify2FAPage() {
     // If no user info, redirect to login
     if (!userId || !userEmail) {
       navigate("/login");
+      return;
     }
-  }, [userId, userEmail, navigate]);
+
+    // Send the initial 2FA code on mount (moved here from LoginPage to
+    // avoid a race condition where the LoginPage unmounted before the
+    // invoke completed, aborting the email send).
+    let cancelled = false;
+    (async () => {
+      try {
+        const accessToken = await getAccessToken();
+        const { error } = await supabase.functions.invoke("send-2fa-code", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (cancelled) return;
+        if (error) {
+          console.error("[2FA] Initial send error:", error);
+          toast({
+            title: "Error al enviar código",
+            description: "Usa el botón 'Reenviar código' para intentar de nuevo.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Código enviado",
+            description: "Revisa tu correo electrónico",
+          });
+          setCountdown(60);
+        }
+      } catch (err: any) {
+        if (cancelled) return;
+        console.error("[2FA] Initial send error:", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, userEmail]);
 
   useEffect(() => {
     // Countdown timer for resend button

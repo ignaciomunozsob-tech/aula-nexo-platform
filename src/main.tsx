@@ -6,16 +6,13 @@ import "./index.css";
 import { supabase } from "./integrations/supabase/client";
 
 /**
- * Handle Supabase password recovery links before mounting the app.
+ * Normalize legacy hash-based URLs (#/path) to plain paths so the
+ * new BrowserRouter can handle them. Any old shared link, email link
+ * or third-party redirect that still includes "/#/" lands on the right
+ * page transparently.
  *
- * Supabase may deliver recovery sessions in two ways:
- * 1. PKCE flow (current): `?code=...` appended to the redirect URL search.
- *    We must call `exchangeCodeForSession(code)`.
- * 2. Implicit/legacy flow: `#access_token=...&refresh_token=...&type=recovery`
- *    in the URL hash. We call `setSession({...})`.
- *
- * Because the app uses HashRouter, after handling the tokens we rewrite the
- * URL to `#/reset-password` so the router lands on the right page.
+ * Tokens for password recovery may also arrive in the hash; we extract
+ * them BEFORE normalizing.
  */
 function getAuthParamsFromUrl(url: URL) {
   const hash = window.location.hash || "";
@@ -51,7 +48,6 @@ async function handleRecoveryLink() {
   const search = getAuthParamsFromUrl(url);
   const hash = window.location.hash || "";
 
-  // --- PKCE flow: ?code=... in the query string ---
   const code = search.get("code");
   const errorDesc = search.get("error_description") || search.get("error");
 
@@ -61,28 +57,26 @@ async function handleRecoveryLink() {
       if (error) throw error;
     } catch (e) {
       console.error("[RECOVERY] exchangeCodeForSession failed", e);
-      window.history.replaceState(null, "", url.pathname + "#/forgot-password");
-      return;
+      window.history.replaceState(null, "", "/forgot-password");
+      return true;
     }
-    // Clean ?code from URL and route to reset page
-    window.history.replaceState(null, "", url.pathname + "#/reset-password");
-    return;
+    window.history.replaceState(null, "", "/reset-password");
+    return true;
   }
 
   if (errorDesc) {
     console.warn("[RECOVERY] error from provider:", errorDesc);
-    window.history.replaceState(null, "", url.pathname + "#/forgot-password");
-    return;
+    window.history.replaceState(null, "", "/forgot-password");
+    return true;
   }
 
-  // --- Implicit/legacy flow: tokens in hash, including HashRouter nested hashes ---
-  if (!hash.startsWith("#")) return;
+  if (!hash.startsWith("#")) return false;
 
   const accessToken = search.get("access_token");
   const refreshToken = search.get("refresh_token");
   const type = search.get("type");
 
-  if (!accessToken || !refreshToken) return;
+  if (!accessToken || !refreshToken) return false;
 
   try {
     const { error } = await supabase.auth.setSession({
@@ -92,18 +86,15 @@ async function handleRecoveryLink() {
     if (error) throw error;
   } catch (e) {
     console.error("[RECOVERY] setSession failed", e);
-    window.history.replaceState(null, "", url.pathname + "#/forgot-password");
-    return;
+    window.history.replaceState(null, "", "/forgot-password");
+    return true;
   }
 
-  const target = type === "recovery" ? "#/reset-password" : "#/";
-  window.history.replaceState(null, "", url.pathname + target);
+  const target = type === "recovery" ? "/reset-password" : "/";
+  window.history.replaceState(null, "", target);
+  return true;
 }
 
-/**
- * Handle MercadoPago OAuth callback before the recovery handler (both use ?code=).
- * Path is /mercadopago/callback so we can detect it without interfering with recovery.
- */
 async function handleMercadoPagoCallback() {
   const url = new URL(window.location.href);
   if (url.pathname !== "/mercadopago/callback") return false;
@@ -113,7 +104,7 @@ async function handleMercadoPagoCallback() {
   const error = url.searchParams.get("error");
 
   if (error || !code) {
-    window.history.replaceState(null, "", "/#/creator/billing?mp=error");
+    window.history.replaceState(null, "", "/creator-app/billing?mp=error");
     return true;
   }
 
@@ -122,7 +113,7 @@ async function handleMercadoPagoCallback() {
     const { data: sess } = await supabase.auth.getSession();
     const token = sess.session?.access_token;
     if (!token) {
-      window.history.replaceState(null, "", "/#/login?next=/creator/billing");
+      window.history.replaceState(null, "", "/login?next=/creator-app/billing");
       return true;
     }
     const res = await fetch(
@@ -136,27 +127,46 @@ async function handleMercadoPagoCallback() {
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
       console.error("MP OAuth callback failed", body);
-      window.history.replaceState(null, "", "/#/creator/billing?mp=error");
+      window.history.replaceState(null, "", "/creator-app/billing?mp=error");
       return true;
     }
-    window.history.replaceState(null, "", "/#/creator/billing?mp=connected");
+    window.history.replaceState(null, "", "/creator-app/billing?mp=connected");
   } catch (e) {
     console.error("MP OAuth callback exception", e);
-    window.history.replaceState(null, "", "/#/creator/billing?mp=error");
+    window.history.replaceState(null, "", "/creator-app/billing?mp=error");
   }
   return true;
 }
 
-handleMercadoPagoCallback().then((handled) => {
-  const next = handled ? Promise.resolve() : handleRecoveryLink();
-  next.finally(() => {
-    createRoot(document.getElementById("root")!).render(
-      <React.StrictMode>
-        <HelmetProvider>
-          <App />
-        </HelmetProvider>
-      </React.StrictMode>
-    );
-  });
-});
+/**
+ * Strip legacy `#/path` hashes left over from the old HashRouter so the
+ * BrowserRouter sees a plain URL.
+ */
+function normalizeLegacyHashRoute() {
+  const hash = window.location.hash || "";
+  if (!hash.startsWith("#/")) return;
+  const stripped = hash.slice(1); // "/path?foo"
+  const url = new URL(window.location.href);
+  // Preserve current search params, then append/merge hash-route params.
+  const [path, query = ""] = stripped.split("?");
+  const merged = new URLSearchParams(url.search);
+  new URLSearchParams(query).forEach((v, k) => merged.set(k, v));
+  const search = merged.toString() ? `?${merged.toString()}` : "";
+  window.history.replaceState(null, "", `${path}${search}`);
+}
 
+(async () => {
+  const mpHandled = await handleMercadoPagoCallback();
+  if (!mpHandled) {
+    const recoveryHandled = await handleRecoveryLink();
+    if (!recoveryHandled) normalizeLegacyHashRoute();
+  }
+
+  createRoot(document.getElementById("root")!).render(
+    <React.StrictMode>
+      <HelmetProvider>
+        <App />
+      </HelmetProvider>
+    </React.StrictMode>
+  );
+})();

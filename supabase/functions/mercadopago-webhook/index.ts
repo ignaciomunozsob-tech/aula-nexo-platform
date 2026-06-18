@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
           const origin = req.headers.get('origin') ?? '';
           const anon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
           await anon.auth.resetPasswordForEmail(buyerEmail, {
-            redirectTo: `${origin || ''}/#/reset-password`,
+            redirectTo: `${origin || ''}/reset-password`,
           });
         } catch (e) {
           console.error('reset email error', e);

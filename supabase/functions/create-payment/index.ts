@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
     if (orderErr || !order) { console.error('create-payment order error', orderErr); return json({ error: 'No se pudo crear la orden' }, 500); }
 
     const origin = req.headers.get('origin') ?? body.return_url ?? '';
-    const returnBase = `${origin}/#/payment`;
+    const returnBase = `${origin}/payment`;
 
     const items: any[] = [{
       id: order.id, title: main.title.slice(0, 250), quantity: 1, currency_id: 'CLP',

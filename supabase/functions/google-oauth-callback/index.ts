@@ -10,7 +10,7 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const REDIRECT_URI = `${SUPABASE_URL}/functions/v1/google-oauth-callback`;
 
-const FALLBACK_RETURN = 'https://novuproject.lovable.app/creator/integrations?google=error';
+const FALLBACK_RETURN = 'https://soynovu.cl/creator-app/integrations?google=error';
 
 Deno.serve(async (req) => {
   const url = new URL(req.url);

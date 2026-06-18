@@ -1,0 +1,1 @@
+REVOKE SELECT (meeting_url) ON public.events FROM anon, authenticated;

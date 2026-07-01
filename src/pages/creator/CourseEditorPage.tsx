@@ -538,16 +538,25 @@ export default function CourseEditorPage() {
       return { id };
     },
     onSuccess: ({ id: courseId }) => {
+      const needsModuleRehydrate = modules.some(
+        (m) =>
+          m.id?.startsWith("new-") ||
+          (m.lessons || []).some(
+            (l) =>
+              l.id?.startsWith("new-") ||
+              (l.resources || []).some((r) => r.id?.startsWith("new-")),
+          ),
+      );
+
+      setHasChanges(false);
+      initialFormRef.current = { ...form };
+      initialModulesRef.current = needsModuleRehydrate ? null : JSON.parse(JSON.stringify(modules));
+      setDeletedModuleIds([]);
+      setDeletedLessonIds([]);
+
       queryClient.invalidateQueries({ queryKey: ["creator-courses"] });
       queryClient.invalidateQueries({ queryKey: ["edit-course", courseId] });
       queryClient.invalidateQueries({ queryKey: ["edit-modules", courseId] });
-      
-      // Reset change tracking
-      setHasChanges(false);
-      initialFormRef.current = { ...form };
-      initialModulesRef.current = JSON.parse(JSON.stringify(modules));
-      setDeletedModuleIds([]);
-      setDeletedLessonIds([]);
 
       toast({ title: "Curso guardado correctamente ✅" });
     },

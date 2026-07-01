@@ -14,6 +14,34 @@ import { ArrowLeft, Loader2, Upload, Trash2, Calendar, Clock, Users, Video } fro
 import { generateSlug, formatPrice } from '@/lib/utils';
 import StudentManagement from '@/components/creator/StudentManagement';
 
+type EventFormSnapshot = {
+  title: string;
+  description: string;
+  priceClp: number;
+  categoryId: string | null;
+  status: string;
+  coverImageUrl: string | null;
+  eventDate: string;
+  eventTime: string;
+  durationMinutes: number;
+  maxAttendees: number | null;
+  meetingUrl: string;
+};
+
+const getEventSnapshot = (values: EventFormSnapshot): EventFormSnapshot => ({
+  ...values,
+  title: values.title || '',
+  description: values.description || '',
+  priceClp: Number(values.priceClp || 0),
+  categoryId: values.categoryId || null,
+  coverImageUrl: values.coverImageUrl || null,
+  eventDate: values.eventDate || '',
+  eventTime: values.eventTime || '',
+  durationMinutes: Number(values.durationMinutes || 60),
+  maxAttendees: values.maxAttendees || null,
+  meetingUrl: values.meetingUrl || '',
+});
+
 export default function EventEditorPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -38,6 +66,8 @@ export default function EventEditorPage() {
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [maxAttendees, setMaxAttendees] = useState<number | null>(null);
   const [meetingUrl, setMeetingUrl] = useState('');
+  const [hasChanges, setHasChanges] = useState(!isEditing);
+  const initialFormRef = useRef<EventFormSnapshot | null>(null);
 
   // Fetch existing event if editing (meeting_url is column-restricted, fetched via RPC)
   const { data: event, isLoading } = useQuery({
@@ -69,25 +99,69 @@ export default function EventEditorPage() {
 
   // Load event data into form
   useEffect(() => {
-    if (event) {
-      setTitle(event.title);
-      setDescription(event.description || '');
-      setPriceClp(event.price_clp);
-      setCategoryId(event.category_id);
-      setStatus(event.status);
-      setCoverImageUrl(event.cover_image_url);
-      setMeetingUrl(event.meeting_url || '');
-      setDurationMinutes(event.duration_minutes || 60);
-      setMaxAttendees(event.max_attendees);
+    if (!event) return;
+    if (initialFormRef.current) return;
 
-      // Parse date and time from event_date
-      if (event.event_date) {
-        const date = new Date(event.event_date);
-        setEventDate(date.toISOString().split('T')[0]);
-        setEventTime(date.toTimeString().slice(0, 5));
-      }
+    let nextEventDate = '';
+    let nextEventTime = '';
+    if (event.event_date) {
+      const date = new Date(event.event_date);
+      nextEventDate = date.toISOString().split('T')[0];
+      nextEventTime = date.toTimeString().slice(0, 5);
     }
+
+    const initial = getEventSnapshot({
+      title: event.title,
+      description: event.description || '',
+      priceClp: event.price_clp,
+      categoryId: event.category_id,
+      status: event.status,
+      coverImageUrl: event.cover_image_url,
+      meetingUrl: event.meeting_url || '',
+      durationMinutes: event.duration_minutes || 60,
+      maxAttendees: event.max_attendees,
+      eventDate: nextEventDate,
+      eventTime: nextEventTime,
+    });
+
+    setTitle(initial.title);
+    setDescription(initial.description);
+    setPriceClp(initial.priceClp);
+    setCategoryId(initial.categoryId);
+    setStatus(initial.status);
+    setCoverImageUrl(initial.coverImageUrl);
+    setMeetingUrl(initial.meetingUrl);
+    setDurationMinutes(initial.durationMinutes);
+    setMaxAttendees(initial.maxAttendees);
+    setEventDate(initial.eventDate);
+    setEventTime(initial.eventTime);
+    initialFormRef.current = initial;
+    setHasChanges(false);
   }, [event]);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setHasChanges(true);
+      return;
+    }
+    if (!initialFormRef.current) return;
+
+    const current = getEventSnapshot({
+      title,
+      description,
+      priceClp,
+      categoryId,
+      status,
+      coverImageUrl,
+      eventDate,
+      eventTime,
+      durationMinutes,
+      maxAttendees,
+      meetingUrl,
+    });
+
+    setHasChanges(JSON.stringify(current) !== JSON.stringify(initialFormRef.current));
+  }, [isEditing, title, description, priceClp, categoryId, status, coverImageUrl, eventDate, eventTime, durationMinutes, maxAttendees, meetingUrl]);
 
   // Handle cover upload
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -159,8 +233,23 @@ export default function EventEditorPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['creator-events'] });
+      queryClient.invalidateQueries({ queryKey: ['event', id] });
+      initialFormRef.current = getEventSnapshot({
+        title,
+        description,
+        priceClp,
+        categoryId,
+        status,
+        coverImageUrl,
+        eventDate,
+        eventTime,
+        durationMinutes,
+        maxAttendees,
+        meetingUrl,
+      });
+      setHasChanges(false);
       toast({ title: isEditing ? 'Evento actualizado' : 'Evento creado' });
-      navigate('/creator-app/products');
+      if (!isEditing) navigate('/creator-app/products');
     },
     onError: (error: any) => {
       const raw = (error?.message || '') as string;
@@ -189,9 +278,21 @@ export default function EventEditorPage() {
         Volver a Productos
       </Button>
 
-      <h1 className="text-2xl font-bold mb-6">
-        {isEditing ? 'Editar Evento' : 'Nuevo Evento Online'}
-      </h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <h1 className="text-2xl font-bold">
+          {isEditing ? 'Editar Evento' : 'Nuevo Evento Online'}
+        </h1>
+        {isEditing && (
+          <Button
+            type="button"
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending || !title || !eventDate || !eventTime || !hasChanges}
+          >
+            {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            Guardar Cambios
+          </Button>
+        )}
+      </div>
 
       <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-6">
         {/* Basic Info */}
@@ -404,7 +505,7 @@ export default function EventEditorPage() {
         </Card>
 
         <div className="flex gap-3">
-          <Button type="submit" disabled={saveMutation.isPending || !title || !eventDate || !eventTime}>
+          <Button type="submit" disabled={saveMutation.isPending || !title || !eventDate || !eventTime || (isEditing && !hasChanges)}>
             {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             {isEditing ? 'Guardar Cambios' : 'Crear Evento'}
           </Button>

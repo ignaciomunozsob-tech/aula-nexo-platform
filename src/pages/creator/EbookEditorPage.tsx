@@ -13,6 +13,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, Loader2, Upload, FileText, Trash2 } from 'lucide-react';
 import { generateSlug, formatPrice } from '@/lib/utils';
 
+type EbookFormSnapshot = {
+  title: string;
+  description: string;
+  priceClp: number;
+  categoryId: string | null;
+  status: string;
+  fileUrl: string | null;
+  coverImageUrl: string | null;
+};
+
+const getEbookSnapshot = (values: EbookFormSnapshot): EbookFormSnapshot => ({
+  ...values,
+  title: values.title || '',
+  description: values.description || '',
+  priceClp: Number(values.priceClp || 0),
+  categoryId: values.categoryId || null,
+  fileUrl: values.fileUrl || null,
+  coverImageUrl: values.coverImageUrl || null,
+});
+
 export default function EbookEditorPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -33,6 +53,8 @@ export default function EbookEditorPage() {
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [hasChanges, setHasChanges] = useState(!isEditing);
+  const initialFormRef = useRef<EbookFormSnapshot | null>(null);
 
   // Fetch existing ebook if editing (file_url is column-restricted, fetched via RPC)
   const { data: ebook, isLoading } = useQuery({
@@ -63,16 +85,49 @@ export default function EbookEditorPage() {
 
   // Load ebook data into form
   useEffect(() => {
-    if (ebook) {
-      setTitle(ebook.title);
-      setDescription(ebook.description || '');
-      setPriceClp(ebook.price_clp);
-      setCategoryId(ebook.category_id);
-      setStatus(ebook.status);
-      setFileUrl(ebook.file_url);
-      setCoverImageUrl(ebook.cover_image_url);
-    }
+    if (!ebook) return;
+    if (initialFormRef.current) return;
+
+    const initial = getEbookSnapshot({
+      title: ebook.title,
+      description: ebook.description || '',
+      priceClp: ebook.price_clp,
+      categoryId: ebook.category_id,
+      status: ebook.status,
+      fileUrl: ebook.file_url || null,
+      coverImageUrl: ebook.cover_image_url,
+    });
+
+    setTitle(initial.title);
+    setDescription(initial.description);
+    setPriceClp(initial.priceClp);
+    setCategoryId(initial.categoryId);
+    setStatus(initial.status);
+    setFileUrl(initial.fileUrl);
+    setCoverImageUrl(initial.coverImageUrl);
+    initialFormRef.current = initial;
+    setHasChanges(false);
   }, [ebook]);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setHasChanges(true);
+      return;
+    }
+    if (!initialFormRef.current) return;
+
+    const current = getEbookSnapshot({
+      title,
+      description,
+      priceClp,
+      categoryId,
+      status,
+      fileUrl,
+      coverImageUrl,
+    });
+
+    setHasChanges(JSON.stringify(current) !== JSON.stringify(initialFormRef.current));
+  }, [isEditing, title, description, priceClp, categoryId, status, fileUrl, coverImageUrl]);
 
   // Handle file upload
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -161,8 +216,19 @@ export default function EbookEditorPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['creator-ebooks'] });
+      queryClient.invalidateQueries({ queryKey: ['ebook', id] });
+      initialFormRef.current = getEbookSnapshot({
+        title,
+        description,
+        priceClp,
+        categoryId,
+        status,
+        fileUrl,
+        coverImageUrl,
+      });
+      setHasChanges(false);
       toast({ title: isEditing ? 'E-book actualizado' : 'E-book creado' });
-      navigate('/creator-app/products');
+      if (!isEditing) navigate('/creator-app/products');
     },
     onError: (error: any) => {
       const raw = (error?.message || '') as string;
@@ -191,9 +257,21 @@ export default function EbookEditorPage() {
         Volver a Productos
       </Button>
 
-      <h1 className="text-2xl font-bold mb-6">
-        {isEditing ? 'Editar E-book' : 'Nuevo E-book'}
-      </h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <h1 className="text-2xl font-bold">
+          {isEditing ? 'Editar E-book' : 'Nuevo E-book'}
+        </h1>
+        {isEditing && (
+          <Button
+            type="button"
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending || !title || !hasChanges}
+          >
+            {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            Guardar Cambios
+          </Button>
+        )}
+      </div>
 
       <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-6">
         {/* Basic Info */}
@@ -372,7 +450,7 @@ export default function EbookEditorPage() {
         </Card>
 
         <div className="flex gap-3">
-          <Button type="submit" disabled={saveMutation.isPending || !title}>
+          <Button type="submit" disabled={saveMutation.isPending || !title || (isEditing && !hasChanges)}>
             {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             {isEditing ? 'Guardar Cambios' : 'Crear E-book'}
           </Button>

@@ -69,6 +69,18 @@ export default function EventEditorPage() {
   const [hasChanges, setHasChanges] = useState(!isEditing);
   const initialFormRef = useRef<EventFormSnapshot | null>(null);
 
+  const handleSave = () => {
+    if (!title.trim()) {
+      toast({ title: 'Título requerido', description: 'Agrega un título antes de guardar.', variant: 'destructive' });
+      return;
+    }
+    if (!eventDate || !eventTime) {
+      toast({ title: 'Fecha y hora requeridas', description: 'Completa la fecha y hora antes de guardar.', variant: 'destructive' });
+      return;
+    }
+    saveMutation.mutate();
+  };
+
   // Fetch existing event if editing (meeting_url is column-restricted, fetched via RPC)
   const { data: event, isLoading } = useQuery({
     queryKey: ['event', id],
@@ -287,7 +299,7 @@ export default function EventEditorPage() {
         {isEditing && (
           <Button
             type="button"
-            onClick={() => saveMutation.mutate()}
+            onClick={handleSave}
             disabled={!canSaveEvent}
             className="w-full sm:w-auto"
           >
@@ -297,7 +309,7 @@ export default function EventEditorPage() {
         )}
       </div>
 
-      <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-6">
+      <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-6">
         {/* Basic Info */}
         <Card>
           <CardHeader>
@@ -524,7 +536,7 @@ export default function EventEditorPage() {
         </div>
       )}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur sm:hidden">
-        <Button onClick={() => saveMutation.mutate()} disabled={!canSaveEvent} className="w-full" size="lg">
+        <Button type="button" onClick={handleSave} disabled={!canSaveEvent} className="w-full" size="lg">
           {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
           {isEditing ? 'Guardar Cambios' : 'Crear Evento'}
         </Button>

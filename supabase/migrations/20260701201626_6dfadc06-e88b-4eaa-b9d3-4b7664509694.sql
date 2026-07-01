@@ -1,0 +1,1 @@
+REVOKE SELECT (video_url) ON public.lessons FROM anon, authenticated;

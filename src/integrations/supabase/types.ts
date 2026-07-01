@@ -1570,7 +1570,6 @@ export type Database = {
           meta_pixel_id: string | null
           name: string | null
           onboarding_completed: boolean | null
-          role: Database["public"]["Enums"]["app_role"]
           updated_at: string
         }
         Insert: {
@@ -1586,7 +1585,6 @@ export type Database = {
           meta_pixel_id?: string | null
           name?: string | null
           onboarding_completed?: boolean | null
-          role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
         }
         Update: {
@@ -1602,7 +1600,6 @@ export type Database = {
           meta_pixel_id?: string | null
           name?: string | null
           onboarding_completed?: boolean | null
-          role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
         }
         Relationships: []

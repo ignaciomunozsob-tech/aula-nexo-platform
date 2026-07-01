@@ -27,8 +27,8 @@ Deno.serve(async (req) => {
       | { code?: string; redirect_uri?: string; state?: string } | null;
     if (!body?.code || !body?.redirect_uri) return json({ error: 'code & redirect_uri required' }, 400);
 
-    // State validation: must match this user (prevents account hijack)
-    if (body.state && body.state !== userId) return json({ error: 'Invalid state' }, 400);
+    // State validation: mandatory and must match this user (prevents account hijack / CSRF)
+    if (!body.state || body.state !== userId) return json({ error: 'Invalid state' }, 400);
 
     // Exchange code for tokens
     const tokenRes = await fetch('https://api.mercadopago.com/oauth/token', {

@@ -413,31 +413,32 @@ export default function CourseEditorPage() {
   }, [form, modules, deletedModuleIds, deletedLessonIds]);
 
   const saveMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (override?: Partial<typeof form>) => {
       if (!user?.id) throw new Error("Debes iniciar sesión");
       if (!id) throw new Error("No se pudo determinar courseId");
 
       const nowIso = new Date().toISOString();
+      const nextForm = { ...form, ...(override || {}) };
 
       const payload: any = {
-        title: (form.title || "").trim(),
-        description: form.description_html || "",
-        price_clp: Number(form.price_clp || 0),
-        level: form.level,
-        category_id: form.category_id || null,
-        status: form.status,
-        format: form.format,
-        certificate_enabled: form.certificate_enabled,
-        certificate_template_url: form.certificate_enabled
-          ? form.certificate_template_url || null
+        title: (nextForm.title || "").trim(),
+        description: nextForm.description_html || "",
+        price_clp: Number(nextForm.price_clp || 0),
+        level: nextForm.level,
+        category_id: nextForm.category_id || null,
+        status: nextForm.status,
+        format: nextForm.format,
+        certificate_enabled: nextForm.certificate_enabled,
+        certificate_template_url: nextForm.certificate_enabled
+          ? nextForm.certificate_template_url || null
           : null,
-        community_enabled: form.community_enabled,
+        community_enabled: nextForm.community_enabled,
         updated_at: nowIso,
       };
 
       // Regenerate slug from title if missing or still a temporary draft slug
       if (!course?.slug || course.slug.startsWith("draft-")) {
-        payload.slug = `${generateSlug(form.title || "curso")}-${Date.now().toString(36).slice(-4)}`;
+        payload.slug = `${generateSlug(nextForm.title || "curso")}-${Date.now().toString(36).slice(-4)}`;
       }
 
       // 1. Actualización directa
@@ -535,9 +536,9 @@ export default function CourseEditorPage() {
         }
       }
 
-      return { id };
+      return { id, savedForm: nextForm };
     },
-    onSuccess: ({ id: courseId }) => {
+    onSuccess: ({ id: courseId, savedForm }) => {
       const needsModuleRehydrate = modules.some(
         (m) =>
           m.id?.startsWith("new-") ||
@@ -549,7 +550,7 @@ export default function CourseEditorPage() {
       );
 
       setHasChanges(false);
-      initialFormRef.current = { ...form };
+      initialFormRef.current = { ...savedForm };
       initialModulesRef.current = needsModuleRehydrate ? null : JSON.parse(JSON.stringify(modules));
       setDeletedModuleIds([]);
       setDeletedLessonIds([]);
@@ -575,6 +576,15 @@ export default function CourseEditorPage() {
       toast({ title, description, variant: "destructive" });
     },
   });
+
+  const handleSave = (override?: Partial<typeof form>) => {
+    const nextForm = { ...form, ...(override || {}) };
+    if (!(nextForm.title || "").trim()) {
+      toast({ title: "Título requerido", description: "Agrega un título antes de guardar.", variant: "destructive" });
+      return;
+    }
+    saveMutation.mutate(override);
+  };
 
   const addModule = () => setModules([...modules, { id: `new-${Date.now()}`, title: "Nuevo módulo", lessons: [] }]);
 
@@ -614,6 +624,7 @@ export default function CourseEditorPage() {
   };
 
   const loading = autoCreating || isLoadingCourse || isLoadingModules;
+  const canSaveCourse = !saveMutation.isPending && !!(form.title || "").trim();
 
   if (loading && !id) {
     return (
@@ -633,7 +644,7 @@ export default function CourseEditorPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
+    <div className="p-4 pb-24 sm:p-6 lg:p-8 max-w-4xl">
       {/* Diálogo de confirmación para publicar */}
       <AlertDialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
         <AlertDialogContent>
@@ -648,7 +659,7 @@ export default function CourseEditorPage() {
             <AlertDialogAction
               onClick={() => {
                 setForm((prev) => ({ ...prev, status: "published" }));
-                setTimeout(() => saveMutation.mutate(), 0);
+                handleSave({ status: "published" });
               }}
             >
               Sí, publicar
@@ -659,16 +670,16 @@ export default function CourseEditorPage() {
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold">Editar Curso</h1>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
           {course?.id && (
             <>
-              <Button variant="outline" asChild>
+              <Button variant="outline" className="w-full sm:w-auto" asChild>
                 <a href={`${window.location.origin}${getCourseUrl(profile?.creator_slug, course.slug)}`} target="_blank" rel="noreferrer">
                   <Link2 className="h-4 w-4 mr-2" />
                   Ver página pública
                 </a>
               </Button>
-              <Button variant="outline" asChild>
+              <Button variant="outline" className="w-full sm:w-auto" asChild>
                 <a href={`${window.location.origin}/preview/course/${course.id}?preview=true`} target="_blank" rel="noreferrer">
                   <Users className="h-4 w-4 mr-2" />
                   Vista previa alumno
@@ -680,9 +691,9 @@ export default function CourseEditorPage() {
             <>
               <Button 
                 variant="outline" 
-                onClick={() => saveMutation.mutate()} 
-                disabled={saveMutation.isPending || !hasChanges}
-                className={!hasChanges ? "opacity-50" : ""}
+                onClick={() => handleSave()} 
+                disabled={!canSaveCourse}
+                className="w-full sm:w-auto"
               >
                 {saveMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -691,7 +702,7 @@ export default function CourseEditorPage() {
                 )}
                 Guardar Borrador
               </Button>
-              <Button onClick={() => setShowPublishDialog(true)} disabled={saveMutation.isPending}>
+              <Button onClick={() => setShowPublishDialog(true)} disabled={!canSaveCourse} className="w-full sm:w-auto">
                 {saveMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : (
@@ -702,9 +713,9 @@ export default function CourseEditorPage() {
             </>
           ) : (
             <Button 
-              onClick={() => saveMutation.mutate()} 
-              disabled={saveMutation.isPending || !hasChanges}
-              className={!hasChanges ? "opacity-50" : ""}
+              onClick={() => handleSave()} 
+              disabled={!canSaveCourse}
+              className="w-full sm:w-auto"
             >
               {saveMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -895,10 +906,10 @@ export default function CourseEditorPage() {
           </div>
 
           <Button 
-            onClick={() => saveMutation.mutate()} 
-            disabled={saveMutation.isPending || !hasChanges} 
+            onClick={() => handleSave()} 
+            disabled={!canSaveCourse} 
             size="lg" 
-            className={`w-full ${!hasChanges ? "opacity-50" : ""}`}
+            className="w-full"
           >
             {saveMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -1180,10 +1191,10 @@ export default function CourseEditorPage() {
           </div>
 
           <Button 
-            onClick={() => saveMutation.mutate()} 
-            disabled={saveMutation.isPending || !hasChanges} 
+            onClick={() => handleSave()} 
+            disabled={!canSaveCourse} 
             size="lg" 
-            className={`w-full ${!hasChanges ? "opacity-50" : ""}`}
+            className="w-full"
           >
             {saveMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -1207,7 +1218,7 @@ export default function CourseEditorPage() {
               communityEnabled={form.community_enabled}
               onToggle={(v) => {
                 setForm((p) => ({ ...p, community_enabled: v }));
-                setTimeout(() => saveMutation.mutate(), 0);
+                handleSave({ community_enabled: v });
               }}
             />
           )}
@@ -1223,6 +1234,16 @@ export default function CourseEditorPage() {
           <CheckoutPagesPage />
         </TabsContent>
       </Tabs>
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur sm:hidden">
+        <Button type="button" onClick={() => handleSave()} disabled={!canSaveCourse} className="w-full" size="lg">
+          {saveMutation.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <Save className="h-4 w-4 mr-2" />
+          )}
+          Guardar Cambios
+        </Button>
+      </div>
     </div>
   );
 }

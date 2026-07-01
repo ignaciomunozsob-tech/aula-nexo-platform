@@ -56,6 +56,14 @@ export default function EbookEditorPage() {
   const [hasChanges, setHasChanges] = useState(!isEditing);
   const initialFormRef = useRef<EbookFormSnapshot | null>(null);
 
+  const handleSave = () => {
+    if (!title.trim()) {
+      toast({ title: 'Título requerido', description: 'Agrega un título antes de guardar.', variant: 'destructive' });
+      return;
+    }
+    saveMutation.mutate();
+  };
+
   // Fetch existing ebook if editing (file_url is column-restricted, fetched via RPC)
   const { data: ebook, isLoading } = useQuery({
     queryKey: ['ebook', id],
@@ -250,8 +258,10 @@ export default function EbookEditorPage() {
     );
   }
 
+  const canSaveEbook = !saveMutation.isPending && !!title.trim();
+
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl">
+    <div className="p-4 pb-24 sm:p-6 lg:p-8 max-w-3xl">
       <Button variant="ghost" onClick={() => navigate('/creator-app/products')} className="mb-6">
         <ArrowLeft className="h-4 w-4 mr-2" />
         Volver a Productos
@@ -264,8 +274,9 @@ export default function EbookEditorPage() {
         {isEditing && (
           <Button
             type="button"
-            onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending || !title || !hasChanges}
+            onClick={handleSave}
+            disabled={!canSaveEbook}
+            className="w-full sm:w-auto"
           >
             {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             Guardar Cambios
@@ -273,7 +284,7 @@ export default function EbookEditorPage() {
         )}
       </div>
 
-      <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-6">
+      <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-6">
         {/* Basic Info */}
         <Card>
           <CardHeader>
@@ -449,16 +460,22 @@ export default function EbookEditorPage() {
           </CardContent>
         </Card>
 
-        <div className="flex gap-3">
-          <Button type="submit" disabled={saveMutation.isPending || !title || (isEditing && !hasChanges)}>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button type="submit" disabled={!canSaveEbook} className="w-full sm:w-auto">
             {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             {isEditing ? 'Guardar Cambios' : 'Crear E-book'}
           </Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/creator-app/products')}>
+          <Button type="button" variant="outline" onClick={() => navigate('/creator-app/products')} className="w-full sm:w-auto">
             Cancelar
           </Button>
         </div>
       </form>
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur sm:hidden">
+        <Button type="button" onClick={handleSave} disabled={!canSaveEbook} className="w-full" size="lg">
+          {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+          {isEditing ? 'Guardar Cambios' : 'Crear E-book'}
+        </Button>
+      </div>
     </div>
   );
 }

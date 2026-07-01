@@ -614,6 +614,7 @@ export default function CourseEditorPage() {
   };
 
   const loading = autoCreating || isLoadingCourse || isLoadingModules;
+  const canSaveCourse = !saveMutation.isPending && !!(form.title || "").trim();
 
   if (loading && !id) {
     return (
@@ -659,16 +660,16 @@ export default function CourseEditorPage() {
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold">Editar Curso</h1>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
           {course?.id && (
             <>
-              <Button variant="outline" asChild>
+              <Button variant="outline" className="w-full sm:w-auto" asChild>
                 <a href={`${window.location.origin}${getCourseUrl(profile?.creator_slug, course.slug)}`} target="_blank" rel="noreferrer">
                   <Link2 className="h-4 w-4 mr-2" />
                   Ver página pública
                 </a>
               </Button>
-              <Button variant="outline" asChild>
+              <Button variant="outline" className="w-full sm:w-auto" asChild>
                 <a href={`${window.location.origin}/preview/course/${course.id}?preview=true`} target="_blank" rel="noreferrer">
                   <Users className="h-4 w-4 mr-2" />
                   Vista previa alumno
@@ -681,8 +682,8 @@ export default function CourseEditorPage() {
               <Button 
                 variant="outline" 
                 onClick={() => saveMutation.mutate()} 
-                disabled={saveMutation.isPending || !hasChanges}
-                className={!hasChanges ? "opacity-50" : ""}
+                disabled={!canSaveCourse}
+                className="w-full sm:w-auto"
               >
                 {saveMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -691,7 +692,7 @@ export default function CourseEditorPage() {
                 )}
                 Guardar Borrador
               </Button>
-              <Button onClick={() => setShowPublishDialog(true)} disabled={saveMutation.isPending}>
+              <Button onClick={() => setShowPublishDialog(true)} disabled={!canSaveCourse} className="w-full sm:w-auto">
                 {saveMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : (
@@ -703,8 +704,8 @@ export default function CourseEditorPage() {
           ) : (
             <Button 
               onClick={() => saveMutation.mutate()} 
-              disabled={saveMutation.isPending || !hasChanges}
-              className={!hasChanges ? "opacity-50" : ""}
+              disabled={!canSaveCourse}
+              className="w-full sm:w-auto"
             >
               {saveMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -896,9 +897,9 @@ export default function CourseEditorPage() {
 
           <Button 
             onClick={() => saveMutation.mutate()} 
-            disabled={saveMutation.isPending || !hasChanges} 
+            disabled={!canSaveCourse} 
             size="lg" 
-            className={`w-full ${!hasChanges ? "opacity-50" : ""}`}
+            className="w-full"
           >
             {saveMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -1181,9 +1182,9 @@ export default function CourseEditorPage() {
 
           <Button 
             onClick={() => saveMutation.mutate()} 
-            disabled={saveMutation.isPending || !hasChanges} 
+            disabled={!canSaveCourse} 
             size="lg" 
-            className={`w-full ${!hasChanges ? "opacity-50" : ""}`}
+            className="w-full"
           >
             {saveMutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin mr-2" />

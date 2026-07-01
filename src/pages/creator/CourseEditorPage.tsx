@@ -659,7 +659,7 @@ export default function CourseEditorPage() {
             <AlertDialogAction
               onClick={() => {
                 setForm((prev) => ({ ...prev, status: "published" }));
-                setTimeout(() => saveMutation.mutate(), 0);
+                handleSave({ status: "published" });
               }}
             >
               Sí, publicar
@@ -691,7 +691,7 @@ export default function CourseEditorPage() {
             <>
               <Button 
                 variant="outline" 
-                onClick={() => saveMutation.mutate()} 
+                onClick={() => handleSave()} 
                 disabled={!canSaveCourse}
                 className="w-full sm:w-auto"
               >
@@ -713,7 +713,7 @@ export default function CourseEditorPage() {
             </>
           ) : (
             <Button 
-              onClick={() => saveMutation.mutate()} 
+              onClick={() => handleSave()} 
               disabled={!canSaveCourse}
               className="w-full sm:w-auto"
             >
@@ -906,7 +906,7 @@ export default function CourseEditorPage() {
           </div>
 
           <Button 
-            onClick={() => saveMutation.mutate()} 
+            onClick={() => handleSave()} 
             disabled={!canSaveCourse} 
             size="lg" 
             className="w-full"
@@ -1191,7 +1191,7 @@ export default function CourseEditorPage() {
           </div>
 
           <Button 
-            onClick={() => saveMutation.mutate()} 
+            onClick={() => handleSave()} 
             disabled={!canSaveCourse} 
             size="lg" 
             className="w-full"
@@ -1218,7 +1218,7 @@ export default function CourseEditorPage() {
               communityEnabled={form.community_enabled}
               onToggle={(v) => {
                 setForm((p) => ({ ...p, community_enabled: v }));
-                setTimeout(() => saveMutation.mutate(), 0);
+                handleSave({ community_enabled: v });
               }}
             />
           )}
@@ -1235,7 +1235,7 @@ export default function CourseEditorPage() {
         </TabsContent>
       </Tabs>
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur sm:hidden">
-        <Button onClick={() => saveMutation.mutate()} disabled={!canSaveCourse} className="w-full" size="lg">
+        <Button type="button" onClick={() => handleSave()} disabled={!canSaveCourse} className="w-full" size="lg">
           {saveMutation.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
           ) : (

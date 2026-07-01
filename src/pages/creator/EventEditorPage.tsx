@@ -271,6 +271,8 @@ export default function EventEditorPage() {
     );
   }
 
+  const canSaveEvent = !saveMutation.isPending && !!title.trim() && !!eventDate && !!eventTime;
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-3xl">
       <Button variant="ghost" onClick={() => navigate('/creator-app/products')} className="mb-6">
@@ -286,7 +288,8 @@ export default function EventEditorPage() {
           <Button
             type="button"
             onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending || !title || !eventDate || !eventTime || !hasChanges}
+            disabled={!canSaveEvent}
+            className="w-full sm:w-auto"
           >
             {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             Guardar Cambios
@@ -504,12 +507,12 @@ export default function EventEditorPage() {
           </CardContent>
         </Card>
 
-        <div className="flex gap-3">
-          <Button type="submit" disabled={saveMutation.isPending || !title || !eventDate || !eventTime || (isEditing && !hasChanges)}>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button type="submit" disabled={!canSaveEvent} className="w-full sm:w-auto">
             {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             {isEditing ? 'Guardar Cambios' : 'Crear Evento'}
           </Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/creator-app/products')}>
+          <Button type="button" variant="outline" onClick={() => navigate('/creator-app/products')} className="w-full sm:w-auto">
             Cancelar
           </Button>
         </div>

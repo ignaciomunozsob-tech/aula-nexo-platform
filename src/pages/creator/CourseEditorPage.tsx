@@ -634,7 +634,7 @@ export default function CourseEditorPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
+    <div className="p-4 pb-24 sm:p-6 lg:p-8 max-w-4xl">
       {/* Diálogo de confirmación para publicar */}
       <AlertDialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
         <AlertDialogContent>
@@ -1224,6 +1224,16 @@ export default function CourseEditorPage() {
           <CheckoutPagesPage />
         </TabsContent>
       </Tabs>
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur sm:hidden">
+        <Button onClick={() => saveMutation.mutate()} disabled={!canSaveCourse} className="w-full" size="lg">
+          {saveMutation.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <Save className="h-4 w-4 mr-2" />
+          )}
+          Guardar Cambios
+        </Button>
+      </div>
     </div>
   );
 }

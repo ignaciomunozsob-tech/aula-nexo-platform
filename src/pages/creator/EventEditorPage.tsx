@@ -526,7 +526,7 @@ export default function EventEditorPage() {
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur sm:hidden">
         <Button onClick={() => saveMutation.mutate()} disabled={!canSaveEvent} className="w-full" size="lg">
           {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-          Guardar Cambios
+          {isEditing ? 'Guardar Cambios' : 'Crear Evento'}
         </Button>
       </div>
     </div>

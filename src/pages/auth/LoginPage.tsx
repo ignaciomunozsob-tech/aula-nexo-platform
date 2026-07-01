@@ -87,14 +87,13 @@ export default function LoginPage() {
         return;
       }
 
-      // Check if user is a creator
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role, name")
-        .eq("id", user.id)
-        .single();
+      // Check if user is a creator (role now lives in user_roles)
+      const [{ data: profile }, { data: role }] = await Promise.all([
+        supabase.from("profiles").select("name").eq("id", user.id).single(),
+        supabase.rpc("get_user_role", { _user_id: user.id }),
+      ]);
 
-      if (profile?.role === "creator") {
+      if (role === "creator") {
         // Navigate to 2FA verification page; the code is sent from there
         // to avoid a race where this component unmounts (due to auth state
         // change) and the in-flight invoke gets aborted before completing.
@@ -102,7 +101,7 @@ export default function LoginPage() {
           state: {
             userId: user.id,
             email: user.email,
-            name: profile.name,
+            name: profile?.name,
           },
         });
       } else {

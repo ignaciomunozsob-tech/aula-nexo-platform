@@ -413,31 +413,32 @@ export default function CourseEditorPage() {
   }, [form, modules, deletedModuleIds, deletedLessonIds]);
 
   const saveMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (override?: Partial<typeof form>) => {
       if (!user?.id) throw new Error("Debes iniciar sesión");
       if (!id) throw new Error("No se pudo determinar courseId");
 
       const nowIso = new Date().toISOString();
+      const nextForm = { ...form, ...(override || {}) };
 
       const payload: any = {
-        title: (form.title || "").trim(),
-        description: form.description_html || "",
-        price_clp: Number(form.price_clp || 0),
-        level: form.level,
-        category_id: form.category_id || null,
-        status: form.status,
-        format: form.format,
-        certificate_enabled: form.certificate_enabled,
-        certificate_template_url: form.certificate_enabled
-          ? form.certificate_template_url || null
+        title: (nextForm.title || "").trim(),
+        description: nextForm.description_html || "",
+        price_clp: Number(nextForm.price_clp || 0),
+        level: nextForm.level,
+        category_id: nextForm.category_id || null,
+        status: nextForm.status,
+        format: nextForm.format,
+        certificate_enabled: nextForm.certificate_enabled,
+        certificate_template_url: nextForm.certificate_enabled
+          ? nextForm.certificate_template_url || null
           : null,
-        community_enabled: form.community_enabled,
+        community_enabled: nextForm.community_enabled,
         updated_at: nowIso,
       };
 
       // Regenerate slug from title if missing or still a temporary draft slug
       if (!course?.slug || course.slug.startsWith("draft-")) {
-        payload.slug = `${generateSlug(form.title || "curso")}-${Date.now().toString(36).slice(-4)}`;
+        payload.slug = `${generateSlug(nextForm.title || "curso")}-${Date.now().toString(36).slice(-4)}`;
       }
 
       // 1. Actualización directa
@@ -535,9 +536,9 @@ export default function CourseEditorPage() {
         }
       }
 
-      return { id };
+      return { id, savedForm: nextForm };
     },
-    onSuccess: ({ id: courseId }) => {
+    onSuccess: ({ id: courseId, savedForm }) => {
       const needsModuleRehydrate = modules.some(
         (m) =>
           m.id?.startsWith("new-") ||
@@ -549,7 +550,7 @@ export default function CourseEditorPage() {
       );
 
       setHasChanges(false);
-      initialFormRef.current = { ...form };
+      initialFormRef.current = { ...savedForm };
       initialModulesRef.current = needsModuleRehydrate ? null : JSON.parse(JSON.stringify(modules));
       setDeletedModuleIds([]);
       setDeletedLessonIds([]);
@@ -575,6 +576,15 @@ export default function CourseEditorPage() {
       toast({ title, description, variant: "destructive" });
     },
   });
+
+  const handleSave = (override?: Partial<typeof form>) => {
+    const nextForm = { ...form, ...(override || {}) };
+    if (!(nextForm.title || "").trim()) {
+      toast({ title: "Título requerido", description: "Agrega un título antes de guardar.", variant: "destructive" });
+      return;
+    }
+    saveMutation.mutate(override);
+  };
 
   const addModule = () => setModules([...modules, { id: `new-${Date.now()}`, title: "Nuevo módulo", lessons: [] }]);
 

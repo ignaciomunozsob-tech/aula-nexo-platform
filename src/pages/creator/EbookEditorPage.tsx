@@ -250,6 +250,8 @@ export default function EbookEditorPage() {
     );
   }
 
+  const canSaveEbook = !saveMutation.isPending && !!title.trim();
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-3xl">
       <Button variant="ghost" onClick={() => navigate('/creator-app/products')} className="mb-6">
@@ -265,7 +267,8 @@ export default function EbookEditorPage() {
           <Button
             type="button"
             onClick={() => saveMutation.mutate()}
-            disabled={saveMutation.isPending || !title || !hasChanges}
+            disabled={!canSaveEbook}
+            className="w-full sm:w-auto"
           >
             {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             Guardar Cambios
@@ -449,12 +452,12 @@ export default function EbookEditorPage() {
           </CardContent>
         </Card>
 
-        <div className="flex gap-3">
-          <Button type="submit" disabled={saveMutation.isPending || !title || (isEditing && !hasChanges)}>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button type="submit" disabled={!canSaveEbook} className="w-full sm:w-auto">
             {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             {isEditing ? 'Guardar Cambios' : 'Crear E-book'}
           </Button>
-          <Button type="button" variant="outline" onClick={() => navigate('/creator-app/products')}>
+          <Button type="button" variant="outline" onClick={() => navigate('/creator-app/products')} className="w-full sm:w-auto">
             Cancelar
           </Button>
         </div>

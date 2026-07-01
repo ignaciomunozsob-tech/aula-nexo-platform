@@ -155,7 +155,7 @@ export default function SessionEditorPage() {
   const removeBlock = (idx: number) => setRules((r) => r.filter((_, i) => i !== idx));
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
+    <div className="max-w-4xl mx-auto p-4 pb-24 sm:p-6 space-y-6">
       <Button variant="ghost" size="sm" onClick={() => navigate("/creator-app/products")}>
         <ArrowLeft className="h-4 w-4 mr-1" /> Volver
       </Button>
@@ -172,10 +172,12 @@ export default function SessionEditorPage() {
 
       {isLoading && isEditing ? <Loader2 className="animate-spin" /> : (
         <Tabs defaultValue="info">
-          <TabsList>
+          <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <TabsList className="w-max sm:w-auto">
             <TabsTrigger value="info">Información</TabsTrigger>
             <TabsTrigger value="availability">Disponibilidad</TabsTrigger>
           </TabsList>
+          </div>
 
           <TabsContent value="info" className="space-y-4 mt-4">
             <Card>
@@ -304,7 +306,13 @@ export default function SessionEditorPage() {
       )}
 
       <div className="flex justify-end">
-        <Button onClick={() => save.mutate()} disabled={save.isPending}>
+        <Button onClick={() => save.mutate()} disabled={save.isPending} className="w-full sm:w-auto">
+          {save.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+          Guardar servicio
+        </Button>
+      </div>
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur sm:hidden">
+        <Button onClick={() => save.mutate()} disabled={save.isPending} className="w-full" size="lg">
           {save.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
           Guardar servicio
         </Button>

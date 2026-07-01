@@ -278,9 +278,21 @@ export default function EventEditorPage() {
         Volver a Productos
       </Button>
 
-      <h1 className="text-2xl font-bold mb-6">
-        {isEditing ? 'Editar Evento' : 'Nuevo Evento Online'}
-      </h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <h1 className="text-2xl font-bold">
+          {isEditing ? 'Editar Evento' : 'Nuevo Evento Online'}
+        </h1>
+        {isEditing && (
+          <Button
+            type="button"
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending || !title || !eventDate || !eventTime || !hasChanges}
+          >
+            {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            Guardar Cambios
+          </Button>
+        )}
+      </div>
 
       <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-6">
         {/* Basic Info */}

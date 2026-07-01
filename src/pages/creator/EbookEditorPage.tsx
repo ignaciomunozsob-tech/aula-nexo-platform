@@ -172,7 +172,7 @@ export default function EbookEditorPage() {
     setUploadingCover(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `ebooks/${user.id}/cover-${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}/ebooks/cover-${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('course-assets')

@@ -56,6 +56,14 @@ export default function EbookEditorPage() {
   const [hasChanges, setHasChanges] = useState(!isEditing);
   const initialFormRef = useRef<EbookFormSnapshot | null>(null);
 
+  const handleSave = () => {
+    if (!title.trim()) {
+      toast({ title: 'Título requerido', description: 'Agrega un título antes de guardar.', variant: 'destructive' });
+      return;
+    }
+    saveMutation.mutate();
+  };
+
   // Fetch existing ebook if editing (file_url is column-restricted, fetched via RPC)
   const { data: ebook, isLoading } = useQuery({
     queryKey: ['ebook', id],
@@ -266,7 +274,7 @@ export default function EbookEditorPage() {
         {isEditing && (
           <Button
             type="button"
-            onClick={() => saveMutation.mutate()}
+            onClick={handleSave}
             disabled={!canSaveEbook}
             className="w-full sm:w-auto"
           >
@@ -276,7 +284,7 @@ export default function EbookEditorPage() {
         )}
       </div>
 
-      <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-6">
+      <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-6">
         {/* Basic Info */}
         <Card>
           <CardHeader>
@@ -463,7 +471,7 @@ export default function EbookEditorPage() {
         </div>
       </form>
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur sm:hidden">
-        <Button onClick={() => saveMutation.mutate()} disabled={!canSaveEbook} className="w-full" size="lg">
+        <Button type="button" onClick={handleSave} disabled={!canSaveEbook} className="w-full" size="lg">
           {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
           {isEditing ? 'Guardar Cambios' : 'Crear E-book'}
         </Button>

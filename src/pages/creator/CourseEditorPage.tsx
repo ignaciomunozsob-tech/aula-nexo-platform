@@ -326,6 +326,9 @@ export default function CourseEditorPage() {
       return data as any;
     },
     enabled: !!id,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: existingModules, isLoading: isLoadingModules } = useQuery({
@@ -364,6 +367,9 @@ export default function CourseEditorPage() {
       );
     },
     enabled: !!id,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   // cargar curso

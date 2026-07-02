@@ -1766,6 +1766,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_manage_lesson: { Args: { _lesson_id: string }; Returns: boolean }
+      can_manage_lesson_module: {
+        Args: { _module_id: string }
+        Returns: boolean
+      }
       creator_has_mercadopago: {
         Args: { _creator_id: string }
         Returns: boolean

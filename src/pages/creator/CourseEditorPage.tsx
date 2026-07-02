@@ -326,6 +326,9 @@ export default function CourseEditorPage() {
       return data as any;
     },
     enabled: !!id,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: existingModules, isLoading: isLoadingModules } = useQuery({
@@ -333,7 +336,13 @@ export default function CourseEditorPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("course_modules")
-        .select("*, lessons(*, lesson_resources(*))")
+        .select(`
+          id, course_id, title, order_index, created_at,
+          lessons(
+            id, module_id, title, order_index, type, content_text, duration_minutes, created_at, description,
+            lesson_resources(id, lesson_id, file_name, created_at)
+          )
+        `)
         .eq("course_id", id)
         .order("order_index");
       if (error) throw error;
@@ -364,6 +373,9 @@ export default function CourseEditorPage() {
       );
     },
     enabled: !!id,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   // cargar curso
@@ -501,7 +513,7 @@ export default function CourseEditorPage() {
             const { data: newLes, error } = await supabase
               .from("lessons")
               .insert(lessonPayload)
-              .select()
+              .select("id")
               .single();
             if (error) throw error;
             lessonId = newLes.id;

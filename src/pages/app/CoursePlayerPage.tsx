@@ -96,10 +96,10 @@ export default function CoursePlayerPage() {
       const { data, error } = await supabase
         .from('course_modules')
         .select(`
-          *,
+          id, course_id, title, order_index, created_at,
           lessons (
-            *,
-            lesson_resources (*)
+            id, module_id, title, order_index, type, content_text, duration_minutes, description, created_at,
+            lesson_resources ( id, lesson_id, file_name, created_at )
           )
         `)
         .eq('course_id', id!)

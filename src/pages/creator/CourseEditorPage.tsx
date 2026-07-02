@@ -513,7 +513,7 @@ export default function CourseEditorPage() {
             const { data: newLes, error } = await supabase
               .from("lessons")
               .insert(lessonPayload)
-              .select()
+              .select("id")
               .single();
             if (error) throw error;
             lessonId = newLes.id;

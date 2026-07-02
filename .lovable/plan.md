@@ -1,26 +1,23 @@
-## Problema
+## Diagnóstico
 
-El error `new row violates row-level security policy` aparece al subir la portada de un **evento** o **e-book**. La política del bucket `course-assets` exige que el primer segmento de la ruta sea el `auth.uid()` del usuario:
+Al revocar el SELECT de `video_url`/`file_url` en `lessons` y `lesson_resources`, quedaron dos huecos:
 
-```
-(storage.foldername(name))[1] = auth.uid()::text
-```
+1. **Vista del alumno (`CoursePlayerPage`)** hace `select *` sobre `lessons` y `lesson_resources`. Al incluir columnas prohibidas, PostgREST devuelve *permission denied* y el listado queda vacío — por eso el alumno no ve módulos ni lecciones.
+2. **Vista pública del curso (`CourseDetailPage`)** consulta `course_modules` con join a `lessons` como visitante `anon`, pero `anon` no tiene ningún SELECT sobre columnas de `lessons`/`lesson_resources`. El temario aparece vacío para visitantes no logueados.
+3. El video "no queda guardado" es en realidad el mismo síntoma: se guarda bien en la base, pero al refetch la vista del alumno no muestra la lección, aparentando pérdida.
 
-Pero los editores construyen la ruta al revés:
+## Cambios
 
-- `EventEditorPage.tsx` → `events/${user.id}/cover-*.ext` (primer segmento = `"events"`)
-- `EbookEditorPage.tsx` cover → `ebooks/${user.id}/cover-*.ext` (primer segmento = `"ebooks"`)
+### Frontend
+- `src/pages/app/CoursePlayerPage.tsx`: reemplazar `select('*')` en la query `course-modules-player` por columnas explícitas seguras:
+  - `lessons`: `id, module_id, title, order_index, type, content_text, duration_minutes, description`
+  - `lesson_resources`: `id, lesson_id, file_name, created_at`
+  - El `video_url` sigue resolviéndose vía `resolveProtectedUrl('lesson_video', ...)` y los recursos ya usan `get-protected-url` para descargar.
 
-Por eso storage rechaza el INSERT. Los cursos (`CourseCoverUploader`) sí funcionan porque usan `${user.id}/courses/...`.
+### Base de datos (migración)
+- Otorgar SELECT a `anon` sobre columnas no sensibles de `lessons` (`id, module_id, title, order_index, type, content_text, duration_minutes, description, created_at`) y `lesson_resources` (`id, lesson_id, file_name, created_at`), para que la página pública del curso muestre el temario a visitantes.
+- Mantener revocado el SELECT sobre `video_url` y `file_url` para ambos roles (la seguridad se conserva).
 
-## Fix
-
-Invertir el orden de las carpetas para que `user.id` quede primero:
-
-1. `src/pages/creator/EventEditorPage.tsx` (línea 186)
-   `events/${user.id}/cover-...` → `${user.id}/events/cover-...`
-
-2. `src/pages/creator/EbookEditorPage.tsx` (línea 175)
-   `ebooks/${user.id}/cover-...` → `${user.id}/ebooks/cover-...`
-
-Cambios mínimos, sin tocar RLS ni el bucket. Las portadas antiguas (si las hubiera) siguen sirviéndose porque el bucket es público; solo cambia dónde se guardan las nuevas.
+### Validación
+- Abrir la vista del alumno de un curso con módulos/lecciones: deben listarse módulos, lecciones y reproducirse el video vía URL firmada.
+- Abrir la página pública del curso sin sesión: el temario debe mostrar módulos y títulos de lección.

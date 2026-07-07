@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { Clock, Users, Star } from 'lucide-react';
+import { Clock, ArrowRight } from 'lucide-react';
 import { formatPrice, formatDuration, getCourseUrl } from '@/lib/utils';
+import { sanitizeHtml } from '@/lib/sanitize';
 
 interface CourseCardProps {
   id: string;
@@ -36,7 +37,7 @@ export function CourseCard({
   return (
     <Link
       to={getCourseUrl(creatorSlug, slug)}
-      className="group bg-card rounded-lg border border-border overflow-hidden card-hover"
+      className="group bg-card rounded-lg border border-border overflow-hidden card-hover flex flex-col"
     >
       {/* Cover Image */}
       <div className="aspect-video bg-muted relative overflow-hidden">
@@ -51,16 +52,10 @@ export function CourseCard({
             <span className="text-4xl font-bold text-primary/30">{title.charAt(0)}</span>
           </div>
         )}
-        {/* Price Badge */}
-        <div className="absolute top-3 right-3 bg-background/95 backdrop-blur-sm px-3 py-1 rounded-full">
-          <span className="font-semibold text-foreground">
-            {priceCLP === 0 ? 'Gratis' : formatPrice(priceCLP)}
-          </span>
-        </div>
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="p-4 flex flex-col flex-1">
         <h3 className="font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
           {title}
         </h3>
@@ -83,13 +78,14 @@ export function CourseCard({
         )}
 
         {description && (
-          <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-            {description}
-          </p>
+          <div
+            className="text-sm text-muted-foreground mt-2 line-clamp-2 rich-text-preview"
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(description) }}
+          />
         )}
 
         {/* Meta */}
-        <div className="flex items-center gap-4 mt-4 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">
           {level && (
             <span className="px-2 py-1 bg-muted rounded-full">
               {levelLabel[level] || level}
@@ -101,6 +97,17 @@ export function CourseCard({
               {formatDuration(durationMinutes)}
             </span>
           )}
+        </div>
+
+        {/* Price + CTA */}
+        <div className="mt-auto pt-4 flex items-center justify-between border-t border-border/50">
+          <span className="font-semibold text-foreground">
+            {priceCLP === 0 ? 'Gratis' : formatPrice(priceCLP)}
+          </span>
+          <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-full text-sm font-medium group-hover:bg-primary/90 transition-colors">
+            Conocer más
+            <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+          </span>
         </div>
       </div>
     </Link>

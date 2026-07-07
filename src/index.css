@@ -253,6 +253,23 @@
   .progress-fill {
     @apply h-full bg-primary transition-all duration-300;
   }
+
+  /* Rich text preview inside cards (kept compact and line-clamped) */
+  .rich-text-preview > * {
+    @apply inline;
+  }
+  .rich-text-preview p,
+  .rich-text-preview div,
+  .rich-text-preview ul,
+  .rich-text-preview ol {
+    @apply m-0 p-0;
+  }
+  .rich-text-preview li {
+    @apply inline;
+  }
+  .rich-text-preview br {
+    @apply hidden;
+  }
 }
 
 @layer utilities {

@@ -1,23 +1,24 @@
-## Diagnóstico
+Plan para permitir videos de más de 500 MB.
 
-Al revocar el SELECT de `video_url`/`file_url` en `lessons` y `lesson_resources`, quedaron dos huecos:
+## Contexto actual
+- `src/hooks/useMyPlan.ts` define `maxFileMB: 500` para todos los creadores (NOVU ya no usa planes diferenciados; todos tienen el mismo límite).
+- `src/components/layout/LessonVideoUploader.tsx` usa `maxFileMB` para validar `file.size > maxSize` y rechaza el archivo antes de subirlo.
+- `src/components/creator/ModuleResourcesEditor.tsx` también usa `maxFileMB` para recursos de módulo.
+- Supabase Storage soporta archivos de hasta 5 GB, por lo que el bloqueo es solo la validación frontend.
 
-1. **Vista del alumno (`CoursePlayerPage`)** hace `select *` sobre `lessons` y `lesson_resources`. Al incluir columnas prohibidas, PostgREST devuelve *permission denied* y el listado queda vacío — por eso el alumno no ve módulos ni lecciones.
-2. **Vista pública del curso (`CourseDetailPage`)** consulta `course_modules` con join a `lessons` como visitante `anon`, pero `anon` no tiene ningún SELECT sobre columnas de `lessons`/`lesson_resources`. El temario aparece vacío para visitantes no logueados.
-3. El video "no queda guardado" es en realidad el mismo síntoma: se guarda bien en la base, pero al refetch la vista del alumno no muestra la lección, aparentando pérdida.
+## Cambios propuestos
+1. Subir `maxFileMB` en `NOVU_PLAN` de 500 MB a un valor mayor que el usuario confirme (por ejemplo 1024 MB, 2048 MB o 5000 MB). Para no reintroducir planes, se cambia la constante global.
+2. Revisar y actualizar los textos visibles de "Máx. 500MB" en los uploaders para reflejar el nuevo límite (están dinámicos con `{maxFileMB}`, así que se actualizan solos).
+3. Verificar que el bucket `protected-content` no tenga un límite de tamaño de objeto inferior al nuevo tope.
+4. Revisar si `createSignedUploadUrl` / signed PUT tiene timeout de red que pueda afectar archivos muy grandes en conexiones lentas; de ser necesario, documentar que la subida depende de la conexión del usuario.
 
-## Cambios
+## No incluido
+- No se reintroduce un sistema de planes con límites diferentes.
+- No se cambia la lógica de column-level security / protected URLs que ya está en producción.
 
-### Frontend
-- `src/pages/app/CoursePlayerPage.tsx`: reemplazar `select('*')` en la query `course-modules-player` por columnas explícitas seguras:
-  - `lessons`: `id, module_id, title, order_index, type, content_text, duration_minutes, description`
-  - `lesson_resources`: `id, lesson_id, file_name, created_at`
-  - El `video_url` sigue resolviéndose vía `resolveProtectedUrl('lesson_video', ...)` y los recursos ya usan `get-protected-url` para descargar.
+## Validación
+- Subir un video de 600 MB (o más) en `CourseEditorPage > LessonVideoUploader` y confirmar que no muestra "Archivo muy grande".
+- Comprobar que el estudiante puede reproducir el video en `CoursePlayerPage` vía `get-protected-url`.
 
-### Base de datos (migración)
-- Otorgar SELECT a `anon` sobre columnas no sensibles de `lessons` (`id, module_id, title, order_index, type, content_text, duration_minutes, description, created_at`) y `lesson_resources` (`id, lesson_id, file_name, created_at`), para que la página pública del curso muestre el temario a visitantes.
-- Mantener revocado el SELECT sobre `video_url` y `file_url` para ambos roles (la seguridad se conserva).
-
-### Validación
-- Abrir la vista del alumno de un curso con módulos/lecciones: deben listarse módulos, lecciones y reproducirse el video vía URL firmada.
-- Abrir la página pública del curso sin sesión: el temario debe mostrar módulos y títulos de lección.
+## Pregunta para el usuario
+¿Hasta qué tamaño quieres permitir? Opciones razonables: 1 GB, 2 GB o el máximo de 5 GB.

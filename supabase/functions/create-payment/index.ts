@@ -170,7 +170,8 @@ Deno.serve(async (req) => {
     } as any).select().single();
     if (orderErr || !order) { console.error('create-payment order error', orderErr); return json({ error: 'No se pudo crear la orden' }, 500); }
 
-    const origin = req.headers.get('origin') ?? body.return_url ?? '';
+    const rawOrigin = req.headers.get('origin') ?? body.return_url ?? '';
+    const origin = isAllowedOrigin(rawOrigin) ? new URL(rawOrigin).origin : 'https://soynovu.cl';
     const returnBase = `${origin}/payment`;
 
     const items: any[] = [{

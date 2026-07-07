@@ -18,6 +18,21 @@ const SCOPES = [
   'https://www.googleapis.com/auth/calendar.freebusy',
 ].join(' ');
 
+const ALLOWED_RETURN_ORIGINS = new Set([
+  'https://soynovu.cl',
+  'https://www.soynovu.cl',
+  'https://novuproject.lovable.app',
+]);
+function isAllowedReturnTo(url: string): boolean {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+    if (ALLOWED_RETURN_ORIGINS.has(u.origin)) return true;
+    if (u.hostname.endsWith('.lovable.app')) return true;
+    return false;
+  } catch { return false; }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {

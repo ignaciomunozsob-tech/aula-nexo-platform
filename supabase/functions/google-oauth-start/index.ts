@@ -35,9 +35,8 @@ Deno.serve(async (req) => {
 
     const body = (await req.json().catch(() => ({}))) as { return_to?: string };
     const returnTo = (body.return_to || '').trim();
-    // Allow only same-app return URLs (lovable.app subdomains + tunovu.com style)
-    if (!/^https?:\/\/[^/]+(\/.*)?$/i.test(returnTo)) {
-      return json({ error: 'return_to required and must be absolute URL' }, 400);
+    if (!returnTo || !isAllowedReturnTo(returnTo)) {
+      return json({ error: 'return_to required and must be an allowed app URL' }, 400);
     }
 
     const nonce = crypto.randomUUID();

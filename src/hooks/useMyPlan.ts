@@ -29,7 +29,7 @@ const NOVU_PLAN: PlanLimits = {
   comision: 10,
   planLabel: 'NOVU',
   maxCourses: null,
-  maxFileMB: 500,
+  maxFileMB: 2048,
   maxManualStudents: null,
   allowDirectVideo: true,
   allowCoupons: true,

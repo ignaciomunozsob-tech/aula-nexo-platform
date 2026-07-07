@@ -1,23 +1,18 @@
-## Diagnóstico
+Plan para permitir videos de más de 500 MB.
 
-Al revocar el SELECT de `video_url`/`file_url` en `lessons` y `lesson_resources`, quedaron dos huecos:
+## Estado: Implementado
 
-1. **Vista del alumno (`CoursePlayerPage`)** hace `select *` sobre `lessons` y `lesson_resources`. Al incluir columnas prohibidas, PostgREST devuelve *permission denied* y el listado queda vacío — por eso el alumno no ve módulos ni lecciones.
-2. **Vista pública del curso (`CourseDetailPage`)** consulta `course_modules` con join a `lessons` como visitante `anon`, pero `anon` no tiene ningún SELECT sobre columnas de `lessons`/`lesson_resources`. El temario aparece vacío para visitantes no logueados.
-3. El video "no queda guardado" es en realidad el mismo síntoma: se guarda bien en la base, pero al refetch la vista del alumno no muestra la lección, aparentando pérdida.
+### Cambio realizado
+- `src/hooks/useMyPlan.ts`: `maxFileMB` subido de **500 MB a 2048 MB (2 GB)** en `NOVU_PLAN`.
+- Esto aplica tanto a videos directos (`LessonVideoUploader`) como a recursos de módulo (`ModuleResourcesEditor`), ya que ambos consumen el mismo límite.
 
-## Cambios
+### Verificaciones adicionales
+- Los textos de los uploaders (`MP4, MOV, WEBM (máx. {maxFileMB}MB)`, etc.) ya son dinámicos, así que se actualizan automáticamente a 2 GB sin tocar más archivos.
+- Supabase Storage permite objetos de hasta 5 GB, por lo que el tope de 2 GB es solo una validación de la app y no choca con el backend de storage.
+- No se encontraron límites de tamaño ni timeouts explícitos en el bucket `protected-content` ni en la función `get-protected-url`.
+- No se reintrodujo sistema de planes.
+- No se modificó la lógica de column-level security / protected URLs.
 
-### Frontend
-- `src/pages/app/CoursePlayerPage.tsx`: reemplazar `select('*')` en la query `course-modules-player` por columnas explícitas seguras:
-  - `lessons`: `id, module_id, title, order_index, type, content_text, duration_minutes, description`
-  - `lesson_resources`: `id, lesson_id, file_name, created_at`
-  - El `video_url` sigue resolviéndose vía `resolveProtectedUrl('lesson_video', ...)` y los recursos ya usan `get-protected-url` para descargar.
-
-### Base de datos (migración)
-- Otorgar SELECT a `anon` sobre columnas no sensibles de `lessons` (`id, module_id, title, order_index, type, content_text, duration_minutes, description, created_at`) y `lesson_resources` (`id, lesson_id, file_name, created_at`), para que la página pública del curso muestre el temario a visitantes.
-- Mantener revocado el SELECT sobre `video_url` y `file_url` para ambos roles (la seguridad se conserva).
-
-### Validación
-- Abrir la vista del alumno de un curso con módulos/lecciones: deben listarse módulos, lecciones y reproducirse el video vía URL firmada.
-- Abrir la página pública del curso sin sesión: el temario debe mostrar módulos y títulos de lección.
+### Validación sugerida
+- Subir un video de 600 MB o más en `CourseEditorPage > LessonVideoUploader` y confirmar que no muestra "Archivo muy grande".
+- Reproducir el video como estudiante en `CoursePlayerPage` para confirmar que `get-protected-url` sigue sirviendo la URL firmada.

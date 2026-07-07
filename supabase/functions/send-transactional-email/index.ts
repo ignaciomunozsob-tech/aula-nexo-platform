@@ -35,6 +35,31 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+  // Caller authorization: reject anon (raw publishable key) calls.
+  // Allow either service_role (server-to-server) or an authenticated user.
+  // verify_jwt=true in config.toml ensures the JWT is valid; here we inspect the role claim.
+  const authHeader = req.headers.get('Authorization') ?? ''
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
+  let callerRole: string | null = null
+  let callerSub: string | null = null
+  if (token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1] ?? ''))
+      callerRole = (payload?.role as string) ?? null
+      callerSub = (payload?.sub as string) ?? null
+    } catch {
+      callerRole = null
+    }
+  }
+  const isServiceRole = callerRole === 'service_role'
+  const isAuthenticatedUser = callerRole === 'authenticated' && !!callerSub
+  if (!isServiceRole && !isAuthenticatedUser) {
+    return new Response(
+      JSON.stringify({ error: 'Forbidden' }),
+      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 

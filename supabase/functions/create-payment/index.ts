@@ -10,6 +10,20 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+const ALLOWED_RETURN_ORIGINS = new Set([
+  'https://soynovu.cl',
+  'https://www.soynovu.cl',
+  'https://novuproject.lovable.app',
+]);
+function isAllowedOrigin(value: string): boolean {
+  try {
+    const u = new URL(value);
+    if (ALLOWED_RETURN_ORIGINS.has(u.origin)) return true;
+    if (u.hostname.endsWith('.lovable.app')) return true;
+    return false;
+  } catch { return false; }
+}
+
 async function fetchProduct(admin: any, type: ProductType, id: string) {
   if (type === 'course') {
     const { data } = await admin.from('courses')
@@ -170,7 +184,8 @@ Deno.serve(async (req) => {
     } as any).select().single();
     if (orderErr || !order) { console.error('create-payment order error', orderErr); return json({ error: 'No se pudo crear la orden' }, 500); }
 
-    const origin = req.headers.get('origin') ?? body.return_url ?? '';
+    const rawOrigin = req.headers.get('origin') ?? body.return_url ?? '';
+    const origin = isAllowedOrigin(rawOrigin) ? new URL(rawOrigin).origin : 'https://soynovu.cl';
     const returnBase = `${origin}/payment`;
 
     const items: any[] = [{

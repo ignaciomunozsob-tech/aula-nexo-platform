@@ -19,7 +19,17 @@ export function AdminLayout() {
     return <Navigate to="/login" replace />;
   }
 
-  if (profile && profile.role !== 'admin') {
+  // Block render until profile has loaded — prevents a brief window where
+  // a non-admin authenticated user could see admin UI while profile is null.
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (profile.role !== 'admin') {
     return <Navigate to="/" replace />;
   }
 

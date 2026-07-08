@@ -378,8 +378,11 @@ export default function CoursePlayerPage() {
                     />
                   ) : (
                     <video
+                      key={signedVideoUrl}
                       src={signedVideoUrl}
                       controls
+                      playsInline
+                      preload="auto"
                       className="w-full h-full"
                       controlsList="nodownload"
                     >

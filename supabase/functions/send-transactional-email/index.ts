@@ -40,6 +40,7 @@ Deno.serve(async (req) => {
   // verify_jwt=true in config.toml ensures the JWT is valid; here we inspect the role claim.
   const authHeader = req.headers.get('Authorization') ?? ''
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   let callerRole: string | null = null
   let callerSub: string | null = null
   if (token) {
@@ -51,7 +52,10 @@ Deno.serve(async (req) => {
       callerRole = null
     }
   }
-  const isServiceRole = callerRole === 'service_role'
+  // Accept service role either as a JWT with role=service_role, or as the raw
+  // service role secret (new sb_secret_* key format is not a JWT).
+  const isServiceRole =
+    callerRole === 'service_role' || (!!serviceRoleKey && token === serviceRoleKey)
   const isAuthenticatedUser = callerRole === 'authenticated' && !!callerSub
   if (!isServiceRole && !isAuthenticatedUser) {
     return new Response(
@@ -59,6 +63,7 @@ Deno.serve(async (req) => {
       { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
+
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')

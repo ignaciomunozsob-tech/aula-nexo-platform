@@ -145,6 +145,32 @@ export default function CoursePlayerPage() {
   });
   const isYouTubeUrl = !!signedVideoUrl && /youtube\.com|youtu\.be/i.test(signedVideoUrl);
 
+  // Prefetch the NEXT video lesson's signed URL + warm the browser cache so
+  // moving to the next lesson feels instant.
+  const nextVideoLesson = (() => {
+    const idx = allLessonsPre.findIndex((l: any) => l.id === selectedLessonId);
+    if (idx < 0) return null;
+    return allLessonsPre.slice(idx + 1).find((l: any) => l.type === 'video') || null;
+  })();
+  const qcPrefetch = useQueryClient();
+  useEffect(() => {
+    if (!nextVideoLesson?.id || (!enrollment && !isPreviewMode)) return;
+    qcPrefetch.prefetchQuery({
+      queryKey: ['signed-video', nextVideoLesson.id],
+      queryFn: async () => {
+        const url = await resolveProtectedUrl('lesson_video', nextVideoLesson.id);
+        // Warm the CDN / browser cache with a small range request.
+        if (url && !/youtube\.com|youtu\.be/i.test(url)) {
+          try {
+            await fetch(url, { headers: { Range: 'bytes=0-524287' }, cache: 'force-cache' });
+          } catch {}
+        }
+        return url;
+      },
+      staleTime: 50 * 60 * 1000,
+    });
+  }, [nextVideoLesson?.id, enrollment, isPreviewMode, qcPrefetch]);
+
   // Select first lesson by default
   useEffect(() => {
     if (modules && modules.length > 0 && !selectedLessonId) {
@@ -378,8 +404,11 @@ export default function CoursePlayerPage() {
                     />
                   ) : (
                     <video
+                      key={signedVideoUrl}
                       src={signedVideoUrl}
                       controls
+                      playsInline
+                      preload="auto"
                       className="w-full h-full"
                       controlsList="nodownload"
                     >

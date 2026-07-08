@@ -45,6 +45,7 @@ export default function LessonVideoUploader({
       xhr.open("PUT", url, true);
       xhr.setRequestHeader("Authorization", `Bearer ${token}`);
       xhr.setRequestHeader("x-upsert", "true");
+      xhr.setRequestHeader("cache-control", "public, max-age=31536000, immutable");
       xhr.setRequestHeader(
         "Content-Type",
         file.type || "application/octet-stream"

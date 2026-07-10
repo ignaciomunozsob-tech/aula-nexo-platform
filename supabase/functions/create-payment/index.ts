@@ -178,7 +178,7 @@ Deno.serve(async (req) => {
       platform_amount_clp: platformAmount,
       community_fee_clp: communityFee,
       status: 'pending',
-      metadata: { title: main.title, has_bump: !!bumpInfo, is_new_user: isNewUser, marketplace: true },
+      metadata: { title: main.title, has_bump: !!bumpInfo, is_new_user: isNewUser, marketplace: true, redirect_url: (main as any).redirect_url ?? null },
       checkout_page_id: body.checkout_page_id ?? null,
       bump_product_type: bumpInfo?.type ?? null,
       bump_product_id: bumpInfo?.id ?? null,

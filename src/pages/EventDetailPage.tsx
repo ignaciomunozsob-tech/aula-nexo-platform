@@ -125,6 +125,27 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
                 </div>
               )}
 
+              {/* Precio + CTA (mobile) */}
+              <div className="lg:hidden bg-background border rounded-xl p-5 shadow-sm space-y-3">
+                <div className="text-3xl font-bold">
+                  {event.price_clp ? formatPrice(event.price_clp) : <span className="text-green-600">Gratis</span>}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {event.price_clp ? "Pago único · acceso al evento" : "Inscripción gratuita"}
+                </p>
+                <Button size="lg" className="w-full" onClick={handleBuy} disabled={checkoutLoading}>
+                  {checkoutLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Inscribirme
+                </Button>
+                {!user && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    Te pediremos tu correo en el siguiente paso.
+                  </p>
+                )}
+              </div>
+
+
+
               {/* Bloques prominentes: fecha, hora, duración */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="bg-background border rounded-lg px-4 py-4">
@@ -201,7 +222,7 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
             </div>
 
             {/* RIGHT - Sticky sidebar con precio */}
-            <div className="lg:col-span-4">
+            <div className="hidden lg:block lg:col-span-4">
               <div className="bg-background border rounded-xl p-5 shadow-sm lg:sticky lg:top-24 space-y-3">
                 <div className="text-3xl font-bold">
                   {event.price_clp ? formatPrice(event.price_clp) : <span className="text-green-600">Gratis</span>}

@@ -9,6 +9,7 @@ import { SEO } from "@/components/SEO";
 import { formatPrice } from "@/lib/utils";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { useMercadoPagoCheckout } from "@/hooks/useMercadoPagoCheckout";
+import { GuestCheckoutDialog } from "@/components/checkout/GuestCheckoutDialog";
 
 interface Props {
   ebookId?: string;

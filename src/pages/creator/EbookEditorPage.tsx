@@ -209,6 +209,7 @@ export default function EbookEditorPage() {
         slug,
         description,
         price_clp: priceClp,
+        redirect_url: redirectUrl?.trim() ? redirectUrl.trim() : null,
         category_id: categoryId,
         status,
         file_url: fileUrl,

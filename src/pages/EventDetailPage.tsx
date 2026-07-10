@@ -312,6 +312,13 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
         onSubmit={submitGuestEmail}
         loading={checkoutLoading}
       />
+
+      <GuestCheckoutDialog
+        open={freeGuestOpen}
+        onOpenChange={setFreeGuestOpen}
+        onSubmit={(email) => registerFree(email)}
+        loading={freeLoading}
+      />
     </>
   );
 }

@@ -296,6 +296,56 @@ export default function CreatorFinancesPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Pagos abandonados */}
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Pagos abandonados</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Personas que iniciaron el pago pero no lo completaron. Puedes contactarlas para cerrar la venta.
+          </p>
+        </CardHeader>
+        <CardContent className="px-0 sm:px-6">
+          {data?.abandoned && data.abandoned.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table className="min-w-[720px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Correo</TableHead>
+                    <TableHead>Teléfono</TableHead>
+                    <TableHead>Producto</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="text-right">Monto</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.abandoned.map((o: any) => (
+                    <TableRow key={o.id}>
+                      <TableCell className="whitespace-nowrap">{formatDate(o.created_at)}</TableCell>
+                      <TableCell>{o.guest_name || "—"}</TableCell>
+                      <TableCell className="whitespace-nowrap">{o.guest_email || "—"}</TableCell>
+                      <TableCell className="whitespace-nowrap">{o.guest_phone || "—"}</TableCell>
+                      <TableCell className="capitalize">{o.product_type}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className={o.status === "failed" ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-800"}>
+                          {o.status === "failed" ? "Falló" : "Sin completar"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-medium whitespace-nowrap">
+                        {formatCLP(o.amount_clp || 0)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-center py-8">No hay pagos abandonados</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

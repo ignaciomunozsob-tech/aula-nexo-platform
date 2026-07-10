@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     // MP access token now comes from the creator's connected MercadoPago account (marketplace).
 
     const body = await req.json().catch(() => null) as
-      | { product_type: ProductType; product_id: string; checkout_page_id?: string; include_bump?: boolean; return_url?: string; guest_email?: string }
+      | { product_type: ProductType; product_id: string; checkout_page_id?: string; include_bump?: boolean; return_url?: string; guest_email?: string; guest_name?: string; guest_phone?: string }
       | null;
     if (!body?.product_type || !body?.product_id) return json({ error: 'product_type and product_id required' }, 400);
 

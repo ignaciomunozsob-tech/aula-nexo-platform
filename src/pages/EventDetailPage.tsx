@@ -25,7 +25,7 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
     queryFn: async () => {
       let q = supabase
         .from("events")
-        .select("id, title, description, cover_image_url, price_clp, event_date, duration_minutes, max_attendees, event_type, slug, creator_id, status")
+        .select("id, title, description, cover_image_url, price_clp, event_date, duration_minutes, max_attendees, event_type, location, slug, creator_id, status")
         .eq("status", "published");
       if (eventIdProp) q = q.eq("id", eventIdProp);
       else if (params.slug) q = q.eq("slug", params.slug);

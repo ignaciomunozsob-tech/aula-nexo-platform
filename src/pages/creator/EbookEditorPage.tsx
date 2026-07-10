@@ -74,7 +74,7 @@ export default function EbookEditorPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('ebooks')
-        .select('id, title, description, price_clp, category_id, status, cover_image_url, creator_id, slug, is_novu_official')
+        .select('id, title, description, price_clp, category_id, status, cover_image_url, creator_id, slug, is_novu_official, redirect_url')
         .eq('id', id!)
         .single();
       if (error) throw error;

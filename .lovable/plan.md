@@ -1,37 +1,43 @@
-## Objetivo
+Después de revisar checkout, webhook, resultado de pago y flujo de invitados, encontré 5 bugs reales priorizados por impacto.
 
-Darte una forma clara de **verificar el 10% de comisi\u00f3n de NOVU** sin necesidad de tener una segunda cuenta MercadoPago para probar el split.
+## 1. 🔴 Invitados no reciben un enlace válido para crear contraseña
+**Dónde**: `supabase/functions/mercadopago-webhook/index.ts` (fulfillment de nuevo usuario).
+**Qué pasa**: se llama `resetPasswordForEmail(buyerEmail, { redirectTo: `${origin}/reset-password` })`, pero `origin` viene de `req.headers.get('origin')` y MercadoPago **no envía header Origin**. Queda `""` y el link del correo apunta a `/reset-password` (URL relativa rota). El comprador nunca puede setear contraseña.
+**Fix**: usar `https://soynovu.cl` como base fija para `redirectTo`.
 
-## C\u00f3mo funciona hoy (contexto)
+## 2. 🟠 Email "nueva venta" al admin muestra 10% hardcodeado
+**Dónde**: `mercadopago-webhook` → bloque `admin-new-sale`.
+**Qué pasa**: recalcula `commissionClp = Math.round(amountClp * 0.10)` a mano. Si cambias `commission_pct` en `app_settings`, el email seguirá diciendo 10%.
+**Fix**: leer `order.platform_amount_clp`, `creator_amount_clp`, `community_fee_clp` de la orden.
 
-Cuando un alumno paga:
+## 3. 🟠 Webhook itera hasta 500 tokens por evento
+**Dónde**: `mercadopago-webhook`, fallback cuando el token de plataforma no lee el pago del seller.
+**Qué pasa**: recorre todos los `creator_mercadopago_accounts` haciendo un `fetch` a MP por cada uno. Con más creadores se vuelve lento y puede timeoutear.
+**Fix**: leer el `user_id` del payload/query de MP y consultar directo el token del seller correcto. Dejar el loop solo como último recurso.
 
-1. El pago entra **directo a la cuenta MercadoPago del creador** (usamos su `access_token`).
-2. NOVU env\u00eda a MercadoPago el par\u00e1metro `marketplace_fee = 10%` en la preferencia de pago.
-3. MercadoPago **retiene autom\u00e1ticamente ese 10%** y lo deposita en la cuenta MP de NOVU. El creador ve en su cuenta MP la venta con el monto ya neto.
-4. En la tabla `orders` guardamos: `amount_clp` (bruto), `platform_amount_clp` (10% NOVU), `community_fee_clp` ($990 si aplica) y `creator_amount_clp` (lo que te queda).
+## 4. 🟡 "Ir al contenido" apunta a rutas genéricas
+**Dónde**: `src/pages/PaymentResultPage.tsx` → `linkFor`.
+**Qué pasa**: para `event`, `ebook` y `community` devuelve `/app`. El comprador aterriza en el dashboard y tiene que buscar su compra.
+**Fix**: priorizar `product_url` (ya viene en `order.metadata`) y rutas específicas por tipo.
 
-O sea, el split ya est\u00e1 pas\u00e1ndose bien a MercadoPago \u2014 pero no ten\u00edas d\u00f3nde verlo dentro de NOVU para cruzarlo con tu Actividad de MercadoPago.
+## 5. 🟡 Mensaje inútil cuando el creador no tiene MercadoPago conectado
+**Dónde**: `src/hooks/useMercadoPagoCheckout.ts`.
+**Qué pasa**: `create-payment` responde 409 `{ error: 'creator_not_connected', message: '…' }`, pero el hook muestra "No se pudo iniciar el pago: FunctionsHttpError". El comprador no entiende.
+**Fix**: leer `data?.error`/`data?.message` de la respuesta y mostrar el mensaje real en el toast.
 
-## Qu\u00e9 voy a agregar
+---
 
-En **/creator/finances**, una nueva tabla "Desglose por venta" que muestre, por cada `order` con `status = 'paid'`:
+## Detalles técnicos
 
-```text
-Fecha | Producto | Bruto | \u2212 NOVU 10% | \u2212 Comunidad | = Neto a tu MP
-```
-
-- Se lee directo de `orders` (`amount_clp`, `platform_amount_clp`, `community_fee_clp`, `creator_amount_clp`), sin nuevos campos ni migraci\u00f3n.
-- Debajo, una nota corta explicando c\u00f3mo cruzarlo con tu cuenta MercadoPago: "El monto en 'Neto a tu MP' debe coincidir con lo que ves en Actividad \u2192 Ventas de tu cuenta MercadoPago para esa fecha."
-- Agrego totales al pie: total bruto, total NOVU retuvo, total neto que recibiste.
-
-## Detalles t\u00e9cnicos
-
-- Archivo: `src/pages/creator/CreatorFinancesPage.tsx` \u2014 extender el `useQuery` para traer tambi\u00e9n `platform_amount_clp` y `creator_amount_clp` de `orders` (ya se consulta `orders` para `community_fee`, solo agrego columnas al `.select`).
-- Nueva `<Card>` "Desglose por venta \u2014 verificaci\u00f3n de comisi\u00f3n" con `<Table>` responsive.
-- Sin cambios en backend, edge functions ni base de datos.
+- **Bug 1**: definir `const PUBLIC_SITE_URL = 'https://soynovu.cl'` en el webhook; usarlo en `redirectTo`.
+- **Bug 2**: reemplazar cálculo local por los campos ya persistidos de `orders`.
+- **Bug 3**: verificar si `creator_mercadopago_accounts` tiene columna `mp_user_id`; si no existe, añadirla en migración y guardarla en el callback OAuth. Preseleccionar con `.eq('mp_user_id', ...)`.
+- **Bug 4**: usar `order.metadata.product_url` como link primario para todos los tipos, con fallback a rutas por tipo.
+- **Bug 5**: al capturar el error de `functions.invoke`, inspeccionar `error.context?.response` o el `data` devuelto para extraer el `message` legible.
 
 ## Fuera de alcance
+- Reescritura del flujo de pago.
+- Cambios visuales/branding.
+- Features nuevas (reintentos automáticos, panel de reconciliación).
 
-- No agrego cuentas de prueba de MercadoPago (requerir\u00eda credenciales `TEST-` separadas y no vale la pena para una sola verificaci\u00f3n).
-- No cambio la l\u00f3gica de `marketplace_fee` \u2014 ya est\u00e1 correcta.
+¿Aplico los 5, o prefieres priorizar solo los rojos/naranjas (1–3)?

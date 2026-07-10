@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, Loader2, Upload, Trash2, Calendar, Clock, Users, Video } from 'lucide-react';
 import { generateSlug, formatPrice } from '@/lib/utils';
 import StudentManagement from '@/components/creator/StudentManagement';
+import { RichTextEditor } from '@/components/editor/RichTextEditor';
 
 type EventFormSnapshot = {
   title: string;

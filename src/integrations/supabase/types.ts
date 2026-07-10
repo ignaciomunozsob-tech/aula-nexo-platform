@@ -1465,6 +1465,8 @@ export type Database = {
           creator_amount_clp: number
           creator_id: string | null
           guest_email: string | null
+          guest_name: string | null
+          guest_phone: string | null
           id: string
           metadata: Json | null
           mp_payment_id: string | null
@@ -1489,6 +1491,8 @@ export type Database = {
           creator_amount_clp?: number
           creator_id?: string | null
           guest_email?: string | null
+          guest_name?: string | null
+          guest_phone?: string | null
           id?: string
           metadata?: Json | null
           mp_payment_id?: string | null
@@ -1513,6 +1517,8 @@ export type Database = {
           creator_amount_clp?: number
           creator_id?: string | null
           guest_email?: string | null
+          guest_name?: string | null
+          guest_phone?: string | null
           id?: string
           metadata?: Json | null
           mp_payment_id?: string | null
@@ -1972,6 +1978,7 @@ export type Database = {
           is_new_user: boolean
           product_id: string
           product_type: string
+          product_url: string
           redirect_url: string
           status: string
         }[]

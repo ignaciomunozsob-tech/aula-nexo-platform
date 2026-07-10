@@ -10,6 +10,7 @@ import { formatPrice } from "@/lib/utils";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { useMercadoPagoCheckout } from "@/hooks/useMercadoPagoCheckout";
 import { useAuth } from "@/lib/auth";
+import { GuestCheckoutDialog } from "@/components/checkout/GuestCheckoutDialog";
 
 interface Props {
   eventId?: string;

@@ -18,6 +18,7 @@ type EbookFormSnapshot = {
   title: string;
   description: string;
   priceClp: number;
+  redirectUrl: string;
   categoryId: string | null;
   status: string;
   fileUrl: string | null;

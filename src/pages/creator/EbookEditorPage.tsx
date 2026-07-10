@@ -104,6 +104,7 @@ export default function EbookEditorPage() {
       title: ebook.title,
       description: ebook.description || '',
       priceClp: ebook.price_clp,
+      redirectUrl: (ebook as any).redirect_url || '',
       categoryId: ebook.category_id,
       status: ebook.status,
       fileUrl: ebook.file_url || null,

@@ -272,6 +272,8 @@ export default function EventEditorPage() {
         durationMinutes,
         maxAttendees,
         meetingUrl,
+        eventType,
+        location,
       });
       setHasChanges(false);
       toast({ title: isEditing ? 'Evento actualizado' : 'Evento creado' });

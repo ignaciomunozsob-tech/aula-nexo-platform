@@ -192,7 +192,7 @@ export default function EventEditorPage() {
     });
 
     setHasChanges(JSON.stringify(current) !== JSON.stringify(initialFormRef.current));
-  }, [isEditing, title, description, priceClp, categoryId, status, coverImageUrl, eventDate, eventTime, durationMinutes, maxAttendees, meetingUrl, eventType, location]);
+  }, [isEditing, title, description, priceClp, redirectUrl, categoryId, status, coverImageUrl, eventDate, eventTime, durationMinutes, maxAttendees, meetingUrl, eventType, location]);
 
   // Handle cover upload
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

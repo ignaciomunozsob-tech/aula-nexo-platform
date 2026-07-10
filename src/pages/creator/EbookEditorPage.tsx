@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Loader2, Upload, FileText, Trash2 } from 'lucide-react';
 import { generateSlug, formatPrice } from '@/lib/utils';
+import { RichTextEditor } from '@/components/editor/RichTextEditor';
 
 type EbookFormSnapshot = {
   title: string;

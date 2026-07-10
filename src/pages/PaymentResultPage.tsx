@@ -116,9 +116,23 @@ export default function PaymentResultPage() {
                 </p>
               </div>
             )}
-            <Button asChild className="w-full">
-              <Link to={productLink}>Ir al contenido</Link>
-            </Button>
+            {redirectUrl ? (
+              <>
+                <Button asChild className="w-full">
+                  <a href={redirectUrl}>Continuar</a>
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Serás redirigido en {countdown} s…
+                </p>
+                <Button asChild variant="ghost" className="w-full mt-2">
+                  <Link to={productLink}>Ir al contenido</Link>
+                </Button>
+              </>
+            ) : (
+              <Button asChild className="w-full">
+                <Link to={productLink}>Ir al contenido</Link>
+              </Button>
+            )}
           </>
         ) : isFailed ? (
           <>

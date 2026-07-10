@@ -63,6 +63,7 @@ export default function SessionEditorPage() {
       setDurationMin(s.duration_min);
       setCoverUrl(s.cover_url || "");
       setStatus(s.status);
+      setRedirectUrl(s.redirect_url || "");
       setTz(s.timezone || "America/Santiago");
       setBufferBefore(s.buffer_before_min ?? 0);
       setBufferAfter(s.buffer_after_min ?? 0);

@@ -91,7 +91,8 @@ export default function PaymentResultPage() {
     return () => clearTimeout(t);
   }, [isPaid, redirectUrl, countdown]);
 
-  const productLink = order ? linkFor(order.product_type, order.product_id) : '/';
+  const productPublicUrl: string | null = order?.product_url ?? null;
+  const productLink = productPublicUrl || (order ? linkFor(order.product_type, order.product_id) : '/');
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">

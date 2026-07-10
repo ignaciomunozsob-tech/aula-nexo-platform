@@ -237,6 +237,7 @@ export default function EbookEditorPage() {
         title,
         description,
         priceClp,
+        redirectUrl,
         categoryId,
         status,
         fileUrl,

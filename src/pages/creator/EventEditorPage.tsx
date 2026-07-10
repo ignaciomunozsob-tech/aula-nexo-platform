@@ -271,6 +271,7 @@ export default function EventEditorPage() {
         title,
         description,
         priceClp,
+        redirectUrl,
         categoryId,
         status,
         coverImageUrl,

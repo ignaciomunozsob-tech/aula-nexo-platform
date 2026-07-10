@@ -25,13 +25,25 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
     queryFn: async () => {
       let q = supabase
         .from("events")
-        .select("id, title, description, cover_image_url, price_clp, event_date, duration_minutes, max_attendees, event_type, slug, creator_id, status, profiles:creator_id(name, avatar_url, creator_slug)")
+        .select("id, title, description, cover_image_url, price_clp, event_date, duration_minutes, max_attendees, event_type, slug, creator_id, status")
         .eq("status", "published");
       if (eventIdProp) q = q.eq("id", eventIdProp);
       else if (params.slug) q = q.eq("slug", params.slug);
       const { data, error } = await q.maybeSingle();
       if (error) throw error;
-      return data;
+      if (!data) return null;
+
+      const { data: creators, error: creatorError } = await supabase.rpc("get_public_creators_by_ids", {
+        _ids: [data.creator_id],
+      });
+      if (creatorError) throw creatorError;
+
+      const creator = Array.isArray(creators) ? creators[0] : null;
+      if (params.creatorSlug && creator?.creator_slug && creator.creator_slug !== params.creatorSlug) {
+        return null;
+      }
+
+      return { ...data, creator };
     },
     enabled: !!eventIdProp || !!params.slug,
   });
@@ -44,7 +56,7 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
     return <div className="max-w-3xl mx-auto p-12 text-center"><p className="text-muted-foreground">Evento no encontrado.</p></div>;
   }
 
-  const creator = (event as any).profiles;
+  const creator = (event as any).creator;
   const eventUrl = creator?.creator_slug && event.slug ? `/${creator.creator_slug}/${event.slug}` : `/`;
 
   const handleBuy = async () => {

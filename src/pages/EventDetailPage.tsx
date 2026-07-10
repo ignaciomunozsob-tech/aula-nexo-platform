@@ -175,8 +175,8 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
                 <p className="text-xs text-muted-foreground">
                   {event.price_clp ? "Pago único · acceso al evento" : "Inscripción gratuita"}
                 </p>
-                <Button size="lg" className="w-full" onClick={handleBuy} disabled={checkoutLoading}>
-                  {checkoutLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                <Button size="lg" className="w-full" onClick={handleBuy} disabled={busy}>
+                  {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   Inscribirme
                 </Button>
                 {!user && (
@@ -272,8 +272,8 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
                 <p className="text-xs text-muted-foreground">
                   {event.price_clp ? "Pago único · acceso al evento" : "Inscripción gratuita"}
                 </p>
-                <Button size="lg" className="w-full" onClick={handleBuy} disabled={checkoutLoading}>
-                  {checkoutLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                <Button size="lg" className="w-full" onClick={handleBuy} disabled={busy}>
+                  {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   Inscribirme
                 </Button>
                 {!user && (

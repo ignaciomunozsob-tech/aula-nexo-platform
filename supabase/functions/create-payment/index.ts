@@ -99,7 +99,10 @@ Deno.serve(async (req) => {
           email_confirm: true,
           user_metadata: { name: guestEmail.split('@')[0], created_via: 'guest_checkout' },
         });
-        if (createErr || !created?.user) console.error('create-payment user create error', createErr); return json({ error: 'No se pudo crear el usuario' }, 500);
+        if (createErr || !created?.user) {
+          console.error('create-payment user create error', createErr);
+          return json({ error: 'No se pudo crear el usuario' }, 500);
+        }
         userId = created.user.id;
         userEmail = guestEmail;
         isNewUser = true;

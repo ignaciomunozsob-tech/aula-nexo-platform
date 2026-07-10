@@ -38,7 +38,7 @@ export function GuestCheckoutDialog({ open, onOpenChange, onSubmit, loading }: G
       return;
     }
     setErr(null);
-    await onSubmit(parsed.data);
+    await onSubmit(parsed.data as GuestCheckoutData);
   };
 
   return (

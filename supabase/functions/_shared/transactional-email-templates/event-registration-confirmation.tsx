@@ -15,6 +15,9 @@ interface Props {
   location?: string
   creatorName?: string
   redirectUrl?: string
+  isNewUser?: boolean
+  accountEmail?: string
+  setPasswordUrl?: string
 }
 
 const Email = ({
@@ -28,6 +31,9 @@ const Email = ({
   location = '',
   creatorName = '',
   redirectUrl = '',
+  isNewUser = false,
+  accountEmail = '',
+  setPasswordUrl = 'https://soynovu.cl/forgot-password',
 }: Props) => (
   <Html lang="es" dir="ltr">
     <Head />

@@ -32,7 +32,8 @@ export default function PaymentResultPage() {
             creator_id: row.creator_id,
             guest_email: row.guest_email,
             redirect_url: (row as any).redirect_url ?? null,
-            metadata: { is_new_user: row.is_new_user, redirect_url: (row as any).redirect_url ?? null },
+            product_url: (row as any).product_url ?? null,
+            metadata: { is_new_user: row.is_new_user, redirect_url: (row as any).redirect_url ?? null, product_url: (row as any).product_url ?? null },
           });
           if (row.status !== 'pending') break;
         }

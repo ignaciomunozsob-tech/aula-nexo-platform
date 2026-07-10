@@ -122,6 +122,7 @@ export default function CreatorFinancesPage() {
         monthlyRevenue,
         salesByMonth,
         totalCommunityFee,
+        abandoned,
       };
     },
     enabled: !!user?.id,

@@ -74,6 +74,22 @@ export default function PaymentResultPage() {
     })();
   }, [isPaid, order]);
 
+  // Auto-redirect after successful payment if creator configured a redirect URL
+  const redirectedRef = useRef(false);
+  const [countdown, setCountdown] = useState(5);
+  const redirectUrl: string | null = order?.redirect_url ?? null;
+  useEffect(() => {
+    if (!isPaid || !redirectUrl || redirectedRef.current) return;
+    if (countdown <= 0) {
+      redirectedRef.current = true;
+      if (window.top && window.top !== window.self) window.top.location.href = redirectUrl;
+      else window.location.href = redirectUrl;
+      return;
+    }
+    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [isPaid, redirectUrl, countdown]);
+
   const productLink = order ? linkFor(order.product_type, order.product_id) : '/';
 
   return (

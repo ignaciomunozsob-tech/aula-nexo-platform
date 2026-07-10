@@ -132,6 +132,7 @@ export default function CourseEditorPage() {
     certificate_enabled: false,
     certificate_template_url: "",
     community_enabled: false,
+    redirect_url: "",
   });
 
   const [modules, setModules] = useState<ModuleForm[]>([]);

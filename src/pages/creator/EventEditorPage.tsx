@@ -136,6 +136,7 @@ export default function EventEditorPage() {
       title: event.title,
       description: event.description || '',
       priceClp: event.price_clp,
+      redirectUrl: (event as any).redirect_url || '',
       categoryId: event.category_id,
       status: event.status,
       coverImageUrl: event.cover_image_url,

@@ -190,8 +190,14 @@ export default function SessionEditorPage() {
                 </div>
                 <div>
                   <Label>Descripción</Label>
-                  <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5}
-                    placeholder="¿Qué incluye? ¿A quién está dirigido?" />
+                  <div className="mt-1">
+                    <RichTextEditor
+                      value={description}
+                      onChange={setDescription}
+                      placeholder="¿Qué incluye? ¿A quién está dirigido?"
+                    />
+                  </div>
+                </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>

@@ -66,6 +66,7 @@ Deno.serve(async (req) => {
         }
         userId = created.user.id;
         userEmail = guestEmail;
+        isNewUser = true;
       }
     }
 

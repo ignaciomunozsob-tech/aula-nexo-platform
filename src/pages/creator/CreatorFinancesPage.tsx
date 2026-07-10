@@ -306,6 +306,64 @@ export default function CreatorFinancesPage() {
         </CardContent>
       </Card>
 
+      {/* Desglose por venta — verificación de comisión */}
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Desglose por venta — verificación de comisión</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Así se reparte cada venta pagada. El monto en <strong>Neto a tu MP</strong> debe coincidir con lo que ves en tu cuenta MercadoPago → Actividad → Ventas para esa fecha (MercadoPago retiene el 10% automáticamente y lo deposita a NOVU).
+          </p>
+        </CardHeader>
+        <CardContent className="px-0 sm:px-6">
+          {data?.paidOrders && data.paidOrders.length > 0 ? (
+            <>
+              <div className="overflow-x-auto">
+                <Table className="min-w-[720px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Fecha</TableHead>
+                      <TableHead>Producto</TableHead>
+                      <TableHead className="text-right">Bruto</TableHead>
+                      <TableHead className="text-right">− NOVU 10%</TableHead>
+                      <TableHead className="text-right">− Comunidad</TableHead>
+                      <TableHead className="text-right">= Neto a tu MP</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.paidOrders.slice(0, 30).map((o: any) => (
+                      <TableRow key={o.id}>
+                        <TableCell className="whitespace-nowrap">{formatDate(o.created_at)}</TableCell>
+                        <TableCell className="capitalize">{(o.metadata as any)?.title || o.product_type}</TableCell>
+                        <TableCell className="text-right whitespace-nowrap">{formatCLP(o.amount_clp || 0)}</TableCell>
+                        <TableCell className="text-right whitespace-nowrap text-muted-foreground">− {formatCLP(o.platform_amount_clp || 0)}</TableCell>
+                        <TableCell className="text-right whitespace-nowrap text-muted-foreground">{o.community_fee_clp ? `− ${formatCLP(o.community_fee_clp)}` : "—"}</TableCell>
+                        <TableCell className="text-right whitespace-nowrap font-semibold">{formatCLP(o.creator_amount_clp || 0)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="px-4 sm:px-0 mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                <div className="rounded-lg border border-border p-3">
+                  <div className="text-muted-foreground">Total bruto</div>
+                  <div className="font-bold text-base">{formatCLP(data.totalGross || 0)}</div>
+                </div>
+                <div className="rounded-lg border border-border p-3">
+                  <div className="text-muted-foreground">Total NOVU retuvo (10%)</div>
+                  <div className="font-bold text-base">− {formatCLP(data.totalPlatform || 0)}</div>
+                </div>
+                <div className="rounded-lg border border-border p-3 bg-muted/40">
+                  <div className="text-muted-foreground">Total neto a tu MercadoPago</div>
+                  <div className="font-bold text-base">{formatCLP(data.totalNet || 0)}</div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <p className="text-muted-foreground text-center py-8">Aún no tienes ventas pagadas</p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Pagos abandonados */}
       <Card className="mt-8">
         <CardHeader>

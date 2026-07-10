@@ -104,6 +104,12 @@ export default function EbookDetailPage({ ebookId: ebookIdProp }: Props) {
           </Card>
         )}
       </div>
+      <GuestCheckoutDialog
+        open={guestDialogOpen}
+        onOpenChange={setGuestDialogOpen}
+        onSubmit={submitGuestEmail}
+        loading={checkoutLoading}
+      />
     </>
   );
 }

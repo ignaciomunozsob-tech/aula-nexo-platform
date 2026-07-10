@@ -81,6 +81,9 @@ Deno.serve(async (req) => {
       }
     }
 
+    const guestName = (body.guest_name ?? '').trim().slice(0, 100) || null;
+    const guestPhone = (body.guest_phone ?? '').trim().slice(0, 30) || null;
+
     if (!userId) {
       // Guest flow
       const guestEmail = (body.guest_email ?? '').trim().toLowerCase();
@@ -91,13 +94,20 @@ Deno.serve(async (req) => {
       if (existingId) {
         userId = existingId as string;
         userEmail = guestEmail;
+        // Backfill missing profile name/phone for existing user
+        if (guestName || guestPhone) {
+          await admin.from('profiles').update({
+            ...(guestName ? { name: guestName } : {}),
+            ...(guestPhone ? { phone: guestPhone } : {}),
+          }).eq('id', userId).is('name', null);
+        }
       } else {
         const randomPwd = crypto.randomUUID() + crypto.randomUUID();
         const { data: created, error: createErr } = await admin.auth.admin.createUser({
           email: guestEmail,
           password: randomPwd,
           email_confirm: true,
-          user_metadata: { name: guestEmail.split('@')[0], created_via: 'guest_checkout' },
+          user_metadata: { name: guestName || guestEmail.split('@')[0], phone: guestPhone, created_via: 'guest_checkout' },
         });
         if (createErr || !created?.user) {
           console.error('create-payment user create error', createErr);

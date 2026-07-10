@@ -47,6 +47,9 @@ async function verifyMpSignature(req: Request, paymentId: string): Promise<boole
   return diff === 0;
 }
 
+// Site URL used for links inside webhook-triggered emails (MP never sends an Origin header).
+const PUBLIC_SITE_URL = 'https://soynovu.cl';
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -54,11 +57,15 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const type = url.searchParams.get('type') ?? url.searchParams.get('topic');
     let paymentId = url.searchParams.get('data.id') ?? url.searchParams.get('id');
+    // MP includes the collector's user_id in the notification (query or body). We use it to
+    // resolve the seller's access_token in a single query instead of iterating every account.
+    let mpSellerId: string | null = url.searchParams.get('user_id');
 
-    if (!paymentId || !type) {
+    if (!paymentId || !type || !mpSellerId) {
       try {
         const bodyJson = await req.clone().json();
         paymentId = paymentId ?? bodyJson?.data?.id ?? bodyJson?.id ?? null;
+        mpSellerId = mpSellerId ?? (bodyJson?.user_id ? String(bodyJson.user_id) : null);
       } catch { /* no body */ }
     }
 
@@ -74,36 +81,41 @@ Deno.serve(async (req) => {
       return new Response('forbidden', { status: 403, headers: corsHeaders });
     }
 
-    // To fetch payment details we need an MP token. With marketplace, every payment belongs
-    // to a connected seller, so we look up the order → creator → seller access token.
-    // We try to resolve via external_reference (no token needed for that lookup — we just
-    // peek the order via service role using the paymentId may not be possible without a token).
-    // MP allows fetching a payment with the platform token too, so we try the connected sellers in turn.
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Optimistic approach: try each known MP access token from connected sellers until one works.
-    // For volume this should be replaced with a token cache keyed by mp_user_id from the webhook payload.
+    // Resolve the seller's access token directly via mp_user_id from the notification.
     let payment: any = null;
-    const tokensToTry: string[] = [];
-    if (MP_ACCESS_TOKEN) tokensToTry.push(MP_ACCESS_TOKEN);
+    const tried = new Set<string>();
 
-    // First, try with the platform token (works for app-level webhooks). If not, fall back to sellers.
-    for (const tok of tokensToTry) {
+    const tryFetch = async (tok: string) => {
+      if (!tok || tried.has(tok)) return false;
+      tried.add(tok);
       const r = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
         headers: { Authorization: `Bearer ${tok}` },
       });
-      if (r.ok) { payment = await r.json(); break; }
+      if (r.ok) { payment = await r.json(); return true; }
+      return false;
+    };
+
+    if (mpSellerId) {
+      const { data: seller } = await admin
+        .from('creator_mercadopago_accounts')
+        .select('access_token')
+        .eq('mp_user_id', String(mpSellerId))
+        .maybeSingle();
+      if (seller?.access_token) await tryFetch(seller.access_token);
     }
 
+    // Fallback: platform token (may work for app-level notifications).
+    if (!payment && MP_ACCESS_TOKEN) await tryFetch(MP_ACCESS_TOKEN);
+
+    // Last-resort fallback: iterate connected sellers. Kept for backwards compat but should
+    // rarely execute now that we resolve via mp_user_id above.
     if (!payment) {
-      // Iterate connected sellers
       const { data: sellers } = await admin
         .from('creator_mercadopago_accounts').select('access_token').limit(500);
       for (const s of sellers ?? []) {
-        const r = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-          headers: { Authorization: `Bearer ${s.access_token}` },
-        });
-        if (r.ok) { payment = await r.json(); break; }
+        if (await tryFetch(s.access_token)) break;
       }
     }
 

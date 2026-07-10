@@ -167,10 +167,9 @@ Deno.serve(async (req) => {
       const buyerEmail: string | null = order.guest_email ?? null;
       if (isNew && buyerEmail) {
         try {
-          const origin = req.headers.get('origin') ?? '';
           const anon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
           await anon.auth.resetPasswordForEmail(buyerEmail, {
-            redirectTo: `${origin || ''}/reset-password`,
+            redirectTo: `${PUBLIC_SITE_URL}/reset-password`,
           });
         } catch (e) {
           console.error('reset email error', e);
@@ -196,9 +195,11 @@ Deno.serve(async (req) => {
           creatorName = data?.name ?? creatorName;
         }
         const amountClp: number = order.amount_clp ?? 0;
-        const commissionClp = Math.round(amountClp * 0.10);
+        // Prefer the persisted breakdown from the order (respects app_settings.commission_pct
+        // at the time of purchase); fall back to the legacy 10% only if the columns are missing.
         const communityFeeClp: number = order.community_fee_clp ?? 0;
-        const netClp = amountClp - commissionClp - communityFeeClp;
+        const commissionClp: number = order.platform_amount_clp ?? Math.round(amountClp * 0.10);
+        const netClp: number = order.creator_amount_clp ?? (amountClp - commissionClp - communityFeeClp);
         const buyer: string = order.guest_email ?? buyerEmail ?? '—';
 
         await admin.functions.invoke('send-transactional-email', {

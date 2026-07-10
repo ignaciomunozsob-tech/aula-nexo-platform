@@ -1,10 +1,10 @@
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, BookOpen } from "lucide-react";
+import { Loader2, BookOpen, User } from "lucide-react";
 import { SEO } from "@/components/SEO";
 import { formatPrice } from "@/lib/utils";
 import { sanitizeHtml } from "@/lib/sanitize";

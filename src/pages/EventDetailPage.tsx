@@ -75,8 +75,8 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
         path={eventUrl}
       />
       <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8">
-        {/* Hero cover — foto horizontal con protagonismo */}
-        <div className="relative overflow-hidden rounded-2xl bg-muted">
+        {/* Hero cover — foto horizontal sola */}
+        <div className="overflow-hidden rounded-2xl bg-muted">
           {event.cover_image_url ? (
             <img
               src={event.cover_image_url}
@@ -86,24 +86,25 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
           ) : (
             <div className="w-full aspect-[21/9]" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 p-6 md:p-10 space-y-3 text-white">
-            <Badge variant="secondary" className="bg-white/90 text-black hover:bg-white">
-              {event.event_type === "in_person" ? "Presencial" : "Online"}
-            </Badge>
-            <h1 className="text-3xl md:text-5xl font-bold leading-tight max-w-3xl">{event.title}</h1>
-            {creator?.creator_slug ? (
-              <Link
-                to={`/creator/${creator.creator_slug}`}
-                className="inline-flex items-center gap-2 text-sm md:text-base text-white/90 hover:text-white underline-offset-4 hover:underline"
-              >
-                <User className="h-4 w-4" />
-                por {creator?.name}
-              </Link>
-            ) : (
-              <p className="text-sm md:text-base text-white/80">por {creator?.name}</p>
-            )}
-          </div>
+        </div>
+
+        {/* Título y metadata debajo de la foto */}
+        <div className="space-y-3">
+          <Badge variant="secondary">
+            {event.event_type === "in_person" ? "Presencial" : "Online"}
+          </Badge>
+          <h1 className="text-3xl md:text-5xl font-bold leading-tight max-w-3xl">{event.title}</h1>
+          {creator?.creator_slug ? (
+            <Link
+              to={`/creator/${creator.creator_slug}`}
+              className="inline-flex items-center gap-2 text-sm md:text-base text-primary hover:underline"
+            >
+              <User className="h-4 w-4" />
+              por {creator?.name}
+            </Link>
+          ) : (
+            <p className="text-sm md:text-base text-muted-foreground">por {creator?.name}</p>
+          )}
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">

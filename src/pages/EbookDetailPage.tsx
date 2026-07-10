@@ -73,7 +73,17 @@ export default function EbookDetailPage({ ebookId: ebookIdProp }: Props) {
           <div className="space-y-4">
             <Badge variant="secondary">Ebook</Badge>
             <h1 className="text-3xl font-bold">{ebook.title}</h1>
-            <p className="text-sm text-muted-foreground">por {creator?.name}</p>
+            {creator?.creator_slug ? (
+              <Link
+                to={`/creator/${creator.creator_slug}`}
+                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+              >
+                <User className="h-4 w-4" />
+                por {creator?.name}
+              </Link>
+            ) : (
+              <p className="text-sm text-muted-foreground">por {creator?.name}</p>
+            )}
             <Card>
               <CardContent className="p-6 space-y-3">
                 <p className="text-3xl font-bold">{ebook.price_clp ? formatPrice(ebook.price_clp) : "Gratis"}</p>

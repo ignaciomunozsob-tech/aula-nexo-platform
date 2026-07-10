@@ -187,12 +187,27 @@ Deno.serve(async (req) => {
       bump_product_id: bumpInfo?.id ?? null,
       bump_amount_clp: bumpInfo?.amount ?? 0,
       guest_email: userEmail,
+      guest_name: guestName,
+      guest_phone: guestPhone,
     } as any).select().single();
     if (orderErr || !order) { console.error('create-payment order error', orderErr); return json({ error: 'No se pudo crear la orden' }, 500); }
 
     const rawOrigin = req.headers.get('origin') ?? body.return_url ?? '';
     const origin = isAllowedOrigin(rawOrigin) ? new URL(rawOrigin).origin : 'https://soynovu.cl';
     const returnBase = `${origin}/payment`;
+
+    // Resolve public product URL so we can send the user back to it if payment fails.
+    let productUrl: string | null = null;
+    try {
+      const { data: prof } = await admin.from('profiles').select('creator_slug').eq('id', main.creator_id).maybeSingle();
+      if (prof?.creator_slug && (main as any).slug) {
+        productUrl = `${origin}/${prof.creator_slug}/${(main as any).slug}`;
+        await admin.from('orders').update({
+          metadata: { ...(order.metadata ?? {}), product_url: productUrl },
+        }).eq('id', order.id);
+      }
+    } catch (e) { console.warn('product_url resolve failed', e); }
+
 
     const items: any[] = [{
       id: order.id, title: main.title.slice(0, 250), quantity: 1, currency_id: 'CLP',

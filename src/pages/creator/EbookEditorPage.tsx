@@ -134,6 +134,7 @@ export default function EbookEditorPage() {
       title,
       description,
       priceClp,
+      redirectUrl,
       categoryId,
       status,
       fileUrl,
@@ -141,7 +142,7 @@ export default function EbookEditorPage() {
     });
 
     setHasChanges(JSON.stringify(current) !== JSON.stringify(initialFormRef.current));
-  }, [isEditing, title, description, priceClp, categoryId, status, fileUrl, coverImageUrl]);
+  }, [isEditing, title, description, priceClp, redirectUrl, categoryId, status, fileUrl, coverImageUrl]);
 
   // Handle file upload
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {

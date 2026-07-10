@@ -235,11 +235,12 @@ export default function EventEditorPage() {
         category_id: categoryId,
         status,
         cover_image_url: coverImageUrl,
-        event_type: 'online',
+        event_type: eventType,
         event_date: eventDateTime,
         duration_minutes: durationMinutes,
         max_attendees: maxAttendees,
-        meeting_url: meetingUrl,
+        meeting_url: eventType === 'online' ? meetingUrl : '',
+        location: eventType === 'in_person' ? location : null,
         creator_id: user!.id,
       };
 

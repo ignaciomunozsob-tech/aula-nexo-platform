@@ -10,6 +10,7 @@ import { formatPrice } from "@/lib/utils";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { useMercadoPagoCheckout } from "@/hooks/useMercadoPagoCheckout";
 import { useAuth } from "@/lib/auth";
+import { GuestCheckoutDialog } from "@/components/checkout/GuestCheckoutDialog";
 
 interface Props {
   eventId?: string;
@@ -18,7 +19,7 @@ interface Props {
 export default function EventDetailPage({ eventId: eventIdProp }: Props) {
   const params = useParams();
   const { user } = useAuth();
-  const { startCheckout, loading: checkoutLoading } = useMercadoPagoCheckout();
+  const { startCheckout, loading: checkoutLoading, guestDialogOpen, setGuestDialogOpen, submitGuestEmail } = useMercadoPagoCheckout();
 
   const { data: event, isLoading } = useQuery({
     queryKey: ["event-public", eventIdProp, params.slug, params.creatorSlug],
@@ -158,6 +159,12 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
           </div>
         </div>
       </div>
+      <GuestCheckoutDialog
+        open={guestDialogOpen}
+        onOpenChange={setGuestDialogOpen}
+        onSubmit={submitGuestEmail}
+        loading={checkoutLoading}
+      />
     </>
   );
 }

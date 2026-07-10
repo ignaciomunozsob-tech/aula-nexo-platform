@@ -9,6 +9,7 @@ import { SEO } from "@/components/SEO";
 import { formatPrice } from "@/lib/utils";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { useMercadoPagoCheckout } from "@/hooks/useMercadoPagoCheckout";
+import { GuestCheckoutDialog } from "@/components/checkout/GuestCheckoutDialog";
 
 interface Props {
   ebookId?: string;
@@ -16,7 +17,7 @@ interface Props {
 
 export default function EbookDetailPage({ ebookId: ebookIdProp }: Props) {
   const params = useParams();
-  const { startCheckout, loading: checkoutLoading } = useMercadoPagoCheckout();
+  const { startCheckout, loading: checkoutLoading, guestDialogOpen, setGuestDialogOpen, submitGuestEmail } = useMercadoPagoCheckout();
 
   const { data: ebook, isLoading } = useQuery({
     queryKey: ["ebook-public", ebookIdProp, params.slug, params.creatorSlug],
@@ -103,6 +104,12 @@ export default function EbookDetailPage({ ebookId: ebookIdProp }: Props) {
           </Card>
         )}
       </div>
+      <GuestCheckoutDialog
+        open={guestDialogOpen}
+        onOpenChange={setGuestDialogOpen}
+        onSubmit={submitGuestEmail}
+        loading={checkoutLoading}
+      />
     </>
   );
 }

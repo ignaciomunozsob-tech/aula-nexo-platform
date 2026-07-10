@@ -137,6 +137,8 @@ export default function EventEditorPage() {
       status: event.status,
       coverImageUrl: event.cover_image_url,
       meetingUrl: event.meeting_url || '',
+      eventType: (event.event_type === 'in_person' ? 'in_person' : 'online'),
+      location: (event as any).location || '',
       durationMinutes: event.duration_minutes || 60,
       maxAttendees: event.max_attendees,
       eventDate: nextEventDate,
@@ -150,6 +152,8 @@ export default function EventEditorPage() {
     setStatus(initial.status);
     setCoverImageUrl(initial.coverImageUrl);
     setMeetingUrl(initial.meetingUrl);
+    setEventType(initial.eventType);
+    setLocation(initial.location);
     setDurationMinutes(initial.durationMinutes);
     setMaxAttendees(initial.maxAttendees);
     setEventDate(initial.eventDate);

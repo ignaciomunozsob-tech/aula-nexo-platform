@@ -58,6 +58,7 @@ import {
 } from "@/components/ui/table";
 import CourseCoverUploader from "@/components/layout/CourseCoverUploader";
 import LessonVideoUploader from "@/components/layout/LessonVideoUploader";
+import { RichTextEditor } from "@/components/editor/RichTextEditor";
 import LessonResourcesEditor from "@/components/layout/LessonResourcesEditor";
 import ModuleResourcesEditor from "@/components/creator/ModuleResourcesEditor";
 import StudentManagement from "@/components/creator/StudentManagement";

@@ -238,6 +238,7 @@ export default function EventEditorPage() {
         slug,
         description,
         price_clp: priceClp,
+        redirect_url: redirectUrl?.trim() ? redirectUrl.trim() : null,
         category_id: categoryId,
         status,
         cover_image_url: coverImageUrl,

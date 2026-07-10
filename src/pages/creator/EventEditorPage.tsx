@@ -71,6 +71,8 @@ export default function EventEditorPage() {
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [maxAttendees, setMaxAttendees] = useState<number | null>(null);
   const [meetingUrl, setMeetingUrl] = useState('');
+  const [eventType, setEventType] = useState<'online' | 'in_person'>('online');
+  const [location, setLocation] = useState('');
   const [hasChanges, setHasChanges] = useState(!isEditing);
   const initialFormRef = useRef<EventFormSnapshot | null>(null);
 

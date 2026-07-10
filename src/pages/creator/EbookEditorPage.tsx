@@ -114,6 +114,7 @@ export default function EbookEditorPage() {
     setTitle(initial.title);
     setDescription(initial.description);
     setPriceClp(initial.priceClp);
+    setRedirectUrl(initial.redirectUrl);
     setCategoryId(initial.categoryId);
     setStatus(initial.status);
     setFileUrl(initial.fileUrl);

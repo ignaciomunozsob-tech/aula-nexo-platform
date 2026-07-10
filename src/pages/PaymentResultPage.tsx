@@ -141,11 +141,17 @@ export default function PaymentResultPage() {
             <XCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
             <h1 className="text-2xl font-bold mb-2">Pago no completado</h1>
             <p className="text-muted-foreground mb-6">
-              Algo salió mal con el pago. No te preocupes, no se realizó ningún cobro.
+              Algo salió mal con el pago. No te preocupes, no se realizó ningún cobro. Puedes volver a intentarlo desde la página del producto.
             </p>
-            <Button asChild variant="outline" className="w-full">
-              <Link to="/">Volver al inicio</Link>
-            </Button>
+            {productPublicUrl ? (
+              <Button asChild className="w-full">
+                <a href={productPublicUrl}>Volver al producto</a>
+              </Button>
+            ) : (
+              <Button asChild className="w-full">
+                <Link to={productLink}>Volver al producto</Link>
+              </Button>
+            )}
           </>
         ) : (
           <>

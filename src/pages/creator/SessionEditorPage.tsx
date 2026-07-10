@@ -228,6 +228,18 @@ export default function SessionEditorPage() {
                   <Label>URL de portada (opcional)</Label>
                   <Input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} placeholder="https://..." />
                 </div>
+                <div>
+                  <Label>URL de redirección post-reserva (opcional)</Label>
+                  <Input
+                    type="url"
+                    value={redirectUrl}
+                    onChange={(e) => setRedirectUrl(e.target.value)}
+                    placeholder="https://tusitio.com/gracias"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Después de agendar, redirigiremos al cliente a esta URL (por ejemplo, un grupo de WhatsApp o página de gracias).
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

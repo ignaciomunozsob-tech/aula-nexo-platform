@@ -50,6 +50,7 @@ export default function EbookEditorPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priceClp, setPriceClp] = useState(0);
+  const [redirectUrl, setRedirectUrl] = useState('');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [status, setStatus] = useState('draft');
   const [fileUrl, setFileUrl] = useState<string | null>(null);

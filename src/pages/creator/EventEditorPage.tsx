@@ -152,6 +152,7 @@ export default function EventEditorPage() {
     setTitle(initial.title);
     setDescription(initial.description);
     setPriceClp(initial.priceClp);
+    setRedirectUrl(initial.redirectUrl);
     setCategoryId(initial.categoryId);
     setStatus(initial.status);
     setCoverImageUrl(initial.coverImageUrl);

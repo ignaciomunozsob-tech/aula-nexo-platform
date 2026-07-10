@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, Loader2, Upload, Trash2, Calendar, Clock, Users, Video } from 'lucide-react';
 import { generateSlug, formatPrice } from '@/lib/utils';
 import StudentManagement from '@/components/creator/StudentManagement';
+import { RichTextEditor } from '@/components/editor/RichTextEditor';
 
 type EventFormSnapshot = {
   title: string;
@@ -329,13 +330,13 @@ export default function EventEditorPage() {
 
             <div>
               <Label>Descripción</Label>
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe tu evento..."
-                className="mt-1"
-                rows={4}
-              />
+              <div className="mt-1">
+                <RichTextEditor
+                  value={description}
+                  onChange={setDescription}
+                  placeholder="Describe tu evento..."
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Loader2, Save, Plus, Trash2, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { useGoogleConnection } from "@/hooks/useGoogleConnection";
+import { RichTextEditor } from "@/components/editor/RichTextEditor";
 import { Link } from "react-router-dom";
 
 const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
@@ -189,8 +190,13 @@ export default function SessionEditorPage() {
                 </div>
                 <div>
                   <Label>Descripción</Label>
-                  <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={5}
-                    placeholder="¿Qué incluye? ¿A quién está dirigido?" />
+                  <div className="mt-1">
+                    <RichTextEditor
+                      value={description}
+                      onChange={setDescription}
+                      placeholder="¿Qué incluye? ¿A quién está dirigido?"
+                    />
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>

@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Loader2, Upload, FileText, Trash2 } from 'lucide-react';
 import { generateSlug, formatPrice } from '@/lib/utils';
+import { RichTextEditor } from '@/components/editor/RichTextEditor';
 
 type EbookFormSnapshot = {
   title: string;
@@ -304,13 +305,13 @@ export default function EbookEditorPage() {
 
             <div>
               <Label>Descripción</Label>
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe tu e-book..."
-                className="mt-1"
-                rows={4}
-              />
+              <div className="mt-1">
+                <RichTextEditor
+                  value={description}
+                  onChange={setDescription}
+                  placeholder="Describe tu e-book..."
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

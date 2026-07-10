@@ -1972,6 +1972,7 @@ export type Database = {
           is_new_user: boolean
           product_id: string
           product_type: string
+          redirect_url: string
           status: string
         }[]
       }

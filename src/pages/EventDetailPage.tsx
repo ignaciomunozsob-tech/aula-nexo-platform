@@ -20,7 +20,7 @@ interface Props {
 export default function EventDetailPage({ eventId: eventIdProp }: Props) {
   const params = useParams();
   const { user } = useAuth();
-  const { startCheckout, loading: checkoutLoading, guestDialogOpen, setGuestDialogOpen, submitGuestEmail } = useMercadoPagoCheckout();
+  const { startCheckout, loading: checkoutLoading, guestDialogOpen, setGuestDialogOpen, submitGuestData } = useMercadoPagoCheckout();
 
   const [freeGuestOpen, setFreeGuestOpen] = useState(false);
   const [freeLoading, setFreeLoading] = useState(false);
@@ -312,7 +312,7 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
       <GuestCheckoutDialog
         open={guestDialogOpen}
         onOpenChange={setGuestDialogOpen}
-        onSubmit={submitGuestEmail}
+        onSubmit={submitGuestData}
         loading={checkoutLoading}
       />
 

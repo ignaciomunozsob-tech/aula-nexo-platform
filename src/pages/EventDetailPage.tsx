@@ -1,10 +1,10 @@
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, Calendar, Users, Clock } from "lucide-react";
+import { Loader2, Calendar, Users, Clock, MapPin, User } from "lucide-react";
 import { SEO } from "@/components/SEO";
 import { formatPrice } from "@/lib/utils";
 import { sanitizeHtml } from "@/lib/sanitize";
@@ -25,7 +25,7 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
     queryFn: async () => {
       let q = supabase
         .from("events")
-        .select("id, title, description, cover_image_url, price_clp, event_date, duration_minutes, max_attendees, event_type, slug, creator_id, status")
+        .select("id, title, description, cover_image_url, price_clp, event_date, duration_minutes, max_attendees, event_type, location, slug, creator_id, status")
         .eq("status", "published");
       if (eventIdProp) q = q.eq("id", eventIdProp);
       else if (params.slug) q = q.eq("slug", params.slug);
@@ -88,10 +88,20 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 p-6 md:p-10 space-y-3 text-white">
             <Badge variant="secondary" className="bg-white/90 text-black hover:bg-white">
-              {event.event_type === "live" ? "En vivo" : "Presencial"}
+              {event.event_type === "in_person" ? "Presencial" : "Online"}
             </Badge>
             <h1 className="text-3xl md:text-5xl font-bold leading-tight max-w-3xl">{event.title}</h1>
-            <p className="text-sm md:text-base text-white/80">por {creator?.name}</p>
+            {creator?.creator_slug ? (
+              <Link
+                to={`/creator/${creator.creator_slug}`}
+                className="inline-flex items-center gap-2 text-sm md:text-base text-white/90 hover:text-white underline-offset-4 hover:underline"
+              >
+                <User className="h-4 w-4" />
+                por {creator?.name}
+              </Link>
+            ) : (
+              <p className="text-sm md:text-base text-white/80">por {creator?.name}</p>
+            )}
           </div>
         </div>
 
@@ -109,7 +119,20 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
               {event.max_attendees && (
                 <span className="flex items-center gap-1"><Users className="h-4 w-4" /> Cupos: {event.max_attendees}</span>
               )}
+              {event.event_type === "in_person" && (event as any).location && (
+                <span className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {(event as any).location}</span>
+              )}
             </div>
+
+            {creator?.creator_slug && (
+              <Link
+                to={`/creator/${creator.creator_slug}`}
+                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+              >
+                <User className="h-4 w-4" />
+                Ver perfil de {creator?.name}
+              </Link>
+            )}
 
             {event.description && (
               <Card>

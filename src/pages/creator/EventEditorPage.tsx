@@ -26,7 +26,9 @@ type EventFormSnapshot = {
   eventTime: string;
   durationMinutes: number;
   maxAttendees: number | null;
+  eventType: 'online' | 'in_person';
   meetingUrl: string;
+  location: string;
 };
 
 const getEventSnapshot = (values: EventFormSnapshot): EventFormSnapshot => ({
@@ -40,7 +42,9 @@ const getEventSnapshot = (values: EventFormSnapshot): EventFormSnapshot => ({
   eventTime: values.eventTime || '',
   durationMinutes: Number(values.durationMinutes || 60),
   maxAttendees: values.maxAttendees || null,
+  eventType: values.eventType === 'in_person' ? 'in_person' : 'online',
   meetingUrl: values.meetingUrl || '',
+  location: values.location || '',
 });
 
 export default function EventEditorPage() {
@@ -67,6 +71,8 @@ export default function EventEditorPage() {
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [maxAttendees, setMaxAttendees] = useState<number | null>(null);
   const [meetingUrl, setMeetingUrl] = useState('');
+  const [eventType, setEventType] = useState<'online' | 'in_person'>('online');
+  const [location, setLocation] = useState('');
   const [hasChanges, setHasChanges] = useState(!isEditing);
   const initialFormRef = useRef<EventFormSnapshot | null>(null);
 
@@ -88,7 +94,7 @@ export default function EventEditorPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('events')
-        .select('id, title, description, price_clp, category_id, status, cover_image_url, duration_minutes, max_attendees, event_date, event_type, creator_id, slug, is_novu_official')
+        .select('id, title, description, price_clp, category_id, status, cover_image_url, duration_minutes, max_attendees, event_date, event_type, location, creator_id, slug, is_novu_official')
         .eq('id', id!)
         .single();
       if (error) throw error;
@@ -131,6 +137,8 @@ export default function EventEditorPage() {
       status: event.status,
       coverImageUrl: event.cover_image_url,
       meetingUrl: event.meeting_url || '',
+      eventType: (event.event_type === 'in_person' ? 'in_person' : 'online'),
+      location: (event as any).location || '',
       durationMinutes: event.duration_minutes || 60,
       maxAttendees: event.max_attendees,
       eventDate: nextEventDate,
@@ -144,6 +152,8 @@ export default function EventEditorPage() {
     setStatus(initial.status);
     setCoverImageUrl(initial.coverImageUrl);
     setMeetingUrl(initial.meetingUrl);
+    setEventType(initial.eventType);
+    setLocation(initial.location);
     setDurationMinutes(initial.durationMinutes);
     setMaxAttendees(initial.maxAttendees);
     setEventDate(initial.eventDate);
@@ -171,10 +181,12 @@ export default function EventEditorPage() {
       durationMinutes,
       maxAttendees,
       meetingUrl,
+      eventType,
+      location,
     });
 
     setHasChanges(JSON.stringify(current) !== JSON.stringify(initialFormRef.current));
-  }, [isEditing, title, description, priceClp, categoryId, status, coverImageUrl, eventDate, eventTime, durationMinutes, maxAttendees, meetingUrl]);
+  }, [isEditing, title, description, priceClp, categoryId, status, coverImageUrl, eventDate, eventTime, durationMinutes, maxAttendees, meetingUrl, eventType, location]);
 
   // Handle cover upload
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -223,11 +235,12 @@ export default function EventEditorPage() {
         category_id: categoryId,
         status,
         cover_image_url: coverImageUrl,
-        event_type: 'online',
+        event_type: eventType,
         event_date: eventDateTime,
         duration_minutes: durationMinutes,
         max_attendees: maxAttendees,
-        meeting_url: meetingUrl,
+        meeting_url: eventType === 'online' ? meetingUrl : '',
+        location: eventType === 'in_person' ? location : null,
         creator_id: user!.id,
       };
 
@@ -259,6 +272,8 @@ export default function EventEditorPage() {
         durationMinutes,
         maxAttendees,
         meetingUrl,
+        eventType,
+        location,
       });
       setHasChanges(false);
       toast({ title: isEditing ? 'Evento actualizado' : 'Evento creado' });
@@ -477,28 +492,56 @@ export default function EventEditorPage() {
           </CardContent>
         </Card>
 
-        {/* Meeting Link */}
+        {/* Modalidad */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Video className="h-5 w-5" />
-              Link de la Reunión
+              Modalidad del Evento
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div>
-              <Label>URL de Zoom, Meet u otra plataforma</Label>
-              <Input
-                type="url"
-                value={meetingUrl}
-                onChange={(e) => setMeetingUrl(e.target.value)}
-                placeholder="https://zoom.us/j/..."
-                className="mt-1"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Este link será visible solo para los inscritos
-              </p>
+              <Label>Tipo de evento</Label>
+              <Select value={eventType} onValueChange={(v) => setEventType(v as 'online' | 'in_person')}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="online">Online (Zoom, Meet, etc.)</SelectItem>
+                  <SelectItem value="in_person">Presencial</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+
+            {eventType === 'online' ? (
+              <div>
+                <Label>URL de Zoom, Meet u otra plataforma</Label>
+                <Input
+                  type="url"
+                  value={meetingUrl}
+                  onChange={(e) => setMeetingUrl(e.target.value)}
+                  placeholder="https://zoom.us/j/..."
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Este link será visible solo para los inscritos
+                </p>
+              </div>
+            ) : (
+              <div>
+                <Label>Dirección del evento</Label>
+                <Input
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Ej: Av. Providencia 1234, Santiago"
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Esta dirección se mostrará públicamente en la página del evento
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 

@@ -37,6 +37,7 @@ const getEventSnapshot = (values: EventFormSnapshot): EventFormSnapshot => ({
   title: values.title || '',
   description: values.description || '',
   priceClp: Number(values.priceClp || 0),
+  redirectUrl: values.redirectUrl || '',
   categoryId: values.categoryId || null,
   coverImageUrl: values.coverImageUrl || null,
   eventDate: values.eventDate || '',

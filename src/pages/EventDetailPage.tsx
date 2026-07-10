@@ -19,7 +19,7 @@ interface Props {
 export default function EventDetailPage({ eventId: eventIdProp }: Props) {
   const params = useParams();
   const { user } = useAuth();
-  const { startCheckout, loading: checkoutLoading } = useMercadoPagoCheckout();
+  const { startCheckout, loading: checkoutLoading, guestDialogOpen, setGuestDialogOpen, submitGuestEmail } = useMercadoPagoCheckout();
 
   const { data: event, isLoading } = useQuery({
     queryKey: ["event-public", eventIdProp, params.slug, params.creatorSlug],

@@ -19,6 +19,7 @@ type EventFormSnapshot = {
   title: string;
   description: string;
   priceClp: number;
+  redirectUrl: string;
   categoryId: string | null;
   status: string;
   coverImageUrl: string | null;
@@ -36,6 +37,7 @@ const getEventSnapshot = (values: EventFormSnapshot): EventFormSnapshot => ({
   title: values.title || '',
   description: values.description || '',
   priceClp: Number(values.priceClp || 0),
+  redirectUrl: values.redirectUrl || '',
   categoryId: values.categoryId || null,
   coverImageUrl: values.coverImageUrl || null,
   eventDate: values.eventDate || '',
@@ -60,6 +62,7 @@ export default function EventEditorPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priceClp, setPriceClp] = useState(0);
+  const [redirectUrl, setRedirectUrl] = useState('');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [status, setStatus] = useState('draft');
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
@@ -133,6 +136,7 @@ export default function EventEditorPage() {
       title: event.title,
       description: event.description || '',
       priceClp: event.price_clp,
+      redirectUrl: (event as any).redirect_url || '',
       categoryId: event.category_id,
       status: event.status,
       coverImageUrl: event.cover_image_url,
@@ -148,6 +152,7 @@ export default function EventEditorPage() {
     setTitle(initial.title);
     setDescription(initial.description);
     setPriceClp(initial.priceClp);
+    setRedirectUrl(initial.redirectUrl);
     setCategoryId(initial.categoryId);
     setStatus(initial.status);
     setCoverImageUrl(initial.coverImageUrl);
@@ -173,6 +178,7 @@ export default function EventEditorPage() {
       title,
       description,
       priceClp,
+      redirectUrl,
       categoryId,
       status,
       coverImageUrl,
@@ -186,7 +192,7 @@ export default function EventEditorPage() {
     });
 
     setHasChanges(JSON.stringify(current) !== JSON.stringify(initialFormRef.current));
-  }, [isEditing, title, description, priceClp, categoryId, status, coverImageUrl, eventDate, eventTime, durationMinutes, maxAttendees, meetingUrl, eventType, location]);
+  }, [isEditing, title, description, priceClp, redirectUrl, categoryId, status, coverImageUrl, eventDate, eventTime, durationMinutes, maxAttendees, meetingUrl, eventType, location]);
 
   // Handle cover upload
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -232,6 +238,7 @@ export default function EventEditorPage() {
         slug,
         description,
         price_clp: priceClp,
+        redirect_url: redirectUrl?.trim() ? redirectUrl.trim() : null,
         category_id: categoryId,
         status,
         cover_image_url: coverImageUrl,
@@ -264,6 +271,7 @@ export default function EventEditorPage() {
         title,
         description,
         priceClp,
+        redirectUrl,
         categoryId,
         status,
         coverImageUrl,
@@ -382,6 +390,20 @@ export default function EventEditorPage() {
                 />
                 <p className="text-xs text-muted-foreground mt-1">{formatPrice(priceClp)}</p>
               </div>
+            </div>
+
+            <div>
+              <Label>URL de redirección post-compra (opcional)</Label>
+              <Input
+                type="url"
+                value={redirectUrl}
+                onChange={(e) => setRedirectUrl(e.target.value)}
+                placeholder="https://tusitio.com/gracias"
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Después de inscribirse (pago o gratis), redirigiremos al asistente a esta URL. Útil para llevarlo a un grupo de WhatsApp o página de gracias.
+              </p>
             </div>
           </CardContent>
         </Card>

@@ -132,6 +132,7 @@ export default function CourseEditorPage() {
     certificate_enabled: false,
     certificate_template_url: "",
     community_enabled: false,
+    redirect_url: "",
   });
 
   const [modules, setModules] = useState<ModuleForm[]>([]);
@@ -280,6 +281,7 @@ export default function CourseEditorPage() {
       certificate_enabled: !!(course as any).certificate_enabled,
       certificate_template_url: (course as any).certificate_template_url ?? "",
       community_enabled: !!(course as any).community_enabled,
+      redirect_url: (course as any).redirect_url ?? "",
     };
 
     setForm(initialForm);
@@ -328,6 +330,7 @@ export default function CourseEditorPage() {
           ? nextForm.certificate_template_url || null
           : null,
         community_enabled: nextForm.community_enabled,
+        redirect_url: nextForm.redirect_url?.trim() ? nextForm.redirect_url.trim() : null,
         updated_at: nowIso,
       };
 
@@ -756,6 +759,20 @@ export default function CourseEditorPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div>
+              <Label>URL de redirección post-compra (opcional)</Label>
+              <Input
+                type="url"
+                value={form.redirect_url}
+                onChange={(e) => setForm({ ...form, redirect_url: e.target.value })}
+                placeholder="https://tusitio.com/gracias"
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Después del pago, redirigiremos al alumno a esta URL (por ejemplo, un grupo de WhatsApp o página de gracias).
+              </p>
             </div>
           </div>
 

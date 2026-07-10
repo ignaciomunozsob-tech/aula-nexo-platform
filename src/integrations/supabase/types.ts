@@ -565,6 +565,7 @@ export type Database = {
           level: string | null
           price_clp: number
           product_type: string
+          redirect_url: string | null
           slug: string
           status: string
           title: string
@@ -590,6 +591,7 @@ export type Database = {
           level?: string | null
           price_clp?: number
           product_type?: string
+          redirect_url?: string | null
           slug: string
           status?: string
           title: string
@@ -615,6 +617,7 @@ export type Database = {
           level?: string | null
           price_clp?: number
           product_type?: string
+          redirect_url?: string | null
           slug?: string
           status?: string
           title?: string
@@ -941,6 +944,7 @@ export type Database = {
           id: string
           is_novu_official: boolean
           price_clp: number
+          redirect_url: string | null
           slug: string
           status: string
           title: string
@@ -956,6 +960,7 @@ export type Database = {
           id?: string
           is_novu_official?: boolean
           price_clp?: number
+          redirect_url?: string | null
           slug: string
           status?: string
           title: string
@@ -971,6 +976,7 @@ export type Database = {
           id?: string
           is_novu_official?: boolean
           price_clp?: number
+          redirect_url?: string | null
           slug?: string
           status?: string
           title?: string
@@ -1160,6 +1166,7 @@ export type Database = {
           max_attendees: number | null
           meeting_url: string | null
           price_clp: number
+          redirect_url: string | null
           slug: string
           status: string
           title: string
@@ -1180,6 +1187,7 @@ export type Database = {
           max_attendees?: number | null
           meeting_url?: string | null
           price_clp?: number
+          redirect_url?: string | null
           slug: string
           status?: string
           title: string
@@ -1200,6 +1208,7 @@ export type Database = {
           max_attendees?: number | null
           meeting_url?: string | null
           price_clp?: number
+          redirect_url?: string | null
           slug?: string
           status?: string
           title?: string
@@ -1397,6 +1406,7 @@ export type Database = {
           max_days_ahead: number
           min_notice_hours: number
           price_clp: number
+          redirect_url: string | null
           slug: string
           status: string
           timezone: string
@@ -1415,6 +1425,7 @@ export type Database = {
           max_days_ahead?: number
           min_notice_hours?: number
           price_clp?: number
+          redirect_url?: string | null
           slug: string
           status?: string
           timezone?: string
@@ -1433,6 +1444,7 @@ export type Database = {
           max_days_ahead?: number
           min_notice_hours?: number
           price_clp?: number
+          redirect_url?: string | null
           slug?: string
           status?: string
           timezone?: string
@@ -1960,6 +1972,7 @@ export type Database = {
           is_new_user: boolean
           product_id: string
           product_type: string
+          redirect_url: string
           status: string
         }[]
       }

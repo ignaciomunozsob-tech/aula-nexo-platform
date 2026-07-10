@@ -27,23 +27,23 @@ function isAllowedOrigin(value: string): boolean {
 async function fetchProduct(admin: any, type: ProductType, id: string) {
   if (type === 'course') {
     const { data } = await admin.from('courses')
-      .select('id, title, price_clp, creator_id, cover_image_url, community_enabled, community_fee_clp').eq('id', id).maybeSingle();
-    return data ? { title: data.title, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_image_url, community_enabled: !!data.community_enabled, community_fee_clp: data.community_fee_clp ?? 0 } : null;
+      .select('id, title, price_clp, creator_id, cover_image_url, community_enabled, community_fee_clp, redirect_url').eq('id', id).maybeSingle();
+    return data ? { title: data.title, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_image_url, community_enabled: !!data.community_enabled, community_fee_clp: data.community_fee_clp ?? 0, redirect_url: data.redirect_url ?? null } : null;
   }
   if (type === 'ebook') {
     const { data } = await admin.from('ebooks')
-      .select('id, title, price_clp, creator_id, cover_image_url').eq('id', id).maybeSingle();
-    return data ? { title: data.title, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_image_url } : null;
+      .select('id, title, price_clp, creator_id, cover_image_url, redirect_url').eq('id', id).maybeSingle();
+    return data ? { title: data.title, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_image_url, redirect_url: data.redirect_url ?? null } : null;
   }
   if (type === 'event') {
     const { data } = await admin.from('events')
-      .select('id, title, price_clp, creator_id, cover_image_url').eq('id', id).maybeSingle();
-    return data ? { title: data.title, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_image_url } : null;
+      .select('id, title, price_clp, creator_id, cover_image_url, redirect_url').eq('id', id).maybeSingle();
+    return data ? { title: data.title, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_image_url, redirect_url: data.redirect_url ?? null } : null;
   }
   if (type === 'community') {
     const { data } = await admin.from('communities')
       .select('id, name, price_clp, creator_id, cover_url').eq('id', id).maybeSingle();
-    return data ? { title: data.name, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_url } : null;
+    return data ? { title: data.name, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_url, redirect_url: null } : null;
   }
   return null;
 }
@@ -178,7 +178,7 @@ Deno.serve(async (req) => {
       platform_amount_clp: platformAmount,
       community_fee_clp: communityFee,
       status: 'pending',
-      metadata: { title: main.title, has_bump: !!bumpInfo, is_new_user: isNewUser, marketplace: true },
+      metadata: { title: main.title, has_bump: !!bumpInfo, is_new_user: isNewUser, marketplace: true, redirect_url: (main as any).redirect_url ?? null },
       checkout_page_id: body.checkout_page_id ?? null,
       bump_product_type: bumpInfo?.type ?? null,
       bump_product_id: bumpInfo?.id ?? null,

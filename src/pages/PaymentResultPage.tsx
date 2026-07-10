@@ -31,7 +31,8 @@ export default function PaymentResultPage() {
             amount_clp: row.amount_clp,
             creator_id: row.creator_id,
             guest_email: row.guest_email,
-            metadata: { is_new_user: row.is_new_user },
+            redirect_url: (row as any).redirect_url ?? null,
+            metadata: { is_new_user: row.is_new_user, redirect_url: (row as any).redirect_url ?? null },
           });
           if (row.status !== 'pending') break;
         }
@@ -73,6 +74,22 @@ export default function PaymentResultPage() {
     })();
   }, [isPaid, order]);
 
+  // Auto-redirect after successful payment if creator configured a redirect URL
+  const redirectedRef = useRef(false);
+  const [countdown, setCountdown] = useState(5);
+  const redirectUrl: string | null = order?.redirect_url ?? null;
+  useEffect(() => {
+    if (!isPaid || !redirectUrl || redirectedRef.current) return;
+    if (countdown <= 0) {
+      redirectedRef.current = true;
+      if (window.top && window.top !== window.self) window.top.location.href = redirectUrl;
+      else window.location.href = redirectUrl;
+      return;
+    }
+    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [isPaid, redirectUrl, countdown]);
+
   const productLink = order ? linkFor(order.product_type, order.product_id) : '/';
 
   return (
@@ -99,9 +116,23 @@ export default function PaymentResultPage() {
                 </p>
               </div>
             )}
-            <Button asChild className="w-full">
-              <Link to={productLink}>Ir al contenido</Link>
-            </Button>
+            {redirectUrl ? (
+              <>
+                <Button asChild className="w-full">
+                  <a href={redirectUrl}>Continuar</a>
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Serás redirigido en {countdown} s…
+                </p>
+                <Button asChild variant="ghost" className="w-full mt-2">
+                  <Link to={productLink}>Ir al contenido</Link>
+                </Button>
+              </>
+            ) : (
+              <Button asChild className="w-full">
+                <Link to={productLink}>Ir al contenido</Link>
+              </Button>
+            )}
           </>
         ) : isFailed ? (
           <>

@@ -204,6 +204,58 @@ Deno.serve(async (req) => {
       } catch (e) {
         console.warn('admin-new-sale email error', e);
       }
+
+      // Event confirmation email (paid events)
+      if (order.product_type === 'event') {
+        try {
+          const { data: ev } = await admin.from('events')
+            .select('title, event_date, duration_minutes, event_type, location, meeting_url, redirect_url, creator_id')
+            .eq('id', order.product_id).maybeSingle();
+          if (ev) {
+            let creatorName = '';
+            if (ev.creator_id) {
+              const { data: cp } = await admin.from('profiles').select('name').eq('id', ev.creator_id).maybeSingle();
+              creatorName = cp?.name ?? '';
+            }
+            let attendeeEmail: string | null = order.guest_email ?? null;
+            let attendeeName = '';
+            if (order.user_id) {
+              const { data: prof } = await admin.from('profiles').select('name').eq('id', order.user_id).maybeSingle();
+              attendeeName = prof?.name ?? '';
+              if (!attendeeEmail) {
+                const { data: uRes } = await admin.auth.admin.getUserById(order.user_id);
+                attendeeEmail = uRes?.user?.email ?? null;
+              }
+            }
+            if (attendeeEmail) {
+              const d = ev.event_date ? new Date(ev.event_date) : null;
+              const dateFmt = d ? d.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Santiago' }) : '';
+              const timeFmt = d ? d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Santiago' }) + ' hrs' : '';
+              await admin.functions.invoke('send-transactional-email', {
+                body: {
+                  templateName: 'event-registration-confirmation',
+                  recipientEmail: attendeeEmail,
+                  idempotencyKey: `evt-reg-${order.id}`,
+                  templateData: {
+                    attendeeName,
+                    eventTitle: ev.title,
+                    eventDateFormatted: dateFmt,
+                    eventTimeFormatted: timeFmt,
+                    durationMin: ev.duration_minutes ?? 60,
+                    eventType: ev.event_type === 'in_person' ? 'in_person' : 'online',
+                    meetingUrl: ev.meeting_url ?? '',
+                    location: ev.location ?? '',
+                    creatorName,
+                    redirectUrl: ev.redirect_url ?? '',
+                  },
+                },
+              });
+            }
+          }
+        } catch (e) {
+          console.warn('event-registration-confirmation email error', e);
+        }
+      }
     }
 
     return new Response('ok', { status: 200, headers: corsHeaders });

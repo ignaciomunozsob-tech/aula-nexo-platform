@@ -33,6 +33,7 @@ export default function SessionEditorPage() {
   const [durationMin, setDurationMin] = useState(30);
   const [coverUrl, setCoverUrl] = useState("");
   const [status, setStatus] = useState<"draft" | "published">("draft");
+  const [redirectUrl, setRedirectUrl] = useState("");
   // Availability fields
   const [tz, setTz] = useState("America/Santiago");
   const [bufferBefore, setBufferBefore] = useState(0);
@@ -62,6 +63,7 @@ export default function SessionEditorPage() {
       setDurationMin(s.duration_min);
       setCoverUrl(s.cover_url || "");
       setStatus(s.status);
+      setRedirectUrl(s.redirect_url || "");
       setTz(s.timezone || "America/Santiago");
       setBufferBefore(s.buffer_before_min ?? 0);
       setBufferAfter(s.buffer_after_min ?? 0);
@@ -95,6 +97,7 @@ export default function SessionEditorPage() {
         buffer_after_min: bufferAfter,
         min_notice_hours: minNotice,
         max_days_ahead: maxDays,
+        redirect_url: redirectUrl.trim() || null,
       };
       let sessionId = id;
       if (isEditing) {
@@ -224,6 +227,18 @@ export default function SessionEditorPage() {
                 <div>
                   <Label>URL de portada (opcional)</Label>
                   <Input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} placeholder="https://..." />
+                </div>
+                <div>
+                  <Label>URL de redirección post-reserva (opcional)</Label>
+                  <Input
+                    type="url"
+                    value={redirectUrl}
+                    onChange={(e) => setRedirectUrl(e.target.value)}
+                    placeholder="https://tusitio.com/gracias"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Después de agendar, redirigiremos al cliente a esta URL (por ejemplo, un grupo de WhatsApp o página de gracias).
+                  </p>
                 </div>
               </CardContent>
             </Card>

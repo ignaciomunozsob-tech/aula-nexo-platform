@@ -18,6 +18,7 @@ type EbookFormSnapshot = {
   title: string;
   description: string;
   priceClp: number;
+  redirectUrl: string;
   categoryId: string | null;
   status: string;
   fileUrl: string | null;
@@ -29,6 +30,7 @@ const getEbookSnapshot = (values: EbookFormSnapshot): EbookFormSnapshot => ({
   title: values.title || '',
   description: values.description || '',
   priceClp: Number(values.priceClp || 0),
+  redirectUrl: values.redirectUrl || '',
   categoryId: values.categoryId || null,
   fileUrl: values.fileUrl || null,
   coverImageUrl: values.coverImageUrl || null,
@@ -48,6 +50,7 @@ export default function EbookEditorPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priceClp, setPriceClp] = useState(0);
+  const [redirectUrl, setRedirectUrl] = useState('');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [status, setStatus] = useState('draft');
   const [fileUrl, setFileUrl] = useState<string | null>(null);
@@ -71,7 +74,7 @@ export default function EbookEditorPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('ebooks')
-        .select('id, title, description, price_clp, category_id, status, cover_image_url, creator_id, slug, is_novu_official')
+        .select('id, title, description, price_clp, category_id, status, cover_image_url, creator_id, slug, is_novu_official, redirect_url')
         .eq('id', id!)
         .single();
       if (error) throw error;
@@ -101,6 +104,7 @@ export default function EbookEditorPage() {
       title: ebook.title,
       description: ebook.description || '',
       priceClp: ebook.price_clp,
+      redirectUrl: (ebook as any).redirect_url || '',
       categoryId: ebook.category_id,
       status: ebook.status,
       fileUrl: ebook.file_url || null,
@@ -110,6 +114,7 @@ export default function EbookEditorPage() {
     setTitle(initial.title);
     setDescription(initial.description);
     setPriceClp(initial.priceClp);
+    setRedirectUrl(initial.redirectUrl);
     setCategoryId(initial.categoryId);
     setStatus(initial.status);
     setFileUrl(initial.fileUrl);
@@ -129,6 +134,7 @@ export default function EbookEditorPage() {
       title,
       description,
       priceClp,
+      redirectUrl,
       categoryId,
       status,
       fileUrl,
@@ -136,7 +142,7 @@ export default function EbookEditorPage() {
     });
 
     setHasChanges(JSON.stringify(current) !== JSON.stringify(initialFormRef.current));
-  }, [isEditing, title, description, priceClp, categoryId, status, fileUrl, coverImageUrl]);
+  }, [isEditing, title, description, priceClp, redirectUrl, categoryId, status, fileUrl, coverImageUrl]);
 
   // Handle file upload
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -203,6 +209,7 @@ export default function EbookEditorPage() {
         slug,
         description,
         price_clp: priceClp,
+        redirect_url: redirectUrl?.trim() ? redirectUrl.trim() : null,
         category_id: categoryId,
         status,
         file_url: fileUrl,
@@ -230,6 +237,7 @@ export default function EbookEditorPage() {
         title,
         description,
         priceClp,
+        redirectUrl,
         categoryId,
         status,
         fileUrl,
@@ -342,6 +350,20 @@ export default function EbookEditorPage() {
                 />
                 <p className="text-xs text-muted-foreground mt-1">{formatPrice(priceClp)}</p>
               </div>
+            </div>
+
+            <div>
+              <Label>URL de redirección post-compra (opcional)</Label>
+              <Input
+                type="url"
+                value={redirectUrl}
+                onChange={(e) => setRedirectUrl(e.target.value)}
+                placeholder="https://tusitio.com/gracias"
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Después del pago, redirigiremos al comprador a esta URL (por ejemplo, un grupo de WhatsApp o página de gracias).
+              </p>
             </div>
           </CardContent>
         </Card>

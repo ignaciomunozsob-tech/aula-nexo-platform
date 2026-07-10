@@ -10,6 +10,8 @@ import { sanitizeHtml } from "@/lib/sanitize";
 import { useMercadoPagoCheckout } from "@/hooks/useMercadoPagoCheckout";
 import { useAuth } from "@/lib/auth";
 import { GuestCheckoutDialog } from "@/components/checkout/GuestCheckoutDialog";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface Props {
   eventId?: string;
@@ -19,6 +21,9 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
   const params = useParams();
   const { user } = useAuth();
   const { startCheckout, loading: checkoutLoading, guestDialogOpen, setGuestDialogOpen, submitGuestEmail } = useMercadoPagoCheckout();
+
+  const [freeGuestOpen, setFreeGuestOpen] = useState(false);
+  const [freeLoading, setFreeLoading] = useState(false);
 
   const { data: event, isLoading } = useQuery({
     queryKey: ["event-public", eventIdProp, params.slug, params.creatorSlug],
@@ -59,17 +64,54 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
   const creator = (event as any).creator;
   const eventUrl = creator?.creator_slug && event.slug ? `/${creator.creator_slug}/${event.slug}` : `/`;
   const isOnline = event.event_type !== "in_person";
+  const isFree = !event.price_clp || event.price_clp <= 0;
+
+  const registerFree = async (guestEmail?: string) => {
+    setFreeLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("register-free-event", {
+        body: { event_id: event.id, guest_email: guestEmail },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success("¡Inscripción confirmada! Te enviamos un correo con los detalles.");
+      const redirect = (data as any)?.redirect_url as string | null | undefined;
+      if (redirect) {
+        if (window.top && window.top !== window.self) window.top.location.href = redirect;
+        else window.location.href = redirect;
+      } else if (!user) {
+        // Guest: send them to login/setup
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error("No se pudo inscribir: " + (e?.message ?? "error desconocido"));
+    } finally {
+      setFreeLoading(false);
+      setFreeGuestOpen(false);
+    }
+  };
 
   const handleBuy = async () => {
+    if (isFree) {
+      if (user) {
+        await registerFree();
+      } else {
+        setFreeGuestOpen(true);
+      }
+      return;
+    }
     await startCheckout("event", event.id, {
       contentName: event.title,
       value: event.price_clp || 0,
     });
   };
 
+  const busy = checkoutLoading || freeLoading;
+
   const eventDate = event.event_date ? new Date(event.event_date) : null;
   const dateLabel = eventDate?.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const timeLabel = eventDate?.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+
 
   return (
     <>
@@ -133,8 +175,8 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
                 <p className="text-xs text-muted-foreground">
                   {event.price_clp ? "Pago único · acceso al evento" : "Inscripción gratuita"}
                 </p>
-                <Button size="lg" className="w-full" onClick={handleBuy} disabled={checkoutLoading}>
-                  {checkoutLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                <Button size="lg" className="w-full" onClick={handleBuy} disabled={busy}>
+                  {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   Inscribirme
                 </Button>
                 {!user && (
@@ -230,8 +272,8 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
                 <p className="text-xs text-muted-foreground">
                   {event.price_clp ? "Pago único · acceso al evento" : "Inscripción gratuita"}
                 </p>
-                <Button size="lg" className="w-full" onClick={handleBuy} disabled={checkoutLoading}>
-                  {checkoutLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                <Button size="lg" className="w-full" onClick={handleBuy} disabled={busy}>
+                  {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   Inscribirme
                 </Button>
                 {!user && (
@@ -269,6 +311,13 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
         onOpenChange={setGuestDialogOpen}
         onSubmit={submitGuestEmail}
         loading={checkoutLoading}
+      />
+
+      <GuestCheckoutDialog
+        open={freeGuestOpen}
+        onOpenChange={setFreeGuestOpen}
+        onSubmit={(email) => registerFree(email)}
+        loading={freeLoading}
       />
     </>
   );

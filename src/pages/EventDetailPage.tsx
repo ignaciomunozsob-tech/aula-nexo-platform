@@ -159,6 +159,12 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
           </div>
         </div>
       </div>
+      <GuestCheckoutDialog
+        open={guestDialogOpen}
+        onOpenChange={setGuestDialogOpen}
+        onSubmit={submitGuestEmail}
+        loading={checkoutLoading}
+      />
     </>
   );
 }

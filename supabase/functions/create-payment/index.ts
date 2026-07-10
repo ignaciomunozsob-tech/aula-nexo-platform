@@ -94,13 +94,6 @@ Deno.serve(async (req) => {
       if (existingId) {
         userId = existingId as string;
         userEmail = guestEmail;
-        // Backfill missing profile name/phone for existing user
-        if (guestName || guestPhone) {
-          await admin.from('profiles').update({
-            ...(guestName ? { name: guestName } : {}),
-            ...(guestPhone ? { phone: guestPhone } : {}),
-          }).eq('id', userId).is('name', null);
-        }
       } else {
         const randomPwd = crypto.randomUUID() + crypto.randomUUID();
         const { data: created, error: createErr } = await admin.auth.admin.createUser({

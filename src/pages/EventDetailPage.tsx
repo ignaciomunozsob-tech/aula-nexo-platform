@@ -3,8 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, Calendar, Users, Clock, MapPin, User } from "lucide-react";
+import { Loader2, Calendar, Users, Clock, MapPin, Video } from "lucide-react";
 import { SEO } from "@/components/SEO";
 import { formatPrice } from "@/lib/utils";
 import { sanitizeHtml } from "@/lib/sanitize";
@@ -59,6 +58,7 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
 
   const creator = (event as any).creator;
   const eventUrl = creator?.creator_slug && event.slug ? `/${creator.creator_slug}/${event.slug}` : `/`;
+  const isOnline = event.event_type !== "in_person";
 
   const handleBuy = async () => {
     await startCheckout("event", event.id, {
@@ -67,6 +67,10 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
     });
   };
 
+  const eventDate = event.event_date ? new Date(event.event_date) : null;
+  const dateLabel = eventDate?.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const timeLabel = eventDate?.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+
   return (
     <>
       <SEO
@@ -74,92 +78,171 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
         description={event.description?.replace(/<[^>]+>/g, "").slice(0, 160) || `Evento de ${creator?.name}`}
         path={eventUrl}
       />
-      <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8">
-        {/* Hero cover — foto horizontal sola */}
-        <div className="overflow-hidden rounded-2xl bg-muted">
-          {event.cover_image_url ? (
-            <img
-              src={event.cover_image_url}
-              alt={event.title}
-              className="w-full aspect-[21/9] object-cover"
-            />
-          ) : (
-            <div className="w-full aspect-[21/9]" />
-          )}
-        </div>
 
-        {/* Título y metadata debajo de la foto */}
-        <div className="space-y-3">
-          <Badge variant="secondary">
-            {event.event_type === "in_person" ? "Presencial" : "Online"}
-          </Badge>
-          <h1 className="text-3xl md:text-5xl font-bold leading-tight max-w-3xl">{event.title}</h1>
-          {creator?.creator_slug ? (
-            <Link
-              to={`/creator/${creator.creator_slug}`}
-              className="inline-flex items-center gap-2 text-sm md:text-base text-primary hover:underline"
-            >
-              <User className="h-4 w-4" />
-              por {creator?.name}
-            </Link>
-          ) : (
-            <p className="text-sm md:text-base text-muted-foreground">por {creator?.name}</p>
-          )}
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="md:col-span-2 space-y-6">
-            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-              {event.event_date && (
-                <span className="flex items-center gap-1"><Calendar className="h-4 w-4" />
-                  {new Date(event.event_date).toLocaleString("es-CL", { dateStyle: "long", timeStyle: "short" })}
-                </span>
-              )}
-              {event.duration_minutes && (
-                <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> {event.duration_minutes} min</span>
-              )}
-              {event.max_attendees && (
-                <span className="flex items-center gap-1"><Users className="h-4 w-4" /> Cupos: {event.max_attendees}</span>
-              )}
-              {event.event_type === "in_person" && (event as any).location && (
-                <span className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {(event as any).location}</span>
-              )}
-            </div>
-
-            {creator?.creator_slug && (
-              <Link
-                to={`/creator/${creator.creator_slug}`}
-                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
-              >
-                <User className="h-4 w-4" />
-                Ver perfil de {creator?.name}
-              </Link>
-            )}
-
-            {event.description && (
-              <Card>
-                <CardContent
-                  className="p-6 prose prose-sm md:prose-base max-w-none dark:prose-invert"
-                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(event.description) }}
-                />
-              </Card>
+      {/* HERO */}
+      <section className="bg-muted/30 border-b">
+        <div className="max-w-6xl mx-auto px-4 py-8 md:py-10">
+          {/* Portada horizontal protagonista */}
+          <div className="overflow-hidden rounded-2xl bg-muted mb-8">
+            {event.cover_image_url ? (
+              <img
+                src={event.cover_image_url}
+                alt={event.title}
+                className="w-full aspect-[21/9] object-cover"
+              />
+            ) : (
+              <div className="w-full aspect-[21/9]" />
             )}
           </div>
 
-          <div className="md:col-span-1">
-            <Card className="md:sticky md:top-6">
-              <CardContent className="p-6 space-y-3">
-                <p className="text-3xl font-bold">{event.price_clp ? formatPrice(event.price_clp) : "Gratis"}</p>
-                <Button className="w-full" onClick={handleBuy} disabled={checkoutLoading}>
+          <div className="grid lg:grid-cols-12 gap-8 items-start">
+            {/* LEFT */}
+            <div className="lg:col-span-8 space-y-6">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary">
+                  {isOnline ? "Online" : "Presencial"}
+                </Badge>
+                {event.duration_minutes && (
+                  <Badge variant="outline" className="gap-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    {event.duration_minutes} min
+                  </Badge>
+                )}
+              </div>
+
+              <h1 className="text-3xl md:text-4xl font-bold leading-tight">{event.title}</h1>
+
+              {creator && (
+                <div className="text-sm text-muted-foreground">
+                  Creado por{" "}
+                  {creator.creator_slug ? (
+                    <Link to={`/creator/${creator.creator_slug}`} className="text-primary hover:underline font-medium">
+                      {creator.name}
+                    </Link>
+                  ) : (
+                    <span className="text-foreground font-medium">{creator.name}</span>
+                  )}
+                </div>
+              )}
+
+              {/* Bloques prominentes: fecha, hora, duración */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="bg-background border rounded-lg px-4 py-4">
+                  <div className="flex items-center gap-2 text-primary mb-1">
+                    <Calendar className="h-5 w-5" />
+                    <p className="text-xs uppercase tracking-wide font-semibold text-muted-foreground">Fecha</p>
+                  </div>
+                  <p className="text-base font-semibold capitalize">
+                    {dateLabel || "Por definir"}
+                  </p>
+                </div>
+                <div className="bg-background border rounded-lg px-4 py-4">
+                  <div className="flex items-center gap-2 text-primary mb-1">
+                    <Clock className="h-5 w-5" />
+                    <p className="text-xs uppercase tracking-wide font-semibold text-muted-foreground">Hora</p>
+                  </div>
+                  <p className="text-base font-semibold">
+                    {timeLabel ? `${timeLabel} hrs` : "Por definir"}
+                  </p>
+                </div>
+                <div className="bg-background border rounded-lg px-4 py-4">
+                  <div className="flex items-center gap-2 text-primary mb-1">
+                    <Clock className="h-5 w-5" />
+                    <p className="text-xs uppercase tracking-wide font-semibold text-muted-foreground">Duración</p>
+                  </div>
+                  <p className="text-base font-semibold">
+                    {event.duration_minutes ? `${event.duration_minutes} minutos` : "Por definir"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Formato / ubicación */}
+              <div className="bg-primary/5 border border-primary/20 rounded-lg px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    {isOnline ? (
+                      <Video className="h-5 w-5 text-primary" />
+                    ) : (
+                      <MapPin className="h-5 w-5 text-primary" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-primary">
+                      {isOnline ? "Evento online" : "Evento presencial"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {isOnline
+                        ? "Recibirás el link de acceso al inscribirte"
+                        : (event as any).location || "Ubicación por confirmar"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {event.max_attendees && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Users className="h-4 w-4" />
+                  <span>Cupos limitados: {event.max_attendees} personas</span>
+                </div>
+              )}
+
+              {/* Descripción */}
+              <div className="pt-4">
+                <h2 className="text-xl font-semibold mb-3">Sobre este evento</h2>
+                {event.description ? (
+                  <div
+                    className="prose prose-sm md:prose-base max-w-none dark:prose-invert"
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(event.description) }}
+                  />
+                ) : (
+                  <p className="text-muted-foreground">Sin descripción.</p>
+                )}
+              </div>
+            </div>
+
+            {/* RIGHT - Sticky sidebar con precio */}
+            <div className="lg:col-span-4">
+              <div className="bg-background border rounded-xl p-5 shadow-sm lg:sticky lg:top-24 space-y-3">
+                <div className="text-3xl font-bold">
+                  {event.price_clp ? formatPrice(event.price_clp) : <span className="text-green-600">Gratis</span>}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {event.price_clp ? "Pago único · acceso al evento" : "Inscripción gratuita"}
+                </p>
+                <Button size="lg" className="w-full" onClick={handleBuy} disabled={checkoutLoading}>
                   {checkoutLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   Inscribirme
                 </Button>
-                {!user && <p className="text-xs text-muted-foreground text-center">Te pediremos tu correo en el siguiente paso.</p>}
-              </CardContent>
-            </Card>
+                {!user && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    Te pediremos tu correo en el siguiente paso.
+                  </p>
+                )}
+
+                <div className="pt-3 border-t space-y-2 text-sm">
+                  {dateLabel && (
+                    <div className="flex items-start gap-2">
+                      <Calendar className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                      <span className="capitalize">{dateLabel}{timeLabel ? ` · ${timeLabel} hrs` : ""}</span>
+                    </div>
+                  )}
+                  {event.duration_minutes && (
+                    <div className="flex items-start gap-2">
+                      <Clock className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                      <span>{event.duration_minutes} min de duración</span>
+                    </div>
+                  )}
+                  <div className="flex items-start gap-2">
+                    {isOnline ? <Video className="h-4 w-4 mt-0.5 text-muted-foreground" /> : <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground" />}
+                    <span>{isOnline ? "Online" : (event as any).location || "Presencial"}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
+
       <GuestCheckoutDialog
         open={guestDialogOpen}
         onOpenChange={setGuestDialogOpen}

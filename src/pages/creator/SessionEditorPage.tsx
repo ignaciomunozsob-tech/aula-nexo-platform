@@ -97,6 +97,7 @@ export default function SessionEditorPage() {
         buffer_after_min: bufferAfter,
         min_notice_hours: minNotice,
         max_days_ahead: maxDays,
+        redirect_url: redirectUrl.trim() || null,
       };
       let sessionId = id;
       if (isEditing) {

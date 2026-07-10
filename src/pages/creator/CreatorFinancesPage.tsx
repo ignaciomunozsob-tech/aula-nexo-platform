@@ -128,6 +128,10 @@ export default function CreatorFinancesPage() {
         salesByMonth,
         totalCommunityFee,
         abandoned,
+        paidOrders,
+        totalGross,
+        totalPlatform,
+        totalNet,
       };
     },
     enabled: !!user?.id,

@@ -30,6 +30,7 @@ const getEbookSnapshot = (values: EbookFormSnapshot): EbookFormSnapshot => ({
   title: values.title || '',
   description: values.description || '',
   priceClp: Number(values.priceClp || 0),
+  redirectUrl: values.redirectUrl || '',
   categoryId: values.categoryId || null,
   fileUrl: values.fileUrl || null,
   coverImageUrl: values.coverImageUrl || null,

@@ -1796,6 +1796,14 @@ export type Database = {
         Args: { _creator_id: string }
         Returns: boolean
       }
+      creator_owns_product: {
+        Args: {
+          _creator_id: string
+          _product_id: string
+          _product_type: string
+        }
+        Returns: boolean
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean

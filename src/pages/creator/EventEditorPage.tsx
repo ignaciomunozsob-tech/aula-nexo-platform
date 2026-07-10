@@ -26,7 +26,9 @@ type EventFormSnapshot = {
   eventTime: string;
   durationMinutes: number;
   maxAttendees: number | null;
+  eventType: 'online' | 'in_person';
   meetingUrl: string;
+  location: string;
 };
 
 const getEventSnapshot = (values: EventFormSnapshot): EventFormSnapshot => ({
@@ -40,7 +42,9 @@ const getEventSnapshot = (values: EventFormSnapshot): EventFormSnapshot => ({
   eventTime: values.eventTime || '',
   durationMinutes: Number(values.durationMinutes || 60),
   maxAttendees: values.maxAttendees || null,
+  eventType: values.eventType === 'in_person' ? 'in_person' : 'online',
   meetingUrl: values.meetingUrl || '',
+  location: values.location || '',
 });
 
 export default function EventEditorPage() {

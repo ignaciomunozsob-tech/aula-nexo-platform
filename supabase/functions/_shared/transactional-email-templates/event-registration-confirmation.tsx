@@ -104,6 +104,24 @@ const Email = ({
           </Section>
         ) : null}
 
+        {isNewUser ? (
+          <Section style={accountCard}>
+            <Text style={accountTitle}>👤 Crea tu contraseña en NOVU</Text>
+            <Text style={text}>
+              Registramos tu inscripción con el correo{' '}
+              <strong>{accountEmail || 'que nos indicaste'}</strong>. Para acceder a tu cuenta, revisar
+              tus compras y volver a entrar al evento cuando quieras, define una contraseña:
+            </Text>
+            <Section style={ctaBox}>
+              <Button href={setPasswordUrl} style={ctaButton}>Crear mi contraseña</Button>
+            </Section>
+            <Text style={muted}>
+              1. Haz clic en el botón. 2. Ingresa tu correo. 3. Recibirás un enlace para elegir una contraseña.
+              Después podrás iniciar sesión en <strong>soynovu.cl</strong> con tu correo y tu nueva contraseña.
+            </Text>
+          </Section>
+        ) : null}
+
         <Text style={muted}>
           Guarda este correo — contiene la información de acceso a tu evento.
         </Text>

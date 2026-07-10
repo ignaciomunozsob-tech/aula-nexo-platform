@@ -492,28 +492,56 @@ export default function EventEditorPage() {
           </CardContent>
         </Card>
 
-        {/* Meeting Link */}
+        {/* Modalidad */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Video className="h-5 w-5" />
-              Link de la Reunión
+              Modalidad del Evento
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div>
-              <Label>URL de Zoom, Meet u otra plataforma</Label>
-              <Input
-                type="url"
-                value={meetingUrl}
-                onChange={(e) => setMeetingUrl(e.target.value)}
-                placeholder="https://zoom.us/j/..."
-                className="mt-1"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Este link será visible solo para los inscritos
-              </p>
+              <Label>Tipo de evento</Label>
+              <Select value={eventType} onValueChange={(v) => setEventType(v as 'online' | 'in_person')}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="online">Online (Zoom, Meet, etc.)</SelectItem>
+                  <SelectItem value="in_person">Presencial</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+
+            {eventType === 'online' ? (
+              <div>
+                <Label>URL de Zoom, Meet u otra plataforma</Label>
+                <Input
+                  type="url"
+                  value={meetingUrl}
+                  onChange={(e) => setMeetingUrl(e.target.value)}
+                  placeholder="https://zoom.us/j/..."
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Este link será visible solo para los inscritos
+                </p>
+              </div>
+            ) : (
+              <div>
+                <Label>Dirección del evento</Label>
+                <Input
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="Ej: Av. Providencia 1234, Santiago"
+                  className="mt-1"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Esta dirección se mostrará públicamente en la página del evento
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 

@@ -330,6 +330,7 @@ export default function CourseEditorPage() {
           ? nextForm.certificate_template_url || null
           : null,
         community_enabled: nextForm.community_enabled,
+        redirect_url: nextForm.redirect_url?.trim() ? nextForm.redirect_url.trim() : null,
         updated_at: nowIso,
       };
 

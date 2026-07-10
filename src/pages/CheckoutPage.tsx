@@ -14,7 +14,7 @@ interface Props { embed?: boolean }
 export default function CheckoutPage({ embed = false }: Props) {
   const { creatorSlug, pageSlug } = useParams();
   const [includeBump, setIncludeBump] = useState(false);
-  const { startCheckout, loading, guestDialogOpen, setGuestDialogOpen, submitGuestEmail } = useMercadoPagoCheckout();
+  const { startCheckout, loading, guestDialogOpen, setGuestDialogOpen, submitGuestData } = useMercadoPagoCheckout();
 
   // Get checkout page (RPC returns only safe columns) — includes creator_id
   const { data: page, isLoading } = useQuery({
@@ -150,7 +150,7 @@ export default function CheckoutPage({ embed = false }: Props) {
       <GuestCheckoutDialog
         open={guestDialogOpen}
         onOpenChange={setGuestDialogOpen}
-        onSubmit={submitGuestEmail}
+        onSubmit={submitGuestData}
         loading={loading}
       />
     </>

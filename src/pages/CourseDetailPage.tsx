@@ -242,7 +242,7 @@ export default function CourseDetailPage() {
     },
   });
 
-  const { startCheckout, loading: checkoutLoading, guestDialogOpen, setGuestDialogOpen, submitGuestEmail } = useMercadoPagoCheckout();
+  const { startCheckout, loading: checkoutLoading, guestDialogOpen, setGuestDialogOpen, submitGuestData } = useMercadoPagoCheckout();
 
   const [creatorPixelId, setCreatorPixelId] = useState<string | null>(null);
 
@@ -694,7 +694,7 @@ export default function CourseDetailPage() {
       <GuestCheckoutDialog
         open={guestDialogOpen}
         onOpenChange={setGuestDialogOpen}
-        onSubmit={submitGuestEmail}
+        onSubmit={submitGuestData}
         loading={checkoutLoading}
       />
     </>

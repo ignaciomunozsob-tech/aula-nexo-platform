@@ -57,13 +57,18 @@ export default function CreatorFinancesPage() {
 
       if (enrollErr) throw enrollErr;
 
-      // Get community fee totals from orders
+      // Get paid orders for community fee totals + commission breakdown
       const { data: orders } = await supabase
         .from("orders")
-        .select("community_fee_clp, created_at, product_type")
+        .select("id, community_fee_clp, amount_clp, platform_amount_clp, creator_amount_clp, created_at, product_type, metadata")
         .eq("creator_id", user.id)
-        .eq("status", "paid");
-      const totalCommunityFee = (orders || []).reduce((acc: number, o: any) => acc + (o.community_fee_clp || 0), 0);
+        .eq("status", "paid")
+        .order("created_at", { ascending: false });
+      const paidOrders = orders || [];
+      const totalCommunityFee = paidOrders.reduce((acc: number, o: any) => acc + (o.community_fee_clp || 0), 0);
+      const totalGross = paidOrders.reduce((acc: number, o: any) => acc + (o.amount_clp || 0), 0);
+      const totalPlatform = paidOrders.reduce((acc: number, o: any) => acc + (o.platform_amount_clp || 0), 0);
+      const totalNet = paidOrders.reduce((acc: number, o: any) => acc + (o.creator_amount_clp || 0), 0);
 
       // Pagos abandonados: pending (>30min) o failed
       const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();

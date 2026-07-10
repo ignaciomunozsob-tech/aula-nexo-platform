@@ -129,6 +129,8 @@ Deno.serve(async (req) => {
               location: ev.location ?? '',
               creatorName,
               redirectUrl: ev.redirect_url ?? '',
+              isNewUser,
+              accountEmail: userEmail,
             },
           },
         });

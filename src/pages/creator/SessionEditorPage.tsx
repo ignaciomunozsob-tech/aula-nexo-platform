@@ -33,6 +33,7 @@ export default function SessionEditorPage() {
   const [durationMin, setDurationMin] = useState(30);
   const [coverUrl, setCoverUrl] = useState("");
   const [status, setStatus] = useState<"draft" | "published">("draft");
+  const [redirectUrl, setRedirectUrl] = useState("");
   // Availability fields
   const [tz, setTz] = useState("America/Santiago");
   const [bufferBefore, setBufferBefore] = useState(0);

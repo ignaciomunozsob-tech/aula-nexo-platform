@@ -760,6 +760,20 @@ export default function CourseEditorPage() {
                 </Select>
               </div>
             </div>
+
+            <div>
+              <Label>URL de redirección post-compra (opcional)</Label>
+              <Input
+                type="url"
+                value={form.redirect_url}
+                onChange={(e) => setForm({ ...form, redirect_url: e.target.value })}
+                placeholder="https://tusitio.com/gracias"
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Después del pago, redirigiremos al alumno a esta URL (por ejemplo, un grupo de WhatsApp o página de gracias).
+              </p>
+            </div>
           </div>
 
           {/* Certificado (opcional) */}

@@ -27,6 +27,7 @@ Deno.serve(async (req) => {
     let userId: string | null = null;
     let userEmail: string | null = null;
     let userName = '';
+    let isNewUser = false;
     const authHeader = req.headers.get('Authorization');
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.replace('Bearer ', '');

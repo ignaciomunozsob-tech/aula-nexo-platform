@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const body = await req.json().catch(() => null) as { event_id?: string; guest_email?: string; guest_name?: string } | null;
+    const body = await req.json().catch(() => null) as { event_id?: string; guest_email?: string; guest_name?: string; guest_phone?: string } | null;
     if (!body?.event_id) return json({ error: 'event_id required' }, 400);
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);

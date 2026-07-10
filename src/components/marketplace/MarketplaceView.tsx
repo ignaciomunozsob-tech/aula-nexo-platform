@@ -548,7 +548,7 @@ function BuyButton({ productType, productId, price, className }: {
   price: number;
   className?: string;
 }) {
-  const { startCheckout, loading, guestDialogOpen, setGuestDialogOpen, submitGuestEmail } = useMercadoPagoCheckout();
+  const { startCheckout, loading, guestDialogOpen, setGuestDialogOpen, submitGuestData } = useMercadoPagoCheckout();
   if (price <= 0) return null;
   return (
     <>
@@ -564,7 +564,7 @@ function BuyButton({ productType, productId, price, className }: {
       <GuestCheckoutDialog
         open={guestDialogOpen}
         onOpenChange={setGuestDialogOpen}
-        onSubmit={submitGuestEmail}
+        onSubmit={submitGuestData}
         loading={loading}
       />
     </>

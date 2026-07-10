@@ -17,7 +17,7 @@ interface Props {
 
 export default function EbookDetailPage({ ebookId: ebookIdProp }: Props) {
   const params = useParams();
-  const { startCheckout, loading: checkoutLoading, guestDialogOpen, setGuestDialogOpen, submitGuestEmail } = useMercadoPagoCheckout();
+  const { startCheckout, loading: checkoutLoading, guestDialogOpen, setGuestDialogOpen, submitGuestData } = useMercadoPagoCheckout();
 
   const { data: ebook, isLoading } = useQuery({
     queryKey: ["ebook-public", ebookIdProp, params.slug, params.creatorSlug],
@@ -107,7 +107,7 @@ export default function EbookDetailPage({ ebookId: ebookIdProp }: Props) {
       <GuestCheckoutDialog
         open={guestDialogOpen}
         onOpenChange={setGuestDialogOpen}
-        onSubmit={submitGuestEmail}
+        onSubmit={submitGuestData}
         loading={checkoutLoading}
       />
     </>

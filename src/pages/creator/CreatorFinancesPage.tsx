@@ -65,6 +65,18 @@ export default function CreatorFinancesPage() {
         .eq("status", "paid");
       const totalCommunityFee = (orders || []).reduce((acc: number, o: any) => acc + (o.community_fee_clp || 0), 0);
 
+      // Pagos abandonados: pending (>30min) o failed
+      const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+      const { data: abandonedRaw } = await supabase
+        .from("orders")
+        .select("id, product_type, product_id, amount_clp, status, created_at, guest_email, guest_name, guest_phone, metadata")
+        .eq("creator_id", user.id)
+        .in("status", ["pending", "failed"])
+        .or(`status.eq.failed,and(status.eq.pending,created_at.lt.${thirtyMinAgo})`)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      const abandoned = abandonedRaw || [];
+
       // Calculate totals
       const salesByMonth: Record<string, number> = {};
       let totalRevenue = 0;
@@ -110,6 +122,7 @@ export default function CreatorFinancesPage() {
         monthlyRevenue,
         salesByMonth,
         totalCommunityFee,
+        abandoned,
       };
     },
     enabled: !!user?.id,
@@ -280,6 +293,56 @@ export default function CreatorFinancesPage() {
             </div>
           ) : (
             <p className="text-muted-foreground text-center py-8">No hay transacciones aún</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Pagos abandonados */}
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Pagos abandonados</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Personas que iniciaron el pago pero no lo completaron. Puedes contactarlas para cerrar la venta.
+          </p>
+        </CardHeader>
+        <CardContent className="px-0 sm:px-6">
+          {data?.abandoned && data.abandoned.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table className="min-w-[720px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Fecha</TableHead>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Correo</TableHead>
+                    <TableHead>Teléfono</TableHead>
+                    <TableHead>Producto</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="text-right">Monto</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.abandoned.map((o: any) => (
+                    <TableRow key={o.id}>
+                      <TableCell className="whitespace-nowrap">{formatDate(o.created_at)}</TableCell>
+                      <TableCell>{o.guest_name || "—"}</TableCell>
+                      <TableCell className="whitespace-nowrap">{o.guest_email || "—"}</TableCell>
+                      <TableCell className="whitespace-nowrap">{o.guest_phone || "—"}</TableCell>
+                      <TableCell className="capitalize">{o.product_type}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className={o.status === "failed" ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-800"}>
+                          {o.status === "failed" ? "Falló" : "Sin completar"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-medium whitespace-nowrap">
+                        {formatCLP(o.amount_clp || 0)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-center py-8">No hay pagos abandonados</p>
           )}
         </CardContent>
       </Card>

@@ -32,7 +32,8 @@ export default function PaymentResultPage() {
             creator_id: row.creator_id,
             guest_email: row.guest_email,
             redirect_url: (row as any).redirect_url ?? null,
-            metadata: { is_new_user: row.is_new_user, redirect_url: (row as any).redirect_url ?? null },
+            product_url: (row as any).product_url ?? null,
+            metadata: { is_new_user: row.is_new_user, redirect_url: (row as any).redirect_url ?? null, product_url: (row as any).product_url ?? null },
           });
           if (row.status !== 'pending') break;
         }
@@ -90,7 +91,8 @@ export default function PaymentResultPage() {
     return () => clearTimeout(t);
   }, [isPaid, redirectUrl, countdown]);
 
-  const productLink = order ? linkFor(order.product_type, order.product_id) : '/';
+  const productPublicUrl: string | null = order?.product_url ?? null;
+  const productLink = productPublicUrl || (order ? linkFor(order.product_type, order.product_id) : '/');
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -139,11 +141,17 @@ export default function PaymentResultPage() {
             <XCircle className="h-12 w-12 mx-auto text-destructive mb-4" />
             <h1 className="text-2xl font-bold mb-2">Pago no completado</h1>
             <p className="text-muted-foreground mb-6">
-              Algo salió mal con el pago. No te preocupes, no se realizó ningún cobro.
+              Algo salió mal con el pago. No te preocupes, no se realizó ningún cobro. Puedes volver a intentarlo desde la página del producto.
             </p>
-            <Button asChild variant="outline" className="w-full">
-              <Link to="/">Volver al inicio</Link>
-            </Button>
+            {productPublicUrl ? (
+              <Button asChild className="w-full">
+                <a href={productPublicUrl}>Volver al producto</a>
+              </Button>
+            ) : (
+              <Button asChild className="w-full">
+                <Link to={productLink}>Volver al producto</Link>
+              </Button>
+            )}
           </>
         ) : (
           <>

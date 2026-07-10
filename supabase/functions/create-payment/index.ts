@@ -27,23 +27,23 @@ function isAllowedOrigin(value: string): boolean {
 async function fetchProduct(admin: any, type: ProductType, id: string) {
   if (type === 'course') {
     const { data } = await admin.from('courses')
-      .select('id, title, price_clp, creator_id, cover_image_url, community_enabled, community_fee_clp, redirect_url').eq('id', id).maybeSingle();
-    return data ? { title: data.title, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_image_url, community_enabled: !!data.community_enabled, community_fee_clp: data.community_fee_clp ?? 0, redirect_url: data.redirect_url ?? null } : null;
+      .select('id, title, slug, price_clp, creator_id, cover_image_url, community_enabled, community_fee_clp, redirect_url').eq('id', id).maybeSingle();
+    return data ? { title: data.title, slug: data.slug, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_image_url, community_enabled: !!data.community_enabled, community_fee_clp: data.community_fee_clp ?? 0, redirect_url: data.redirect_url ?? null } : null;
   }
   if (type === 'ebook') {
     const { data } = await admin.from('ebooks')
-      .select('id, title, price_clp, creator_id, cover_image_url, redirect_url').eq('id', id).maybeSingle();
-    return data ? { title: data.title, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_image_url, redirect_url: data.redirect_url ?? null } : null;
+      .select('id, title, slug, price_clp, creator_id, cover_image_url, redirect_url').eq('id', id).maybeSingle();
+    return data ? { title: data.title, slug: data.slug, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_image_url, redirect_url: data.redirect_url ?? null } : null;
   }
   if (type === 'event') {
     const { data } = await admin.from('events')
-      .select('id, title, price_clp, creator_id, cover_image_url, redirect_url').eq('id', id).maybeSingle();
-    return data ? { title: data.title, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_image_url, redirect_url: data.redirect_url ?? null } : null;
+      .select('id, title, slug, price_clp, creator_id, cover_image_url, redirect_url').eq('id', id).maybeSingle();
+    return data ? { title: data.title, slug: data.slug, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_image_url, redirect_url: data.redirect_url ?? null } : null;
   }
   if (type === 'community') {
     const { data } = await admin.from('communities')
-      .select('id, name, price_clp, creator_id, cover_url').eq('id', id).maybeSingle();
-    return data ? { title: data.name, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_url, redirect_url: null } : null;
+      .select('id, name, slug, price_clp, creator_id, cover_url').eq('id', id).maybeSingle();
+    return data ? { title: data.name, slug: (data as any).slug ?? null, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_url, redirect_url: null } : null;
   }
   return null;
 }
@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     // MP access token now comes from the creator's connected MercadoPago account (marketplace).
 
     const body = await req.json().catch(() => null) as
-      | { product_type: ProductType; product_id: string; checkout_page_id?: string; include_bump?: boolean; return_url?: string; guest_email?: string }
+      | { product_type: ProductType; product_id: string; checkout_page_id?: string; include_bump?: boolean; return_url?: string; guest_email?: string; guest_name?: string; guest_phone?: string }
       | null;
     if (!body?.product_type || !body?.product_id) return json({ error: 'product_type and product_id required' }, 400);
 
@@ -81,6 +81,9 @@ Deno.serve(async (req) => {
       }
     }
 
+    const guestName = (body.guest_name ?? '').trim().slice(0, 100) || null;
+    const guestPhone = (body.guest_phone ?? '').trim().slice(0, 30) || null;
+
     if (!userId) {
       // Guest flow
       const guestEmail = (body.guest_email ?? '').trim().toLowerCase();
@@ -97,7 +100,7 @@ Deno.serve(async (req) => {
           email: guestEmail,
           password: randomPwd,
           email_confirm: true,
-          user_metadata: { name: guestEmail.split('@')[0], created_via: 'guest_checkout' },
+          user_metadata: { name: guestName || guestEmail.split('@')[0], phone: guestPhone, created_via: 'guest_checkout' },
         });
         if (createErr || !created?.user) {
           console.error('create-payment user create error', createErr);
@@ -184,12 +187,27 @@ Deno.serve(async (req) => {
       bump_product_id: bumpInfo?.id ?? null,
       bump_amount_clp: bumpInfo?.amount ?? 0,
       guest_email: userEmail,
+      guest_name: guestName,
+      guest_phone: guestPhone,
     } as any).select().single();
     if (orderErr || !order) { console.error('create-payment order error', orderErr); return json({ error: 'No se pudo crear la orden' }, 500); }
 
     const rawOrigin = req.headers.get('origin') ?? body.return_url ?? '';
     const origin = isAllowedOrigin(rawOrigin) ? new URL(rawOrigin).origin : 'https://soynovu.cl';
     const returnBase = `${origin}/payment`;
+
+    // Resolve public product URL so we can send the user back to it if payment fails.
+    let productUrl: string | null = null;
+    try {
+      const { data: prof } = await admin.from('profiles').select('creator_slug').eq('id', main.creator_id).maybeSingle();
+      if (prof?.creator_slug && (main as any).slug) {
+        productUrl = `${origin}/${prof.creator_slug}/${(main as any).slug}`;
+        await admin.from('orders').update({
+          metadata: { ...(order.metadata ?? {}), product_url: productUrl },
+        }).eq('id', order.id);
+      }
+    } catch (e) { console.warn('product_url resolve failed', e); }
+
 
     const items: any[] = [{
       id: order.id, title: main.title.slice(0, 250), quantity: 1, currency_id: 'CLP',

@@ -20,7 +20,7 @@ interface Props {
 export default function EventDetailPage({ eventId: eventIdProp }: Props) {
   const params = useParams();
   const { user } = useAuth();
-  const { startCheckout, loading: checkoutLoading, guestDialogOpen, setGuestDialogOpen, submitGuestEmail } = useMercadoPagoCheckout();
+  const { startCheckout, loading: checkoutLoading, guestDialogOpen, setGuestDialogOpen, submitGuestData } = useMercadoPagoCheckout();
 
   const [freeGuestOpen, setFreeGuestOpen] = useState(false);
   const [freeLoading, setFreeLoading] = useState(false);
@@ -66,11 +66,16 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
   const isOnline = event.event_type !== "in_person";
   const isFree = !event.price_clp || event.price_clp <= 0;
 
-  const registerFree = async (guestEmail?: string) => {
+  const registerFree = async (guest?: { name: string; email: string; phone: string }) => {
     setFreeLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("register-free-event", {
-        body: { event_id: event.id, guest_email: guestEmail },
+        body: {
+          event_id: event.id,
+          guest_email: guest?.email,
+          guest_name: guest?.name,
+          guest_phone: guest?.phone,
+        },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -79,8 +84,6 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
       if (redirect) {
         if (window.top && window.top !== window.self) window.top.location.href = redirect;
         else window.location.href = redirect;
-      } else if (!user) {
-        // Guest: send them to login/setup
       }
     } catch (e: any) {
       console.error(e);
@@ -309,7 +312,7 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
       <GuestCheckoutDialog
         open={guestDialogOpen}
         onOpenChange={setGuestDialogOpen}
-        onSubmit={submitGuestEmail}
+        onSubmit={submitGuestData}
         loading={checkoutLoading}
       />
 

@@ -65,6 +65,18 @@ export default function CreatorFinancesPage() {
         .eq("status", "paid");
       const totalCommunityFee = (orders || []).reduce((acc: number, o: any) => acc + (o.community_fee_clp || 0), 0);
 
+      // Pagos abandonados: pending (>30min) o failed
+      const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+      const { data: abandonedRaw } = await supabase
+        .from("orders")
+        .select("id, product_type, product_id, amount_clp, status, created_at, guest_email, guest_name, guest_phone, metadata")
+        .eq("creator_id", user.id)
+        .in("status", ["pending", "failed"])
+        .or(`status.eq.failed,and(status.eq.pending,created_at.lt.${thirtyMinAgo})`)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      const abandoned = abandonedRaw || [];
+
       // Calculate totals
       const salesByMonth: Record<string, number> = {};
       let totalRevenue = 0;

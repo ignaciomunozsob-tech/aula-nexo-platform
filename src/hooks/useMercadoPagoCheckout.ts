@@ -30,7 +30,7 @@ export function useMercadoPagoCheckout() {
     productType: ProductType,
     productId: string,
     meta: CheckoutMeta,
-    guestEmail?: string,
+    guest?: { name: string; email: string; phone: string },
   ) => {
     setLoading(true);
 
@@ -53,11 +53,12 @@ export function useMercadoPagoCheckout() {
           product_id: productId,
           checkout_page_id: meta.checkoutPageId,
           include_bump: !!meta.includeBump,
-          guest_email: guestEmail,
+          guest_email: guest?.email,
+          guest_name: guest?.name,
+          guest_phone: guest?.phone,
         },
       });
       if (error) throw error;
-      // Producción: usar init_point. Solo caer a sandbox si MP no devolvió el de prod.
       const url = data?.init_point || data?.sandbox_init_point;
       if (!url) throw new Error('No se obtuvo el link de pago');
       if (window.top && window.top !== window.self) {
@@ -81,15 +82,15 @@ export function useMercadoPagoCheckout() {
       await doCheckout(productType, productId, meta);
       return;
     }
-    // Guest flow: open dialog to collect email
+    // Guest flow: open dialog to collect name, email and phone
     setPending({ productType, productId, meta });
     setGuestDialogOpen(true);
   };
 
-  const submitGuestEmail = async (email: string) => {
+  const submitGuestData = async (data: { name: string; email: string; phone: string }) => {
     if (!pending) return;
     setGuestDialogOpen(false);
-    await doCheckout(pending.productType, pending.productId, pending.meta, email);
+    await doCheckout(pending.productType, pending.productId, pending.meta, data);
     setPending(null);
   };
 
@@ -98,6 +99,8 @@ export function useMercadoPagoCheckout() {
     loading,
     guestDialogOpen,
     setGuestDialogOpen,
-    submitGuestEmail,
+    submitGuestData,
+    /** @deprecated use submitGuestData */
+    submitGuestEmail: async (email: string) => submitGuestData({ name: '', email, phone: '' }),
   };
 }

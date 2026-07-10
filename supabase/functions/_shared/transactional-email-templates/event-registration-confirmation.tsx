@@ -15,6 +15,9 @@ interface Props {
   location?: string
   creatorName?: string
   redirectUrl?: string
+  isNewUser?: boolean
+  accountEmail?: string
+  setPasswordUrl?: string
 }
 
 const Email = ({
@@ -28,6 +31,9 @@ const Email = ({
   location = '',
   creatorName = '',
   redirectUrl = '',
+  isNewUser = false,
+  accountEmail = '',
+  setPasswordUrl = 'https://soynovu.cl/forgot-password',
 }: Props) => (
   <Html lang="es" dir="ltr">
     <Head />
@@ -98,6 +104,24 @@ const Email = ({
           </Section>
         ) : null}
 
+        {isNewUser ? (
+          <Section style={accountCard}>
+            <Text style={accountTitle}>👤 Crea tu contraseña en NOVU</Text>
+            <Text style={text}>
+              Registramos tu inscripción con el correo{' '}
+              <strong>{accountEmail || 'que nos indicaste'}</strong>. Para acceder a tu cuenta, revisar
+              tus compras y volver a entrar al evento cuando quieras, define una contraseña:
+            </Text>
+            <Section style={ctaBox}>
+              <Button href={setPasswordUrl} style={ctaButton}>Crear mi contraseña</Button>
+            </Section>
+            <Text style={muted}>
+              1. Haz clic en el botón. 2. Ingresa tu correo. 3. Recibirás un enlace para elegir una contraseña.
+              Después podrás iniciar sesión en <strong>soynovu.cl</strong> con tu correo y tu nueva contraseña.
+            </Text>
+          </Section>
+        ) : null}
+
         <Text style={muted}>
           Guarda este correo — contiene la información de acceso a tu evento.
         </Text>
@@ -134,6 +158,8 @@ const blockLabel: React.CSSProperties = { fontSize: '12px', color: '#666', textT
 const blockValue: React.CSSProperties = { fontSize: '15px', color: '#0a0a0a', margin: 0, fontWeight: 700 }
 const accessCard: React.CSSProperties = { backgroundColor: '#fffbe6', border: '1px solid #fcc70e', borderRadius: '12px', padding: '20px 24px', margin: '24px 0' }
 const accessTitle: React.CSSProperties = { fontSize: '15px', fontWeight: 700, color: '#0a0a0a', margin: '0 0 8px 0' }
+const accountCard: React.CSSProperties = { backgroundColor: '#f5f5f5', border: '1px solid #e5e5e5', borderRadius: '12px', padding: '20px 24px', margin: '24px 0' }
+const accountTitle: React.CSSProperties = { fontSize: '15px', fontWeight: 700, color: '#0a0a0a', margin: '0 0 8px 0' }
 const ctaBox: React.CSSProperties = { textAlign: 'center' as const, margin: '20px 0 12px 0' }
 const ctaButton: React.CSSProperties = { backgroundColor: '#fcc70e', color: '#0a0a0a', fontWeight: 700, fontSize: '16px', padding: '14px 28px', borderRadius: '10px', textDecoration: 'none', display: 'inline-block' }
 const ctaSecondary: React.CSSProperties = { backgroundColor: '#0a0a0a', color: '#ffffff', fontWeight: 700, fontSize: '15px', padding: '12px 24px', borderRadius: '10px', textDecoration: 'none', display: 'inline-block' }

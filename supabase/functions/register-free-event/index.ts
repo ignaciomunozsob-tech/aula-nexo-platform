@@ -27,6 +27,7 @@ Deno.serve(async (req) => {
     let userId: string | null = null;
     let userEmail: string | null = null;
     let userName = '';
+    let isNewUser = false;
     const authHeader = req.headers.get('Authorization');
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.replace('Bearer ', '');
@@ -65,6 +66,7 @@ Deno.serve(async (req) => {
         }
         userId = created.user.id;
         userEmail = guestEmail;
+        isNewUser = true;
       }
     }
 
@@ -127,6 +129,8 @@ Deno.serve(async (req) => {
               location: ev.location ?? '',
               creatorName,
               redirectUrl: ev.redirect_url ?? '',
+              isNewUser,
+              accountEmail: userEmail,
             },
           },
         });

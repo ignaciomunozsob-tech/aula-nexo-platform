@@ -247,6 +247,8 @@ Deno.serve(async (req) => {
                     location: ev.location ?? '',
                     creatorName,
                     redirectUrl: ev.redirect_url ?? '',
+                    isNewUser: !!((order.metadata as any)?.is_new_user),
+                    accountEmail: attendeeEmail,
                   },
                 },
               });

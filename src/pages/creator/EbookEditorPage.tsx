@@ -305,13 +305,13 @@ export default function EbookEditorPage() {
 
             <div>
               <Label>Descripción</Label>
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe tu e-book..."
-                className="mt-1"
-                rows={4}
-              />
+              <div className="mt-1">
+                <RichTextEditor
+                  value={description}
+                  onChange={setDescription}
+                  placeholder="Describe tu e-book..."
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

@@ -173,9 +173,9 @@ export default function PaymentResultPage() {
 function linkFor(type: string, id: string) {
   switch (type) {
     case 'course': return `/app/course/${id}`;
-    case 'event': return `/app`;
-    case 'ebook': return `/app`;
-    case 'community': return `/app`;
-    default: return '/';
+    case 'ebook': return `/app/my-courses`;
+    case 'event': return `/app/my-courses`;
+    case 'community': return `/app/my-courses`;
+    default: return '/app';
   }
 }

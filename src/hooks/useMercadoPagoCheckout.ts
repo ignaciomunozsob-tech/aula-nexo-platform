@@ -58,9 +58,24 @@ export function useMercadoPagoCheckout() {
           guest_phone: guest?.phone,
         },
       });
-      if (error) throw error;
+      // supabase-js surfaces non-2xx as `error`, but the JSON body is still parseable via error.context.
+      if (error) {
+        let serverMsg: string | null = null;
+        try {
+          const resp = (error as any)?.context?.response ?? (error as any)?.context;
+          if (resp && typeof resp.json === 'function') {
+            const body = await resp.json();
+            serverMsg = body?.message || body?.error || null;
+          }
+        } catch { /* noop */ }
+        throw new Error(serverMsg ?? error.message ?? 'error desconocido');
+      }
       const url = data?.init_point || data?.sandbox_init_point;
-      if (!url) throw new Error('No se obtuvo el link de pago');
+      if (!url) {
+        // Edge function might respond 200 with an error payload — surface it.
+        const serverMsg = (data as any)?.message || (data as any)?.error;
+        throw new Error(serverMsg || 'No se obtuvo el link de pago');
+      }
       if (window.top && window.top !== window.self) {
         window.top.location.href = url;
       } else {
@@ -68,7 +83,7 @@ export function useMercadoPagoCheckout() {
       }
     } catch (e: any) {
       console.error(e);
-      toast.error('No se pudo iniciar el pago: ' + (e?.message ?? 'error desconocido'));
+      toast.error(e?.message ?? 'No se pudo iniciar el pago');
       setLoading(false);
     }
   };

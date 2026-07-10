@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Loader2, Save, Plus, Trash2, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { useGoogleConnection } from "@/hooks/useGoogleConnection";
+import { RichTextEditor } from "@/components/editor/RichTextEditor";
 import { Link } from "react-router-dom";
 
 const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];

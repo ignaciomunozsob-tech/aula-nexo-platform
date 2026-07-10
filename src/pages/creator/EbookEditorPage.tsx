@@ -351,6 +351,20 @@ export default function EbookEditorPage() {
                 <p className="text-xs text-muted-foreground mt-1">{formatPrice(priceClp)}</p>
               </div>
             </div>
+
+            <div>
+              <Label>URL de redirección post-compra (opcional)</Label>
+              <Input
+                type="url"
+                value={redirectUrl}
+                onChange={(e) => setRedirectUrl(e.target.value)}
+                placeholder="https://tusitio.com/gracias"
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Después del pago, redirigiremos al comprador a esta URL (por ejemplo, un grupo de WhatsApp o página de gracias).
+              </p>
+            </div>
           </CardContent>
         </Card>
 

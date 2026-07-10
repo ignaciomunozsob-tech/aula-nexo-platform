@@ -88,10 +88,20 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 p-6 md:p-10 space-y-3 text-white">
             <Badge variant="secondary" className="bg-white/90 text-black hover:bg-white">
-              {event.event_type === "live" ? "En vivo" : "Presencial"}
+              {event.event_type === "in_person" ? "Presencial" : "Online"}
             </Badge>
             <h1 className="text-3xl md:text-5xl font-bold leading-tight max-w-3xl">{event.title}</h1>
-            <p className="text-sm md:text-base text-white/80">por {creator?.name}</p>
+            {creator?.creator_slug ? (
+              <Link
+                to={`/creator/${creator.creator_slug}`}
+                className="inline-flex items-center gap-2 text-sm md:text-base text-white/90 hover:text-white underline-offset-4 hover:underline"
+              >
+                <User className="h-4 w-4" />
+                por {creator?.name}
+              </Link>
+            ) : (
+              <p className="text-sm md:text-base text-white/80">por {creator?.name}</p>
+            )}
           </div>
         </div>
 
@@ -109,7 +119,20 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
               {event.max_attendees && (
                 <span className="flex items-center gap-1"><Users className="h-4 w-4" /> Cupos: {event.max_attendees}</span>
               )}
+              {event.event_type === "in_person" && (event as any).location && (
+                <span className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {(event as any).location}</span>
+              )}
             </div>
+
+            {creator?.creator_slug && (
+              <Link
+                to={`/creator/${creator.creator_slug}`}
+                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+              >
+                <User className="h-4 w-4" />
+                Ver perfil de {creator?.name}
+              </Link>
+            )}
 
             {event.description && (
               <Card>

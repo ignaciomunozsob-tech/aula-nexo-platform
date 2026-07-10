@@ -19,6 +19,7 @@ type EventFormSnapshot = {
   title: string;
   description: string;
   priceClp: number;
+  redirectUrl: string;
   categoryId: string | null;
   status: string;
   coverImageUrl: string | null;

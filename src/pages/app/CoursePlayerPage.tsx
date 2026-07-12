@@ -141,7 +141,17 @@ export default function CoursePlayerPage() {
     isVideoLesson &&
     (currentLessonForUrl as any)?.video_source === 'bunny' &&
     !!(currentLessonForUrl as any)?.bunny_video_id;
-  const bunnyLibraryId = import.meta.env.VITE_BUNNY_LIBRARY_ID as string | undefined;
+
+  const { data: bunnyConfig } = useQuery({
+    queryKey: ['bunny-embed-config'],
+    queryFn: async () => {
+      const { data } = await supabase.functions.invoke('bunny-embed-config');
+      return (data ?? {}) as { libraryId?: string; cdnHostname?: string };
+    },
+    enabled: !!isBunnyVideo,
+    staleTime: 60 * 60 * 1000,
+  });
+  const bunnyLibraryId = bunnyConfig?.libraryId;
 
   const { data: signedVideoUrl } = useQuery({
     queryKey: ['signed-video', currentLessonForUrl?.id],

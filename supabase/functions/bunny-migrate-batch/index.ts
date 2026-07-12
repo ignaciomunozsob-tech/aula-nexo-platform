@@ -10,7 +10,7 @@ const BUNNY_LIBRARY_ID = Deno.env.get('BUNNY_LIBRARY_ID')!
 const BUNNY_API_KEY = Deno.env.get('BUNNY_API_KEY')!
 const BUNNY_CDN_HOSTNAME = Deno.env.get('BUNNY_CDN_HOSTNAME')!
 
-const BATCH_SIZE = 2
+const BATCH_SIZE = 1
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })

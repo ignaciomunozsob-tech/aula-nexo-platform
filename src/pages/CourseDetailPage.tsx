@@ -230,7 +230,7 @@ export default function CourseDetailPage() {
         navigate("/login");
       } else {
         toast({ title: "¡Inscripción exitosa! 🎉", description: "Ya puedes acceder al curso." });
-        navigate(`/app/course/${course?.id}/play`);
+        navigate(`/app/course/${course?.id}`);
       }
     },
     onError: (err: any) => {
@@ -272,7 +272,7 @@ export default function CourseDetailPage() {
 
   const handleEnrollClick = () => {
     if (existingEnrollment?.status === "active") {
-      navigate(`/app/course/${course?.id}/play`);
+      navigate(`/app/course/${course?.id}`);
       return;
     }
 

@@ -99,6 +99,7 @@ export default function CoursePlayerPage() {
           id, course_id, title, order_index, created_at,
           lessons (
             id, module_id, title, order_index, type, content_text, duration_minutes, description, created_at,
+            bunny_video_id, bunny_status, video_source,
             lesson_resources ( id, lesson_id, file_name, created_at )
           )
         `)

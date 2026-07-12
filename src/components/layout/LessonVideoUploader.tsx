@@ -298,14 +298,14 @@ export default function LessonVideoUploader({
         />
       ) : (
         <div className="space-y-2">
-          {hasHostedVideo && libraryId ? (
+          {hasHostedVideo && bunnyEmbedUrl ? (
             <div className="space-y-2">
               <div
                 className="bg-black overflow-hidden rounded-lg"
                 style={{ aspectRatio: "16 / 9" }}
               >
                 <iframe
-                  src={`https://iframe.mediadelivery.net/embed/${libraryId}/${hostedVideoId}`}
+                  src={bunnyEmbedUrl}
                   loading="lazy"
                   className="w-full h-full"
                   style={{ border: "none" }}

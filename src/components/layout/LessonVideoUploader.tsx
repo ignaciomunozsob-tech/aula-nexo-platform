@@ -15,6 +15,14 @@ interface LessonVideoUploaderProps {
   lessonId: string;
   currentUrl: string | null;
   prepareLesson?: (currentLessonId: string) => Promise<string>;
+  courseId?: string;
+  moduleId?: string;
+  moduleTitle?: string;
+  moduleOrderIndex?: number;
+  lessonTitle?: string;
+  lessonOrderIndex?: number;
+  lessonType?: "video" | "text";
+  onLessonPersisted?: (ids: { lessonId: string; moduleId?: string }) => void;
   onUrlChange: (url: string) => void;
 }
 
@@ -52,6 +60,14 @@ export default function LessonVideoUploader({
   lessonId,
   currentUrl,
   prepareLesson,
+  courseId,
+  moduleId,
+  moduleTitle,
+  moduleOrderIndex,
+  lessonTitle,
+  lessonOrderIndex,
+  lessonType = "video",
+  onLessonPersisted,
   onUrlChange,
 }: LessonVideoUploaderProps) {
   const { toast } = useToast();
@@ -191,21 +207,44 @@ export default function LessonVideoUploader({
     setProgress(0);
     setHostedStatus("uploading");
 
+    let serverLessonId: string | null = null;
+    let serverModuleId: string | undefined;
+
     try {
       let uploadLessonId = persistedLessonId || lessonId;
-      if (!isUuid(uploadLessonId)) {
+
+      const hasServerPersistenceContext =
+        !!courseId &&
+        !!moduleId &&
+        typeof moduleOrderIndex === "number" &&
+        typeof lessonOrderIndex === "number";
+
+      // Older fallback: if this component is ever rendered without enough context
+      // for the backend to persist the lesson atomically, use the parent helper.
+      // In the course editor we now send full context to the function so the web
+      // and video-hosting setup cannot get out of sync.
+      if (!isUuid(uploadLessonId) && !hasServerPersistenceContext) {
         if (!prepareLesson) {
           throw new Error("Guarda los cambios del curso antes de subir un video a una lección nueva.");
         }
         uploadLessonId = await prepareLesson(uploadLessonId);
       }
-      if (!isUuid(uploadLessonId)) {
+      if (!isUuid(uploadLessonId) && !hasServerPersistenceContext) {
         throw new Error("No se pudo preparar la lección para subir el video. Guarda el curso e intenta nuevamente.");
       }
-      setResolvedLessonId(uploadLessonId);
 
       const { data, error } = await supabase.functions.invoke("bunny-create-video", {
-        body: { lessonId: uploadLessonId, title: file.name },
+        body: {
+          lessonId: uploadLessonId,
+          title: file.name,
+          courseId,
+          moduleId,
+          moduleTitle,
+          moduleOrderIndex,
+          lessonTitle,
+          lessonOrderIndex,
+          lessonType,
+        },
       });
       if (error) throw new Error(await getFunctionErrorMessage(error));
       if (!data || (data as any).error) {
@@ -213,6 +252,14 @@ export default function LessonVideoUploader({
       }
 
       const uploadConfig = data as any;
+      serverLessonId = String(uploadConfig.lessonId || uploadLessonId || "");
+      serverModuleId = uploadConfig.moduleId ? String(uploadConfig.moduleId) : undefined;
+      if (!isUuid(serverLessonId)) {
+        throw new Error("El servidor no devolvió un ID válido para la lección.");
+      }
+      uploadLessonId = serverLessonId;
+      setResolvedLessonId(uploadLessonId);
+
       const videoId = String(uploadConfig.videoId || "");
       const endpoint = String(uploadConfig.endpoint || uploadConfig.tusEndpoint || "");
       const headers = (uploadConfig.headers ||
@@ -249,10 +296,15 @@ export default function LessonVideoUploader({
       setResolvedLessonId(uploadLessonId);
       setHostedVideoId(videoId);
       setLegacyFilename(null);
+      onLessonPersisted?.({ lessonId: uploadLessonId, moduleId: serverModuleId });
       onUrlChange(`bunny:${videoId}`);
       toast({ title: "Video subido — procesando…" });
     } catch (err: any) {
       console.error("Upload error:", err);
+      if (isUuid(serverLessonId)) {
+        setResolvedLessonId(serverLessonId);
+        onLessonPersisted?.({ lessonId: serverLessonId, moduleId: serverModuleId });
+      }
       setHostedStatus("error");
       toast({
         title: "Error al subir",

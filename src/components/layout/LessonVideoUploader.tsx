@@ -155,13 +155,19 @@ export default function LessonVideoUploader({
 
     try {
       let uploadLessonId = lessonId;
+      console.log("[LessonVideoUploader] startUpload", {
+        lessonId,
+        isPersistedLessonId,
+        hasPrepareLesson: !!prepareLesson,
+      });
       if (!isPersistedLessonId) {
         if (!prepareLesson) {
           throw new Error("Guarda los cambios del curso antes de subir un video a una lección nueva.");
         }
         uploadLessonId = await prepareLesson();
+        console.log("[LessonVideoUploader] prepareLesson returned", { uploadLessonId });
         if (!/^[0-9a-f-]{36}$/i.test(uploadLessonId)) {
-          throw new Error("No se pudo preparar la lección para subir el video");
+          throw new Error(`No se pudo preparar la lección (id inválido: ${uploadLessonId})`);
         }
       }
 
@@ -172,6 +178,7 @@ export default function LessonVideoUploader({
       if (!data || (data as any).error) {
         throw new Error((data as any)?.detail || (data as any)?.error || "No se pudo iniciar la subida");
       }
+
       const uploadConfig = data as any;
       const videoId = String(uploadConfig.videoId || "");
       const endpoint = String(uploadConfig.endpoint || uploadConfig.tusEndpoint || "");

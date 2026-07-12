@@ -33,12 +33,16 @@ export default function LessonVideoUploader({
   const [bunnyStatus, setBunnyStatus] = useState<
     "idle" | "uploading" | "processing" | "ready" | "error"
   >("idle");
-  const [mode, setMode] = useState<"url" | "upload">(
-    currentUrl && /^https?:\/\//i.test(currentUrl) ? "url" : "upload"
-  );
+  const [mode, setMode] = useState<"url" | "upload">(() => {
+    // Default to "upload" unless it's clearly a YouTube/Vimeo link.
+    if (!currentUrl) return "upload";
+    return /youtube\.com|youtu\.be|vimeo\.com/i.test(currentUrl) ? "url" : "upload";
+  });
   const [legacyFilename, setLegacyFilename] = useState<string | null>(null);
 
-  const isExternalUrl = !!currentUrl && /^https?:\/\//i.test(currentUrl);
+  // Only real YouTube/Vimeo URLs go in the URL input.
+  const isExternalUrl =
+    !!currentUrl && /youtube\.com|youtu\.be|vimeo\.com/i.test(currentUrl);
 
   // Load current lesson bunny state
   useEffect(() => {
@@ -53,6 +57,7 @@ export default function LessonVideoUploader({
       if (data.video_source === "bunny" && data.bunny_video_id) {
         setBunnyStatus(data.bunny_status || "ready");
         setLegacyFilename(null);
+        setMode("upload");
       } else if (
         data.video_url &&
         !/^https?:\/\//i.test(data.video_url) &&
@@ -60,6 +65,7 @@ export default function LessonVideoUploader({
       ) {
         // Legacy video still stored in Lovable Cloud (protected-content bucket).
         setLegacyFilename(data.video_url.split("/").pop() || "video");
+        setMode("upload");
       }
     })();
     return () => {

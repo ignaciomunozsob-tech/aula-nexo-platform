@@ -36,6 +36,7 @@ export default function LessonVideoUploader({
   const [mode, setMode] = useState<"url" | "upload">(
     currentUrl && /^https?:\/\//i.test(currentUrl) ? "url" : "upload"
   );
+  const [legacyFilename, setLegacyFilename] = useState<string | null>(null);
 
   const isExternalUrl = !!currentUrl && /^https?:\/\//i.test(currentUrl);
 
@@ -45,18 +46,27 @@ export default function LessonVideoUploader({
     (async () => {
       const { data } = await (supabase as any)
         .from("lessons")
-        .select("bunny_status, bunny_video_id, video_source")
+        .select("bunny_status, bunny_video_id, video_source, video_url")
         .eq("id", lessonId)
         .maybeSingle();
       if (!alive || !data) return;
       if (data.video_source === "bunny" && data.bunny_video_id) {
         setBunnyStatus(data.bunny_status || "ready");
+        setLegacyFilename(null);
+      } else if (
+        data.video_url &&
+        !/^https?:\/\//i.test(data.video_url) &&
+        !data.video_url.startsWith("bunny:")
+      ) {
+        // Legacy video still stored in Lovable Cloud (protected-content bucket).
+        setLegacyFilename(data.video_url.split("/").pop() || "video");
       }
     })();
     return () => {
       alive = false;
     };
   }, [lessonId]);
+
 
   // Poll status while processing
   useEffect(() => {

@@ -1,118 +1,48 @@
-# Migración de videos a Bunny.net Stream
+## Diagnóstico
 
-Solo se toca lo relacionado con **videos de lecciones**. PDFs, imágenes, ebooks y recursos siguen en Lovable Cloud sin cambios.
+Los videos **no se borraron**. Los 19 archivos subidos siguen intactos en el bucket privado `protected-content` de Lovable Cloud, y la tabla `lessons` sigue apuntando a ellos:
 
----
+- 23 lecciones con `video_source='legacy'` (19 con `video_url` apuntando al path del storage, 4 sin video).
+- 0 lecciones migradas a Bunny todavía.
+- El bucket y los objetos están intactos (la migración a Bunny sólo agregó columnas nuevas, nunca borró nada).
 
-## 1. Requisitos previos (acción tuya)
+El bug es en la **UI del editor y del player**, que dejaron de reconocer el modo `legacy`:
 
-Necesito que confirmes que estos 3 secretos ya están guardados en el backend (yo veo la lista de secretos y **no aparecen**). Debes agregarlos antes de que la migración funcione:
+### 1. Editor de lección (`LessonVideoUploader.tsx`)
+El `useEffect` sólo lee `bunny_status / bunny_video_id / video_source`. Como los legacy tienen `video_source='legacy'`, nunca setea estado — y como `currentUrl` es un path (no `http…`), el modo por defecto salta a "Subir video" mostrando el dropzone vacío. El creador cree que perdió el archivo.
 
-- `BUNNY_LIBRARY_ID` — ID numérico de tu Video Library en Bunny.
-- `BUNNY_API_KEY` — API Key de esa Library (no la de la cuenta).
-- `BUNNY_CDN_HOSTNAME` — hostname del pull zone conectado (ej. `vz-xxxx.b-cdn.net`).
-
-Si me confirmas que quieres avanzar, te abro el formulario seguro para pegarlos.
-
----
-
-## 2. Cambios en base de datos
-
-Migración nueva. Sobre la tabla `lessons`:
-
-- `bunny_video_id text` — id devuelto por Bunny.
-- `bunny_status text default 'ready'` — `uploading | processing | ready | error`.
-- `video_source text default 'legacy'` — `legacy` (storage antiguo) | `bunny` | `external` (YouTube/Vimeo).
-- `bunny_migrated_at timestamptz`.
-
-`video_url` se mantiene como está para no romper contenido existente.
-
-Además, tabla nueva `video_migration_jobs` (para el panel admin):
-- `lesson_id`, `status` (`pending|running|done|error`), `error_message`, timestamps.
+### 2. Player (`CoursePlayerPage.tsx`)
+La rama de legacy existe (usa `resolveProtectedUrl → get-protected-url`), pero conviene verificar en pantalla que efectivamente reproduce los legacy actuales. Si algún alumno reportó "no carga", puede ser un problema puntual de sesión/enrollment y no de datos.
 
 ---
 
-## 3. Subida nueva (panel creador)
+## Plan
 
-Reemplazo del flujo actual en `LessonVideoUploader.tsx` para modo "Subir MP4":
+### Paso 1 — Arreglar el editor para mostrar el video legacy existente
+En `LessonVideoUploader.tsx`:
 
-1. Frontend llama a edge function `bunny-create-video` con `{ lessonId, title }` → crea el video en Bunny y devuelve `{ videoId, uploadUrl, uploadHeaders }`. Guarda `bunny_video_id` y `bunny_status='uploading'` en la lección.
-2. Frontend hace `PUT` con XHR (para mostrar barra de progreso, igual que hoy) directamente a `https://video.bunnycdn.com/library/{lib}/videos/{videoId}` con el header `AccessKey`. **Aquí la AccessKey queda expuesta al navegador durante el PUT** — es la única forma de mantener el progreso real. Si prefieres seguridad estricta, alternativa: subir a nuestro edge function como proxy (pierde progreso preciso). Por defecto usaré la variante directa; dime si prefieres proxy.
-3. Frontend hace polling a edge function `bunny-video-status` cada 5s. Al llegar `ready`, se guarda `video_source='bunny'`, `bunny_status='ready'` y la URL `https://{CDN}/{videoId}/play_720p.mp4` (aunque el player usa iframe).
-4. Mientras procesa, el editor muestra "Tu video se está procesando…".
+- Leer también `video_url` en el `useEffect`.
+- Si `video_source='legacy'` y hay `video_url` (path no-http), mostrar el bloque "Video listo" con nombre del archivo y botón para reemplazar/eliminar — igual que ya se hace para `bunny.status='ready'`.
+- No cambiar el modo por defecto cuando ya hay un legacy: seguir en "Subir video" pero con el archivo visible arriba del dropzone.
+- El botón "Eliminar" para legacy debe pedir confirmación (borra `video_url` y deja la lección sin video; NO borra el objeto del storage, para poder recuperarlo).
 
-Las URLs de YouTube/Vimeo siguen funcionando como hoy (`video_source='external'`).
+### Paso 2 — Verificar el player con un video legacy
+Abrir una lección legacy en el player (alumno inscrito) y confirmar que `get-protected-url` responde con la URL firmada y el `<video>` reproduce. Si falla, revisar logs de la function y ajustar.
 
----
-
-## 4. Reproductor
-
-En `CoursePlayerPage.tsx` (y donde se reproduzcan lecciones):
-
-- Si `video_source='bunny'` y hay `bunny_video_id`: iframe de Bunny (`iframe.mediadelivery.net/embed/{lib}/{videoId}`), 100% ancho, aspect-ratio 16/9, radius 12px.
-- Si `video_source='external'`: comportamiento actual (YouTube embed).
-- Si `video_source='legacy'`: comportamiento actual con `get-protected-url` (hasta que la migración lo pase a `bunny`).
+### Paso 3 — Comunicar al usuario cómo migrar (opcional, sin código nuevo)
+Recordar que ya existe `/admin/video-migration` para mover los 19 videos legacy a Bunny cuando quiera. Mientras no lo haga, seguirán reproduciéndose desde Lovable Cloud sin problema.
 
 ---
 
-## 5. Protección anti-descarga
+## Fuera de alcance
 
-En el edge function que crea el video, activo en la lección de Bunny:
-- **Token Authentication** en la Library (setting `EnableTokenAuthentication`).
-- **Referrer allowlist** con `soynovu.cl`, `www.soynovu.cl` y el dominio de preview.
-
-El iframe embed valida el referer → los `.mp4` directos dejan de ser accesibles. Para máxima seguridad, si quieres firma por sesión de usuario, requiere un edge function extra `bunny-sign-embed` que genere token JWT por lección + user; puedo agregarlo en un segundo paso.
-
----
-
-## 6. Migración de videos existentes
-
-Edge function `bunny-migrate-lesson` (idempotente, una lección por invocación):
-1. Marca job `running`.
-2. Descarga el objeto de `protected-content` con service role.
-3. Crea video en Bunny + PUT del archivo.
-4. Actualiza la lección (`bunny_video_id`, `video_source='bunny'`, `bunny_migrated_at`).
-5. **NO borra** el archivo original todavía (rollback safety). Un segundo edge function `bunny-cleanup-legacy` lo borra cuando confirmes en admin.
-6. Job `done` o `error`.
-
-Trigger: página nueva en `/admin/video-migration` con:
-- Botón "Encolar todas las lecciones legacy".
-- Barra de progreso `X de Y migrados`, contador de errores, lista de fallidas con motivo.
-- Botón "Reintentar fallidas".
-- Botón "Eliminar originales de Storage" (aparece solo cuando `Y - X = 0`).
-
-La migración corre en segundo plano invocando el edge function en loop desde la propia página admin mientras esté abierta (más simple que cron; puedo cambiar a cron si prefieres desatendido).
-
----
-
-## 7. Fuera de alcance
-
-- No se tocan ebooks, PDFs, imágenes ni ningún otro archivo.
-- No se cambia el flujo de pagos, comunidades, ni auth.
-- No se rediseña el player más allá del embed nuevo.
-
----
+- No se toca el bucket `protected-content` ni se borran objetos.
+- No se cambia el flujo de subida nueva a Bunny.
+- No se modifica el player más allá de verificar; si aparece un bug concreto, se aborda con un plan aparte.
 
 ## Detalles técnicos
 
-**Nuevas edge functions:**
-- `bunny-create-video` (POST, JWT requerido, valida `can_manage_lesson`)
-- `bunny-video-status` (POST, JWT)
-- `bunny-migrate-lesson` (POST, admin only)
-- `bunny-cleanup-legacy` (POST, admin only)
-
-**Archivos frontend a modificar:**
-- `src/components/layout/LessonVideoUploader.tsx` — flujo Bunny + polling.
-- `src/pages/app/CoursePlayerPage.tsx` — render iframe según `video_source`.
-- `src/pages/admin/AdminDashboard.tsx` o nueva `AdminVideoMigrationPage.tsx` + ruta.
-- `src/App.tsx` — registrar ruta admin.
-
-**Types:** se regeneran automáticamente tras la migración.
-
----
-
-## Preguntas antes de implementar
-
-1. ¿Confirmas los 3 secretos de Bunny? (si dices sí, te abro el formulario).
-2. Subida directa desde el navegador (con AccessKey visible durante el PUT) **o** proxy vía edge function (más seguro, sin barra de progreso precisa)?
-3. ¿Token por sesión de usuario ahora, o basta con Referrer + Token Auth de Library como primer paso?
+- Archivo modificado: `src/components/layout/LessonVideoUploader.tsx`.
+- Nuevo estado local `legacyFilename` derivado del path (`video_url.split('/').pop()`).
+- `handleRemoveVideo` ya limpia `video_url`, así queda igual.
+- Sin cambios de DB, sin cambios en edge functions.

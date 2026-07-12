@@ -429,9 +429,19 @@ export default function CoursePlayerPage() {
                       allowFullScreen
                     />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-white/80 text-sm">
-                      <Loader2 className="h-6 w-6 animate-spin" />
-                      {(currentLessonForUrl as any)?.bunny_status === 'ready' ? 'Cargando video…' : 'Tu video se está procesando…'}
+                    <div
+                      className="w-full h-full flex flex-col items-center justify-center gap-4 text-center px-6"
+                      style={{ backgroundColor: '#1a1a2e' }}
+                    >
+                      <Loader2 className="h-10 w-10 animate-spin" style={{ color: '#fcc70e' }} />
+                      <div className="space-y-2">
+                        <p className="text-white font-medium text-base" style={{ fontFamily: 'Inter, sans-serif' }}>
+                          Tu video se está procesando
+                        </p>
+                        <p className="text-gray-400 text-sm max-w-md">
+                          Esto puede tomar unos minutos. Recarga la página en unos minutos para ver el progreso.
+                        </p>
+                      </div>
                     </div>
                   )
                 ) : signedVideoUrl ? (

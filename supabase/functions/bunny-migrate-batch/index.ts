@@ -60,12 +60,14 @@ Deno.serve(async (req) => {
         if (!cr.ok) throw new Error(`Bunny create failed: ${await cr.text()}`)
         const { guid: videoId } = await cr.json()
 
-        // 2) Download legacy object
-        const { data: blob, error: dlErr } = await admin.storage.from(BUCKET)
-          .download(lesson.video_url)
-        if (dlErr || !blob) throw new Error(`Download failed: ${dlErr?.message || 'no blob'}`)
+        // 2) Signed URL for streaming download (avoids loading blob in memory)
+        const { data: signed, error: signErr } = await admin.storage.from(BUCKET)
+          .createSignedUrl(lesson.video_url, 60 * 30)
+        if (signErr || !signed?.signedUrl) throw new Error(`Sign failed: ${signErr?.message}`)
+        const dl = await fetch(signed.signedUrl)
+        if (!dl.ok || !dl.body) throw new Error(`Download failed: ${dl.status}`)
 
-        // 3) Upload to Bunny
+        // 3) Stream directly to Bunny
         const up = await fetch(
           `https://video.bunnycdn.com/library/${BUNNY_LIBRARY_ID}/videos/${videoId}`,
           {
@@ -74,7 +76,7 @@ Deno.serve(async (req) => {
               AccessKey: BUNNY_API_KEY,
               'Content-Type': 'application/octet-stream',
             },
-            body: blob.stream(),
+            body: dl.body,
           },
         )
         if (!up.ok) throw new Error(`Bunny upload failed: ${await up.text()}`)

@@ -142,16 +142,21 @@ export default function CoursePlayerPage() {
     (currentLessonForUrl as any)?.video_source === 'bunny' &&
     !!(currentLessonForUrl as any)?.bunny_video_id;
 
-  const { data: bunnyConfig } = useQuery({
-    queryKey: ['bunny-embed-config'],
+  const bunnyVideoIdForUrl = (currentLessonForUrl as any)?.bunny_video_id as string | undefined;
+  const { data: bunnySignedEmbed } = useQuery({
+    queryKey: ['bunny-signed-embed', bunnyVideoIdForUrl],
     queryFn: async () => {
-      const { data } = await supabase.functions.invoke('bunny-embed-config');
-      return (data ?? {}) as { libraryId?: string; cdnHostname?: string };
+      const { data, error } = await supabase.functions.invoke('bunny-sign-embed', {
+        body: { videoId: bunnyVideoIdForUrl },
+      });
+      if (error) throw error;
+      return (data ?? {}) as { url?: string; expires?: number };
     },
-    enabled: !!isBunnyVideo,
-    staleTime: 60 * 60 * 1000,
+    enabled: !!isBunnyVideo && !!bunnyVideoIdForUrl && (currentLessonForUrl as any)?.bunny_status === 'ready',
+    staleTime: 50 * 60 * 1000,
+    refetchInterval: 55 * 60 * 1000,
   });
-  const bunnyLibraryId = bunnyConfig?.libraryId;
+  const bunnyEmbedUrl = bunnySignedEmbed?.url;
 
   const { data: signedVideoUrl } = useQuery({
     queryKey: ['signed-video', currentLessonForUrl?.id],
@@ -413,10 +418,10 @@ export default function CoursePlayerPage() {
                 className="bg-black overflow-hidden mb-6"
                 style={{ aspectRatio: '16 / 9', borderRadius: 12 }}
               >
-                {isBunnyVideo && bunnyLibraryId ? (
-                  (currentLessonForUrl as any)?.bunny_status === 'ready' ? (
+                {isBunnyVideo ? (
+                  (currentLessonForUrl as any)?.bunny_status === 'ready' && bunnyEmbedUrl ? (
                     <iframe
-                      src={`https://iframe.mediadelivery.net/embed/${bunnyLibraryId}/${(currentLessonForUrl as any).bunny_video_id}`}
+                      src={bunnyEmbedUrl}
                       loading="lazy"
                       className="w-full h-full"
                       style={{ border: 'none' }}
@@ -426,7 +431,7 @@ export default function CoursePlayerPage() {
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-white/80 text-sm">
                       <Loader2 className="h-6 w-6 animate-spin" />
-                      Tu video se está procesando…
+                      {(currentLessonForUrl as any)?.bunny_status === 'ready' ? 'Cargando video…' : 'Tu video se está procesando…'}
                     </div>
                   )
                 ) : signedVideoUrl ? (

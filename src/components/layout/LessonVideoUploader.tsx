@@ -46,16 +46,21 @@ export default function LessonVideoUploader({
   const isExternalUrl =
     !!currentUrl && /youtube\.com|youtu\.be|vimeo\.com/i.test(currentUrl);
 
-  // Library id (public, used to build the embed URL).
-  const { data: embedConfig } = useQuery({
-    queryKey: ["bunny-embed-config"],
+  // Signed embed URL for the hosted video (token generated server-side).
+  const { data: bunnySignedEmbed } = useQuery({
+    queryKey: ["bunny-signed-embed", hostedVideoId],
     queryFn: async () => {
-      const { data } = await supabase.functions.invoke("bunny-embed-config");
-      return (data ?? {}) as { libraryId?: string };
+      const { data, error } = await supabase.functions.invoke("bunny-sign-embed", {
+        body: { videoId: hostedVideoId },
+      });
+      if (error) throw error;
+      return (data ?? {}) as { url?: string; expires?: number };
     },
-    staleTime: 60 * 60 * 1000,
+    enabled: !!hostedVideoId && hostedStatus === "ready",
+    staleTime: 50 * 60 * 1000,
+    refetchInterval: 55 * 60 * 1000,
   });
-  const libraryId = embedConfig?.libraryId;
+  const bunnyEmbedUrl = bunnySignedEmbed?.url;
 
   // Signed URL for legacy videos stored in our own bucket.
   const { data: legacySignedUrl } = useQuery({
@@ -293,14 +298,14 @@ export default function LessonVideoUploader({
         />
       ) : (
         <div className="space-y-2">
-          {hasHostedVideo && libraryId ? (
+          {hasHostedVideo && bunnyEmbedUrl ? (
             <div className="space-y-2">
               <div
                 className="bg-black overflow-hidden rounded-lg"
                 style={{ aspectRatio: "16 / 9" }}
               >
                 <iframe
-                  src={`https://iframe.mediadelivery.net/embed/${libraryId}/${hostedVideoId}`}
+                  src={bunnyEmbedUrl}
                   loading="lazy"
                   className="w-full h-full"
                   style={{ border: "none" }}

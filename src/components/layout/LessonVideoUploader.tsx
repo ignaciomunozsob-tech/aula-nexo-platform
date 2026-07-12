@@ -14,6 +14,7 @@ import { resolveProtectedUrl } from "@/lib/protectedMedia";
 interface LessonVideoUploaderProps {
   lessonId: string;
   currentUrl: string | null;
+  prepareLesson?: () => Promise<string>;
   onUrlChange: (url: string) => void;
 }
 
@@ -24,6 +25,7 @@ interface LessonVideoUploaderProps {
 export default function LessonVideoUploader({
   lessonId,
   currentUrl,
+  prepareLesson,
   onUrlChange,
 }: LessonVideoUploaderProps) {
   const { toast } = useToast();
@@ -73,6 +75,7 @@ export default function LessonVideoUploader({
 
   // Load current lesson state
   useEffect(() => {
+    if (!isPersistedLessonId) return;
     let alive = true;
     (async () => {
       const { data } = await (supabase as any)
@@ -98,7 +101,7 @@ export default function LessonVideoUploader({
     return () => {
       alive = false;
     };
-  }, [lessonId]);
+  }, [isPersistedLessonId, lessonId]);
 
   // Poll status while processing
   useEffect(() => {
@@ -146,23 +149,24 @@ export default function LessonVideoUploader({
       });
       return;
     }
-    if (!isPersistedLessonId) {
-      toast({
-        title: "Guarda la lección primero",
-        description: "Guarda los cambios del curso antes de subir un video a una lección nueva.",
-        variant: "destructive",
-      });
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      return;
-    }
-
     setUploading(true);
     setProgress(0);
     setHostedStatus("uploading");
 
     try {
+      let uploadLessonId = lessonId;
+      if (!isPersistedLessonId) {
+        if (!prepareLesson) {
+          throw new Error("Guarda los cambios del curso antes de subir un video a una lección nueva.");
+        }
+        uploadLessonId = await prepareLesson();
+        if (!/^[0-9a-f-]{36}$/i.test(uploadLessonId)) {
+          throw new Error("No se pudo preparar la lección para subir el video");
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke("bunny-create-video", {
-        body: { lessonId, title: file.name },
+        body: { lessonId: uploadLessonId, title: file.name },
       });
       if (error) throw error;
       if (!data || (data as any).error) {

@@ -270,3 +270,13 @@ function json(payload: unknown, status = 200) {
 function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
 }
+
+function toSafeOrderIndex(value: unknown) {
+  const n = Number(value)
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : 0
+}
+
+function cleanTitle(value: unknown, fallback: string) {
+  const text = String(value ?? '').trim()
+  return text ? text.slice(0, 255) : fallback
+}

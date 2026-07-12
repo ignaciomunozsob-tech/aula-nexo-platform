@@ -1,43 +1,118 @@
-Después de revisar checkout, webhook, resultado de pago y flujo de invitados, encontré 5 bugs reales priorizados por impacto.
+# Migración de videos a Bunny.net Stream
 
-## 1. 🔴 Invitados no reciben un enlace válido para crear contraseña
-**Dónde**: `supabase/functions/mercadopago-webhook/index.ts` (fulfillment de nuevo usuario).
-**Qué pasa**: se llama `resetPasswordForEmail(buyerEmail, { redirectTo: `${origin}/reset-password` })`, pero `origin` viene de `req.headers.get('origin')` y MercadoPago **no envía header Origin**. Queda `""` y el link del correo apunta a `/reset-password` (URL relativa rota). El comprador nunca puede setear contraseña.
-**Fix**: usar `https://soynovu.cl` como base fija para `redirectTo`.
+Solo se toca lo relacionado con **videos de lecciones**. PDFs, imágenes, ebooks y recursos siguen en Lovable Cloud sin cambios.
 
-## 2. 🟠 Email "nueva venta" al admin muestra 10% hardcodeado
-**Dónde**: `mercadopago-webhook` → bloque `admin-new-sale`.
-**Qué pasa**: recalcula `commissionClp = Math.round(amountClp * 0.10)` a mano. Si cambias `commission_pct` en `app_settings`, el email seguirá diciendo 10%.
-**Fix**: leer `order.platform_amount_clp`, `creator_amount_clp`, `community_fee_clp` de la orden.
+---
 
-## 3. 🟠 Webhook itera hasta 500 tokens por evento
-**Dónde**: `mercadopago-webhook`, fallback cuando el token de plataforma no lee el pago del seller.
-**Qué pasa**: recorre todos los `creator_mercadopago_accounts` haciendo un `fetch` a MP por cada uno. Con más creadores se vuelve lento y puede timeoutear.
-**Fix**: leer el `user_id` del payload/query de MP y consultar directo el token del seller correcto. Dejar el loop solo como último recurso.
+## 1. Requisitos previos (acción tuya)
 
-## 4. 🟡 "Ir al contenido" apunta a rutas genéricas
-**Dónde**: `src/pages/PaymentResultPage.tsx` → `linkFor`.
-**Qué pasa**: para `event`, `ebook` y `community` devuelve `/app`. El comprador aterriza en el dashboard y tiene que buscar su compra.
-**Fix**: priorizar `product_url` (ya viene en `order.metadata`) y rutas específicas por tipo.
+Necesito que confirmes que estos 3 secretos ya están guardados en el backend (yo veo la lista de secretos y **no aparecen**). Debes agregarlos antes de que la migración funcione:
 
-## 5. 🟡 Mensaje inútil cuando el creador no tiene MercadoPago conectado
-**Dónde**: `src/hooks/useMercadoPagoCheckout.ts`.
-**Qué pasa**: `create-payment` responde 409 `{ error: 'creator_not_connected', message: '…' }`, pero el hook muestra "No se pudo iniciar el pago: FunctionsHttpError". El comprador no entiende.
-**Fix**: leer `data?.error`/`data?.message` de la respuesta y mostrar el mensaje real en el toast.
+- `BUNNY_LIBRARY_ID` — ID numérico de tu Video Library en Bunny.
+- `BUNNY_API_KEY` — API Key de esa Library (no la de la cuenta).
+- `BUNNY_CDN_HOSTNAME` — hostname del pull zone conectado (ej. `vz-xxxx.b-cdn.net`).
+
+Si me confirmas que quieres avanzar, te abro el formulario seguro para pegarlos.
+
+---
+
+## 2. Cambios en base de datos
+
+Migración nueva. Sobre la tabla `lessons`:
+
+- `bunny_video_id text` — id devuelto por Bunny.
+- `bunny_status text default 'ready'` — `uploading | processing | ready | error`.
+- `video_source text default 'legacy'` — `legacy` (storage antiguo) | `bunny` | `external` (YouTube/Vimeo).
+- `bunny_migrated_at timestamptz`.
+
+`video_url` se mantiene como está para no romper contenido existente.
+
+Además, tabla nueva `video_migration_jobs` (para el panel admin):
+- `lesson_id`, `status` (`pending|running|done|error`), `error_message`, timestamps.
+
+---
+
+## 3. Subida nueva (panel creador)
+
+Reemplazo del flujo actual en `LessonVideoUploader.tsx` para modo "Subir MP4":
+
+1. Frontend llama a edge function `bunny-create-video` con `{ lessonId, title }` → crea el video en Bunny y devuelve `{ videoId, uploadUrl, uploadHeaders }`. Guarda `bunny_video_id` y `bunny_status='uploading'` en la lección.
+2. Frontend hace `PUT` con XHR (para mostrar barra de progreso, igual que hoy) directamente a `https://video.bunnycdn.com/library/{lib}/videos/{videoId}` con el header `AccessKey`. **Aquí la AccessKey queda expuesta al navegador durante el PUT** — es la única forma de mantener el progreso real. Si prefieres seguridad estricta, alternativa: subir a nuestro edge function como proxy (pierde progreso preciso). Por defecto usaré la variante directa; dime si prefieres proxy.
+3. Frontend hace polling a edge function `bunny-video-status` cada 5s. Al llegar `ready`, se guarda `video_source='bunny'`, `bunny_status='ready'` y la URL `https://{CDN}/{videoId}/play_720p.mp4` (aunque el player usa iframe).
+4. Mientras procesa, el editor muestra "Tu video se está procesando…".
+
+Las URLs de YouTube/Vimeo siguen funcionando como hoy (`video_source='external'`).
+
+---
+
+## 4. Reproductor
+
+En `CoursePlayerPage.tsx` (y donde se reproduzcan lecciones):
+
+- Si `video_source='bunny'` y hay `bunny_video_id`: iframe de Bunny (`iframe.mediadelivery.net/embed/{lib}/{videoId}`), 100% ancho, aspect-ratio 16/9, radius 12px.
+- Si `video_source='external'`: comportamiento actual (YouTube embed).
+- Si `video_source='legacy'`: comportamiento actual con `get-protected-url` (hasta que la migración lo pase a `bunny`).
+
+---
+
+## 5. Protección anti-descarga
+
+En el edge function que crea el video, activo en la lección de Bunny:
+- **Token Authentication** en la Library (setting `EnableTokenAuthentication`).
+- **Referrer allowlist** con `soynovu.cl`, `www.soynovu.cl` y el dominio de preview.
+
+El iframe embed valida el referer → los `.mp4` directos dejan de ser accesibles. Para máxima seguridad, si quieres firma por sesión de usuario, requiere un edge function extra `bunny-sign-embed` que genere token JWT por lección + user; puedo agregarlo en un segundo paso.
+
+---
+
+## 6. Migración de videos existentes
+
+Edge function `bunny-migrate-lesson` (idempotente, una lección por invocación):
+1. Marca job `running`.
+2. Descarga el objeto de `protected-content` con service role.
+3. Crea video en Bunny + PUT del archivo.
+4. Actualiza la lección (`bunny_video_id`, `video_source='bunny'`, `bunny_migrated_at`).
+5. **NO borra** el archivo original todavía (rollback safety). Un segundo edge function `bunny-cleanup-legacy` lo borra cuando confirmes en admin.
+6. Job `done` o `error`.
+
+Trigger: página nueva en `/admin/video-migration` con:
+- Botón "Encolar todas las lecciones legacy".
+- Barra de progreso `X de Y migrados`, contador de errores, lista de fallidas con motivo.
+- Botón "Reintentar fallidas".
+- Botón "Eliminar originales de Storage" (aparece solo cuando `Y - X = 0`).
+
+La migración corre en segundo plano invocando el edge function en loop desde la propia página admin mientras esté abierta (más simple que cron; puedo cambiar a cron si prefieres desatendido).
+
+---
+
+## 7. Fuera de alcance
+
+- No se tocan ebooks, PDFs, imágenes ni ningún otro archivo.
+- No se cambia el flujo de pagos, comunidades, ni auth.
+- No se rediseña el player más allá del embed nuevo.
 
 ---
 
 ## Detalles técnicos
 
-- **Bug 1**: definir `const PUBLIC_SITE_URL = 'https://soynovu.cl'` en el webhook; usarlo en `redirectTo`.
-- **Bug 2**: reemplazar cálculo local por los campos ya persistidos de `orders`.
-- **Bug 3**: verificar si `creator_mercadopago_accounts` tiene columna `mp_user_id`; si no existe, añadirla en migración y guardarla en el callback OAuth. Preseleccionar con `.eq('mp_user_id', ...)`.
-- **Bug 4**: usar `order.metadata.product_url` como link primario para todos los tipos, con fallback a rutas por tipo.
-- **Bug 5**: al capturar el error de `functions.invoke`, inspeccionar `error.context?.response` o el `data` devuelto para extraer el `message` legible.
+**Nuevas edge functions:**
+- `bunny-create-video` (POST, JWT requerido, valida `can_manage_lesson`)
+- `bunny-video-status` (POST, JWT)
+- `bunny-migrate-lesson` (POST, admin only)
+- `bunny-cleanup-legacy` (POST, admin only)
 
-## Fuera de alcance
-- Reescritura del flujo de pago.
-- Cambios visuales/branding.
-- Features nuevas (reintentos automáticos, panel de reconciliación).
+**Archivos frontend a modificar:**
+- `src/components/layout/LessonVideoUploader.tsx` — flujo Bunny + polling.
+- `src/pages/app/CoursePlayerPage.tsx` — render iframe según `video_source`.
+- `src/pages/admin/AdminDashboard.tsx` o nueva `AdminVideoMigrationPage.tsx` + ruta.
+- `src/App.tsx` — registrar ruta admin.
 
-¿Aplico los 5, o prefieres priorizar solo los rojos/naranjas (1–3)?
+**Types:** se regeneran automáticamente tras la migración.
+
+---
+
+## Preguntas antes de implementar
+
+1. ¿Confirmas los 3 secretos de Bunny? (si dices sí, te abro el formulario).
+2. Subida directa desde el navegador (con AccessKey visible durante el PUT) **o** proxy vía edge function (más seguro, sin barra de progreso precisa)?
+3. ¿Token por sesión de usuario ahora, o basta con Referrer + Token Auth de Library como primer paso?

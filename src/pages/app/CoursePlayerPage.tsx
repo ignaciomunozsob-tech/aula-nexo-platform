@@ -399,8 +399,27 @@ export default function CoursePlayerPage() {
             <div className="max-w-4xl mx-auto p-4 md:p-8">
             {/* Video or Text content */}
             {currentLesson.type === 'video' ? (
-              <div className="aspect-video bg-black rounded-lg overflow-hidden mb-6">
-                {signedVideoUrl ? (
+              <div
+                className="bg-black overflow-hidden mb-6"
+                style={{ aspectRatio: '16 / 9', borderRadius: 12 }}
+              >
+                {isBunnyVideo && bunnyLibraryId ? (
+                  (currentLessonForUrl as any)?.bunny_status === 'ready' ? (
+                    <iframe
+                      src={`https://iframe.mediadelivery.net/embed/${bunnyLibraryId}/${(currentLessonForUrl as any).bunny_video_id}`}
+                      loading="lazy"
+                      className="w-full h-full"
+                      style={{ border: 'none' }}
+                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-white/80 text-sm">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                      Tu video se está procesando…
+                    </div>
+                  )
+                ) : signedVideoUrl ? (
                   isYouTubeUrl ? (
                     <iframe
                       src={signedVideoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}

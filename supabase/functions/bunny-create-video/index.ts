@@ -44,9 +44,16 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}))
     const lessonId = String(body.lessonId ?? '').trim()
     const title = String(body.title ?? '').trim() || 'Lección'
-    if (!/^[0-9a-f-]{36}$/i.test(lessonId)) {
+    if (lessonId.startsWith('new-')) {
+      console.error('[bunny-create-video] temporary lessonId received', lessonId)
+      return json({
+        error: 'Invalid lessonId',
+        detail: 'La lección todavía no fue guardada antes de iniciar la subida.',
+      }, 400)
+    }
+    if (!isUuid(lessonId)) {
       console.error('[bunny-create-video] invalid lessonId', lessonId)
-      return json({ error: 'Invalid lessonId' }, 200)
+      return json({ error: 'Invalid lessonId', detail: lessonId }, 400)
     }
 
     console.log('[bunny-create-video] start', { lessonId, title, userId })
@@ -166,4 +173,8 @@ function json(payload: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
 }

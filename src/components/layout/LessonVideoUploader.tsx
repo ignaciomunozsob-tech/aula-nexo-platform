@@ -349,6 +349,8 @@ export default function LessonVideoUploader({
   const hasLegacyVideo = !!legacyFilename && !uploading;
   const isProcessing = hostedStatus === "processing" && !uploading;
 
+
+
   return (
     <div className="space-y-3">
       <div className="flex gap-2">
@@ -406,21 +408,29 @@ export default function LessonVideoUploader({
         />
       ) : (
         <div className="space-y-2">
-          {hasHostedVideo && bunnyEmbedUrl ? (
+          {hasHostedVideo ? (
             <div className="space-y-2">
               <div
-                className="bg-black overflow-hidden rounded-lg"
+                className="bg-black overflow-hidden rounded-lg relative"
                 style={{ aspectRatio: "16 / 9" }}
               >
-                <iframe
-                  src={bunnyEmbedUrl}
-                  loading="lazy"
-                  className="w-full h-full"
-                  style={{ border: "none" }}
-                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
-                  allowFullScreen
-                />
+                {bunnyEmbedUrl ? (
+                  <iframe
+                    src={bunnyEmbedUrl}
+                    loading="lazy"
+                    className="w-full h-full"
+                    style={{ border: "none" }}
+                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/80 text-sm bg-gradient-to-br from-neutral-900 to-neutral-800 animate-pulse">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    Cargando previsualización…
+                  </div>
+                )}
               </div>
+
               <div className="flex gap-2">
                 <Button
                   type="button"

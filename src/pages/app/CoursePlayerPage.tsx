@@ -99,6 +99,7 @@ export default function CoursePlayerPage() {
           id, course_id, title, order_index, created_at,
           lessons (
             id, module_id, title, order_index, type, content_text, duration_minutes, description, created_at,
+            bunny_video_id, bunny_status, video_source,
             lesson_resources ( id, lesson_id, file_name, created_at )
           )
         `)
@@ -136,11 +137,26 @@ export default function CoursePlayerPage() {
   const allLessonsPre = modules?.flatMap((m: any) => (m.lessons as any[]) || []) || [];
   const currentLessonForUrl = allLessonsPre.find((l: any) => l.id === selectedLessonId);
   const isVideoLesson = currentLessonForUrl?.type === 'video';
+  const isBunnyVideo =
+    isVideoLesson &&
+    (currentLessonForUrl as any)?.video_source === 'bunny' &&
+    !!(currentLessonForUrl as any)?.bunny_video_id;
+
+  const { data: bunnyConfig } = useQuery({
+    queryKey: ['bunny-embed-config'],
+    queryFn: async () => {
+      const { data } = await supabase.functions.invoke('bunny-embed-config');
+      return (data ?? {}) as { libraryId?: string; cdnHostname?: string };
+    },
+    enabled: !!isBunnyVideo,
+    staleTime: 60 * 60 * 1000,
+  });
+  const bunnyLibraryId = bunnyConfig?.libraryId;
 
   const { data: signedVideoUrl } = useQuery({
     queryKey: ['signed-video', currentLessonForUrl?.id],
     queryFn: () => resolveProtectedUrl('lesson_video', currentLessonForUrl!.id),
-    enabled: !!isVideoLesson && !!currentLessonForUrl?.id && (!!enrollment || isPreviewMode),
+    enabled: !!isVideoLesson && !isBunnyVideo && !!currentLessonForUrl?.id && (!!enrollment || isPreviewMode),
     staleTime: 50 * 60 * 1000, // refresh before the 60-min TTL
   });
   const isYouTubeUrl = !!signedVideoUrl && /youtube\.com|youtu\.be/i.test(signedVideoUrl);
@@ -393,8 +409,27 @@ export default function CoursePlayerPage() {
             <div className="max-w-4xl mx-auto p-4 md:p-8">
             {/* Video or Text content */}
             {currentLesson.type === 'video' ? (
-              <div className="aspect-video bg-black rounded-lg overflow-hidden mb-6">
-                {signedVideoUrl ? (
+              <div
+                className="bg-black overflow-hidden mb-6"
+                style={{ aspectRatio: '16 / 9', borderRadius: 12 }}
+              >
+                {isBunnyVideo && bunnyLibraryId ? (
+                  (currentLessonForUrl as any)?.bunny_status === 'ready' ? (
+                    <iframe
+                      src={`https://iframe.mediadelivery.net/embed/${bunnyLibraryId}/${(currentLessonForUrl as any).bunny_video_id}`}
+                      loading="lazy"
+                      className="w-full h-full"
+                      style={{ border: 'none' }}
+                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-white/80 text-sm">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                      Tu video se está procesando…
+                    </div>
+                  )
+                ) : signedVideoUrl ? (
                   isYouTubeUrl ? (
                     <iframe
                       src={signedVideoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}

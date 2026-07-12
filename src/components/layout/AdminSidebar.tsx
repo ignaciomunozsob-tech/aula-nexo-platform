@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, GraduationCap, Users, LogOut, Home, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, Users, LogOut, Home, ShieldCheck, Film } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -17,6 +17,7 @@ export function AdminSidebar() {
     { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', end: true },
     { to: '/admin/courses', icon: GraduationCap, label: 'Cursos NOVU', end: false },
     { to: '/admin/instructors', icon: Users, label: 'Instructores', end: false },
+    { to: '/admin/video-migration', icon: Film, label: 'Migración de videos', end: false },
   ];
 
   const initials = profile?.name?.charAt(0).toUpperCase() || 'A';

@@ -1297,6 +1297,9 @@ export type Database = {
       }
       lessons: {
         Row: {
+          bunny_migrated_at: string | null
+          bunny_status: string
+          bunny_video_id: string | null
           content_text: string | null
           created_at: string
           description: string | null
@@ -1306,9 +1309,13 @@ export type Database = {
           order_index: number
           title: string
           type: string
+          video_source: string
           video_url: string | null
         }
         Insert: {
+          bunny_migrated_at?: string | null
+          bunny_status?: string
+          bunny_video_id?: string | null
           content_text?: string | null
           created_at?: string
           description?: string | null
@@ -1318,9 +1325,13 @@ export type Database = {
           order_index?: number
           title: string
           type?: string
+          video_source?: string
           video_url?: string | null
         }
         Update: {
+          bunny_migrated_at?: string | null
+          bunny_status?: string
+          bunny_video_id?: string | null
           content_text?: string | null
           created_at?: string
           description?: string | null
@@ -1330,6 +1341,7 @@ export type Database = {
           order_index?: number
           title?: string
           type?: string
+          video_source?: string
           video_url?: string | null
         }
         Relationships: [
@@ -1781,6 +1793,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      video_migration_jobs: {
+        Row: {
+          attempts: number
+          bunny_video_id: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          lesson_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          bunny_video_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lesson_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          bunny_video_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lesson_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_migration_jobs_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: true
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

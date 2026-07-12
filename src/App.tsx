@@ -12,6 +12,7 @@ import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminCoursesPage from "@/pages/admin/AdminCoursesPage";
 import AdminCourseEditorPage from "@/pages/admin/AdminCourseEditorPage";
 import AdminInstructorsPage from "@/pages/admin/AdminInstructorsPage";
+import AdminVideoMigrationPage from "@/pages/admin/AdminVideoMigrationPage";
 import HomePage from "@/pages/HomePage";
 import ComisionesPage from "@/pages/ComisionesPage";
 import TerminosPage from "@/pages/TerminosPage";
@@ -159,6 +160,7 @@ const App = () => (
                 <Route path="courses/new" element={<AdminCourseEditorPage />} />
                 <Route path="courses/:id/edit" element={<AdminCourseEditorPage />} />
                 <Route path="instructors" element={<AdminInstructorsPage />} />
+                <Route path="video-migration" element={<AdminVideoMigrationPage />} />
               </Route>
 
               {/* Community routes */}

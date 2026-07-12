@@ -4,10 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Upload, X, Film, Link2, Lock } from "lucide-react";
+import { Loader2, Upload, X, Link2, Lock, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMyPlan } from "@/hooks/useMyPlan";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { resolveProtectedUrl } from "@/lib/protectedMedia";
 
 interface LessonVideoUploaderProps {
   lessonId: string;
@@ -15,9 +17,10 @@ interface LessonVideoUploaderProps {
   onUrlChange: (url: string) => void;
 }
 
-// Videos live in Bunny Stream. We keep YouTube/Vimeo URLs in the same `video_url`
-// column for the "URL" mode. The bunny video id is stored separately in
-// `lessons.bunny_video_id` by the edge functions.
+// The uploader has two modes: paste a YouTube/Vimeo URL, or upload an MP4 that
+// the platform hosts (behind the scenes on Bunny Stream; the UI never surfaces
+// the word "Bunny"). Once a video is ready, we render an actual inline player
+// so the creator sees exactly what the student will see.
 export default function LessonVideoUploader({
   lessonId,
   currentUrl,
@@ -30,21 +33,39 @@ export default function LessonVideoUploader({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [bunnyStatus, setBunnyStatus] = useState<
+  const [hostedStatus, setHostedStatus] = useState<
     "idle" | "uploading" | "processing" | "ready" | "error"
   >("idle");
+  const [hostedVideoId, setHostedVideoId] = useState<string | null>(null);
+  const [legacyFilename, setLegacyFilename] = useState<string | null>(null);
   const [mode, setMode] = useState<"url" | "upload">(() => {
-    // Default to "upload" unless it's clearly a YouTube/Vimeo link.
     if (!currentUrl) return "upload";
     return /youtube\.com|youtu\.be|vimeo\.com/i.test(currentUrl) ? "url" : "upload";
   });
-  const [legacyFilename, setLegacyFilename] = useState<string | null>(null);
 
-  // Only real YouTube/Vimeo URLs go in the URL input.
   const isExternalUrl =
     !!currentUrl && /youtube\.com|youtu\.be|vimeo\.com/i.test(currentUrl);
 
-  // Load current lesson bunny state
+  // Library id (public, used to build the embed URL).
+  const { data: embedConfig } = useQuery({
+    queryKey: ["bunny-embed-config"],
+    queryFn: async () => {
+      const { data } = await supabase.functions.invoke("bunny-embed-config");
+      return (data ?? {}) as { libraryId?: string };
+    },
+    staleTime: 60 * 60 * 1000,
+  });
+  const libraryId = embedConfig?.libraryId;
+
+  // Signed URL for legacy videos stored in our own bucket.
+  const { data: legacySignedUrl } = useQuery({
+    queryKey: ["lesson-legacy-video", lessonId, legacyFilename],
+    queryFn: () => resolveProtectedUrl("lesson_video", lessonId),
+    enabled: !!legacyFilename,
+    staleTime: 50 * 60 * 1000,
+  });
+
+  // Load current lesson state
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -55,7 +76,8 @@ export default function LessonVideoUploader({
         .maybeSingle();
       if (!alive || !data) return;
       if (data.video_source === "bunny" && data.bunny_video_id) {
-        setBunnyStatus(data.bunny_status || "ready");
+        setHostedStatus(data.bunny_status || "ready");
+        setHostedVideoId(data.bunny_video_id);
         setLegacyFilename(null);
         setMode("upload");
       } else if (
@@ -63,7 +85,6 @@ export default function LessonVideoUploader({
         !/^https?:\/\//i.test(data.video_url) &&
         !data.video_url.startsWith("bunny:")
       ) {
-        // Legacy video still stored in Lovable Cloud (protected-content bucket).
         setLegacyFilename(data.video_url.split("/").pop() || "video");
         setMode("upload");
       }
@@ -73,10 +94,9 @@ export default function LessonVideoUploader({
     };
   }, [lessonId]);
 
-
   // Poll status while processing
   useEffect(() => {
-    if (bunnyStatus !== "processing" && bunnyStatus !== "uploading") return;
+    if (hostedStatus !== "processing" && hostedStatus !== "uploading") return;
     let alive = true;
     const t = setInterval(async () => {
       try {
@@ -86,13 +106,13 @@ export default function LessonVideoUploader({
         if (!alive) return;
         const s = (data as any)?.status;
         if (s === "ready") {
-          setBunnyStatus("ready");
+          setHostedStatus("ready");
           toast({ title: "Video listo ✅" });
         } else if (s === "error") {
-          setBunnyStatus("error");
-          toast({ title: "Bunny reportó un error al procesar", variant: "destructive" });
+          setHostedStatus("error");
+          toast({ title: "Error al procesar el video", variant: "destructive" });
         } else if (s) {
-          setBunnyStatus(s);
+          setHostedStatus(s);
         }
       } catch {}
     }, 5000);
@@ -100,12 +120,9 @@ export default function LessonVideoUploader({
       alive = false;
       clearInterval(t);
     };
-  }, [bunnyStatus, lessonId, toast]);
+  }, [hostedStatus, lessonId, toast]);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const startUpload = async (file: File) => {
     if (!file.type.startsWith("video/")) {
       toast({
         title: "Archivo no válido",
@@ -114,7 +131,6 @@ export default function LessonVideoUploader({
       });
       return;
     }
-
     const maxSize = maxFileMB * 1024 * 1024;
     if (file.size > maxSize) {
       toast({
@@ -127,17 +143,16 @@ export default function LessonVideoUploader({
 
     setUploading(true);
     setProgress(0);
-    setBunnyStatus("uploading");
+    setHostedStatus("uploading");
 
     try {
-      // Ask backend to create the Bunny video and give us a TUS signature.
       const { data, error } = await supabase.functions.invoke("bunny-create-video", {
         body: { lessonId, title: file.name },
       });
       if (error || !data) throw error || new Error("No se pudo iniciar la subida");
       const {
         videoId,
-        libraryId,
+        libraryId: libId,
         tusEndpoint,
         authorizationSignature,
         authorizationExpire,
@@ -157,12 +172,9 @@ export default function LessonVideoUploader({
             AuthorizationSignature: authorizationSignature,
             AuthorizationExpire: String(authorizationExpire),
             VideoId: videoId,
-            LibraryId: libraryId,
+            LibraryId: libId,
           },
-          metadata: {
-            filetype: file.type,
-            title: file.name,
-          },
+          metadata: { filetype: file.type, title: file.name },
           chunkSize: 50 * 1024 * 1024,
           onError: (err) => reject(err),
           onProgress: (bytesUploaded, bytesTotal) => {
@@ -174,15 +186,14 @@ export default function LessonVideoUploader({
       });
 
       setProgress(100);
-      setBunnyStatus("processing");
-      // Store the video id in the same field so parent forms have a value to save.
-      // The player uses `video_source='bunny'` + `bunny_video_id`; the URL is set
-      // once Bunny finishes encoding.
+      setHostedStatus("processing");
+      setHostedVideoId(videoId);
+      setLegacyFilename(null);
       onUrlChange(`bunny:${videoId}`);
-      toast({ title: "Video subido — procesando en Bunny…" });
+      toast({ title: "Video subido — procesando…" });
     } catch (err: any) {
       console.error("Upload error:", err);
-      setBunnyStatus("error");
+      setHostedStatus("error");
       toast({
         title: "Error al subir",
         description: err?.message || "Intenta nuevamente",
@@ -194,16 +205,20 @@ export default function LessonVideoUploader({
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) startUpload(file);
+  };
+
   const handleRemoveVideo = async () => {
-    if (legacyFilename) {
-      const ok = window.confirm(
-        "Este video está guardado en Lovable Cloud. Si lo eliminas, la lección quedará sin video (el archivo seguirá en Storage por seguridad, pero la lección no lo mostrará). ¿Continuar?",
-      );
-      if (!ok) return;
-    }
+    const ok = window.confirm(
+      "¿Eliminar el video de esta lección? Esta acción no se puede deshacer.",
+    );
+    if (!ok) return;
     onUrlChange("");
     setProgress(0);
-    setBunnyStatus("idle");
+    setHostedStatus("idle");
+    setHostedVideoId(null);
     setLegacyFilename(null);
     await (supabase as any)
       .from("lessons")
@@ -216,6 +231,10 @@ export default function LessonVideoUploader({
       .eq("id", lessonId);
   };
 
+  const hasHostedVideo =
+    hostedStatus === "ready" && !!hostedVideoId && !uploading;
+  const hasLegacyVideo = !!legacyFilename && !uploading;
+  const isProcessing = hostedStatus === "processing" && !uploading;
 
   return (
     <div className="space-y-3">
@@ -237,7 +256,8 @@ export default function LessonVideoUploader({
             if (!allowDirectVideo) {
               toast({
                 title: "Función bloqueada en tu plan",
-                description: "La subida directa de videos está disponible desde el Plan Creador.",
+                description:
+                  "La subida directa de videos está disponible desde el Plan Creador.",
                 variant: "destructive",
               });
               return;
@@ -246,13 +266,22 @@ export default function LessonVideoUploader({
           }}
           title={!allowDirectVideo ? "Disponible desde Plan Creador" : undefined}
         >
-          {allowDirectVideo ? <Upload className="h-4 w-4 mr-1" /> : <Lock className="h-4 w-4 mr-1" />}
+          {allowDirectVideo ? (
+            <Upload className="h-4 w-4 mr-1" />
+          ) : (
+            <Lock className="h-4 w-4 mr-1" />
+          )}
           Subir video
         </Button>
       </div>
+
       {!allowDirectVideo && mode === "upload" && (
         <div className="text-xs text-muted-foreground bg-muted/50 border border-border rounded-md p-2">
-          La subida directa de videos requiere <Link to="/precios" className="underline font-semibold">Plan Creador</Link>. Usa una URL de YouTube o Vimeo en el plan Gratis.
+          La subida directa de videos requiere{" "}
+          <Link to="/precios" className="underline font-semibold">
+            Plan Creador
+          </Link>
+          . Usa una URL de YouTube o Vimeo en el plan Gratis.
         </div>
       )}
 
@@ -264,74 +293,113 @@ export default function LessonVideoUploader({
         />
       ) : (
         <div className="space-y-2">
-          {bunnyStatus === "ready" && !uploading ? (
-            <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-              <Film className="h-5 w-5 text-primary" />
-              <span className="text-sm flex-1 truncate">Video listo</span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleRemoveVideo}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : legacyFilename && !uploading ? (
+          {hasHostedVideo && libraryId ? (
             <div className="space-y-2">
-              <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                <Film className="h-5 w-5 text-primary" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm truncate">{legacyFilename}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Guardado en Lovable Cloud (video anterior)
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleRemoveVideo}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="border-2 border-dashed rounded-lg p-3 text-center">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="video/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                  disabled={uploading}
+              <div
+                className="bg-black overflow-hidden rounded-lg"
+                style={{ aspectRatio: "16 / 9" }}
+              >
+                <iframe
+                  src={`https://iframe.mediadelivery.net/embed/${libraryId}/${hostedVideoId}`}
+                  loading="lazy"
+                  className="w-full h-full"
+                  style={{ border: "none" }}
+                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                  allowFullScreen
                 />
+              </div>
+              <div className="flex gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Reemplazar por un nuevo video
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Reemplazar video
                 </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRemoveVideo}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Quitar
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="video/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
               </div>
             </div>
-          ) : bunnyStatus === "processing" ? (
-            <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <span className="text-sm flex-1">Tu video se está procesando en Bunny…</span>
-              <Button
+          ) : hasLegacyVideo ? (
+            <div className="space-y-2">
+              <div
+                className="bg-black overflow-hidden rounded-lg"
+                style={{ aspectRatio: "16 / 9" }}
+              >
+                {legacySignedUrl ? (
+                  <video
+                    src={legacySignedUrl}
+                    controls
+                    className="w-full h-full"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white/70 text-sm">
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    Cargando video…
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Reemplazar video
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRemoveVideo}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Quitar
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="video/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </div>
+            </div>
+          ) : isProcessing ? (
+            <div
+              className="bg-black overflow-hidden rounded-lg flex flex-col items-center justify-center gap-3 text-white/80 text-sm"
+              style={{ aspectRatio: "16 / 9" }}
+            >
+              <Loader2 className="h-6 w-6 animate-spin" />
+              Tu video se está procesando…
+              <button
                 type="button"
-                variant="ghost"
-                size="sm"
+                className="text-xs underline opacity-70 hover:opacity-100"
                 onClick={handleRemoveVideo}
               >
-                <X className="h-4 w-4" />
-              </Button>
+                Cancelar
+              </button>
             </div>
-
           ) : (
-            <div className="border-2 border-dashed rounded-lg p-4 text-center space-y-3">
+            <div className="border-2 border-dashed rounded-lg p-6 text-center space-y-3">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -344,7 +412,7 @@ export default function LessonVideoUploader({
                 <div className="space-y-2">
                   <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Subiendo a Bunny… {progress}%
+                    Subiendo video… {progress}%
                   </div>
                   <Progress value={progress} className="h-2" />
                 </div>

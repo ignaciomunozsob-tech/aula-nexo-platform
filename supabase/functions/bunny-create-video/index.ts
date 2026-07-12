@@ -7,31 +7,49 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 
-const BUNNY_LIBRARY_ID = Deno.env.get('BUNNY_LIBRARY_ID')!
-const BUNNY_API_KEY = Deno.env.get('BUNNY_API_KEY')!
+const BUNNY_LIBRARY_ID = (Deno.env.get('BUNNY_LIBRARY_ID') ?? '').trim()
+const BUNNY_API_KEY = (Deno.env.get('BUNNY_API_KEY') ?? '').trim()
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
+    if (!BUNNY_LIBRARY_ID || !BUNNY_API_KEY) {
+      console.error('[bunny-create-video] missing env', {
+        hasLibraryId: !!BUNNY_LIBRARY_ID,
+        hasApiKey: !!BUNNY_API_KEY,
+      })
+      return json({ error: 'Bunny credentials not configured' }, 200)
+    }
+
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader?.startsWith('Bearer ')) return json({ error: 'Unauthorized' }, 401)
+    if (!authHeader?.startsWith('Bearer ')) {
+      console.error('[bunny-create-video] missing bearer')
+      return json({ error: 'Unauthorized' }, 200)
+    }
+    const token = authHeader.replace('Bearer ', '')
 
     const userClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
       { global: { headers: { Authorization: authHeader } } },
     )
-    const { data: claims, error: claimsErr } = await userClient.auth.getClaims(
-      authHeader.replace('Bearer ', ''),
-    )
-    if (claimsErr || !claims?.claims?.sub) return json({ error: 'Unauthorized' }, 401)
-    const userId = claims.claims.sub as string
+    const { data: userData, error: userErr } = await userClient.auth.getUser(token)
+    if (userErr || !userData?.user?.id) {
+      console.error('[bunny-create-video] auth failed', userErr?.message)
+      return json({ error: 'Unauthorized', detail: userErr?.message }, 200)
+    }
+    const userId = userData.user.id
 
     const body = await req.json().catch(() => ({}))
     const lessonId = String(body.lessonId ?? '').trim()
     const title = String(body.title ?? '').trim() || 'Lección'
-    if (!/^[0-9a-f-]{36}$/i.test(lessonId)) return json({ error: 'Invalid lessonId' }, 400)
+    if (!/^[0-9a-f-]{36}$/i.test(lessonId)) {
+      console.error('[bunny-create-video] invalid lessonId', lessonId)
+      return json({ error: 'Invalid lessonId' }, 200)
+    }
+
+    console.log('[bunny-create-video] start', { lessonId, title, userId })
 
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -41,13 +59,16 @@ Deno.serve(async (req) => {
     // Authorization: user must be creator of the lesson's course or admin
     const { data: lesson } = await admin.from('lessons')
       .select('id, module_id').eq('id', lessonId).maybeSingle()
-    if (!lesson) return json({ error: 'Lesson not found' }, 404)
+    if (!lesson) return json({ error: 'Lesson not found' }, 200)
     const { data: mod } = await admin.from('course_modules')
       .select('course_id, courses(creator_id)').eq('id', lesson.module_id).maybeSingle()
     const creatorId = (mod as any)?.courses?.creator_id
     const { data: adminRow } = await admin.from('user_roles')
       .select('role').eq('user_id', userId).eq('role', 'admin').maybeSingle()
-    if (creatorId !== userId && !adminRow) return json({ error: 'Forbidden' }, 403)
+    if (creatorId !== userId && !adminRow) {
+      console.error('[bunny-create-video] forbidden', { userId, creatorId })
+      return json({ error: 'Forbidden' }, 200)
+    }
 
     // 1) Create the video in Bunny
     const createRes = await fetch(
@@ -62,13 +83,34 @@ Deno.serve(async (req) => {
         body: JSON.stringify({ title }),
       },
     )
+    const createBodyText = await createRes.text()
+    console.log('[bunny-create-video] bunny create response', {
+      status: createRes.status,
+      ok: createRes.ok,
+      libraryId: BUNNY_LIBRARY_ID,
+      apiKeyLength: BUNNY_API_KEY.length,
+      apiKeyPreview: BUNNY_API_KEY.slice(0, 4) + '…',
+      bodyPreview: createBodyText.slice(0, 500),
+    })
     if (!createRes.ok) {
-      const t = await createRes.text()
-      return json({ error: 'Bunny create failed', detail: t }, 502)
+      console.error('[bunny-create-video] bunny error body', createBodyText)
+      return json({
+        error: `Bunny create failed (${createRes.status})`,
+        detail: createBodyText,
+      }, 200)
     }
-    const created = await createRes.json()
+    let created: any
+    try {
+      created = JSON.parse(createBodyText)
+    } catch {
+      console.error('[bunny-create-video] bunny returned non-json', createBodyText)
+      return json({ error: 'Bunny returned non-JSON', detail: createBodyText }, 200)
+    }
     const videoId = created.guid as string
-    if (!videoId) return json({ error: 'Bunny returned no guid' }, 502)
+    if (!videoId) {
+      console.error('[bunny-create-video] no guid in response', created)
+      return json({ error: 'Bunny returned no guid', detail: createBodyText }, 200)
+    }
 
     // 2) Build TUS authorization signature (valid ~24h)
     const expiration = Math.floor(Date.now() / 1000) + 24 * 60 * 60
@@ -83,7 +125,12 @@ Deno.serve(async (req) => {
       video_source: 'bunny',
       video_url: null,
     }).eq('id', lessonId)
-    if (updErr) return json({ error: updErr.message }, 500)
+    if (updErr) {
+      console.error('[bunny-create-video] lesson update failed', updErr.message)
+      return json({ error: updErr.message }, 200)
+    }
+
+    console.log('[bunny-create-video] success', { videoId, expiration })
 
     return json({
       videoId,
@@ -93,8 +140,8 @@ Deno.serve(async (req) => {
       authorizationExpire: expiration,
     })
   } catch (e) {
-    console.error('bunny-create-video error', e)
-    return json({ error: 'Internal error' }, 500)
+    console.error('[bunny-create-video] unhandled error', e)
+    return json({ error: 'Internal error', detail: String((e as any)?.message ?? e) }, 200)
   }
 })
 

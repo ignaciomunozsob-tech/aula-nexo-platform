@@ -1,48 +1,53 @@
-## Problema
+# Firma de tokens para Bunny Stream
 
-Todas las tablas del esquema `public` quedaron **sin permisos (GRANT)** para los roles `authenticated` y `anon`. Verificado con `information_schema.table_privileges`: cero filas para el esquema `public`.
+Objetivo: nunca exponer `BUNNY_SECURITY_KEY` al cliente. Toda URL de iframe de Bunny debe generarse en el servidor con token firmado (1h de expiración).
 
-Con RLS activa pero sin GRANT, PostgREST responde **403 permission denied** en todo:
-- Alumno abre un curso → falla al leer `courses`, `course_modules`, `lessons`.
-- Creador entra al editor → falla al leer `lessons.video_url`, por lo que la lección aparece como "sin video" y se muestra el uploader de nuevo.
+## 1. Nueva edge function: `bunny-sign-embed`
 
-Esto no es un bug de las políticas RLS (las políticas están correctas) ni del player: es una falta de GRANT a nivel Postgres.
+Archivo: `supabase/functions/bunny-sign-embed/index.ts`
 
-## Solución
+- Recibe `{ videoId: string }` en el body (validado con Zod, string no vacío).
+- Lee `BUNNY_LIBRARY_ID` y `BUNNY_SECURITY_KEY` del entorno.
+- Calcula:
+  - `expires = Math.floor(Date.now()/1000) + 3600`
+  - `token = sha256Hex(BUNNY_SECURITY_KEY + videoId + expires)` usando `crypto.subtle.digest("SHA-256", ...)` y conversión a hex.
+- Responde `{ url, expires }` donde
+  `url = https://iframe.mediadelivery.net/embed/{libraryId}/{videoId}?token={token}&expires={expires}`
+- CORS estándar; maneja `OPTIONS`.
+- Sin verificación adicional de acceso (el gating de acceso al curso ya lo aplica el resto de la app; esta función solo firma).
 
-Una sola migración SQL que reponga los GRANTs en todas las tablas de `public`, respetando qué tablas deben ser legibles por `anon`:
+No se modifica `supabase/config.toml` (usa el default de Lovable, `verify_jwt = false` como el resto de funciones bunny-*).
 
-1. **Bulk grant a `authenticated` y `service_role`** en todas las tablas base de `public` (loop sobre `pg_class`):
-   - `authenticated` → `SELECT, INSERT, UPDATE, DELETE`
-   - `service_role` → `ALL`
-   
-   La RLS sigue filtrando fila por fila; el GRANT solo abre la puerta de la Data API.
+## 2. Reemplazar iframes actuales
 
-2. **GRANT SELECT explícito a `anon`** solo en las tablas con política pública real, según `pg_policies`:
-   - `courses`, `events`, `ebooks`, `one_on_one_sessions` (published viewable publicly)
-   - `course_modules` (viewable si el curso está publicado)
-   - `categories`
-   - `communities` (viewable when published)
-   - `creator_availability_rules`, `creator_availability_settings`, `session_availability_rules`
-   - `profiles` (necesario para resolver `creator_slug` en el storefront público)
+### `src/pages/app/CoursePlayerPage.tsx` (línea ~416-419)
 
-   El resto (lessons, enrollments, orders, lesson_progress, creator_billing_info, 2FA, etc.) **no** recibe acceso `anon`: siguen siendo solo para usuarios autenticados vía sus políticas RLS existentes.
+Reemplazar la query `bunny-embed-config` por una query `bunny-signed-embed` parametrizada por `bunny_video_id`:
 
-3. **Re-grant de columnas específicas** ya hecho previamente en `lessons` (`bunny_video_id, bunny_status, video_source`) sigue vigente; no se toca.
+- `useQuery(["bunny-signed-embed", videoId], () => invoke("bunny-sign-embed", { body: { videoId } }))`
+- `enabled: isBunnyVideo && bunny_status === 'ready'`
+- `staleTime: 50 * 60 * 1000` (menor a 1h para refrescar antes de expirar)
+- `refetchInterval: 55 * 60 * 1000`
+- El iframe usa `src={signed.url}` en vez de construir la URL manualmente.
+- Mientras `isLoading`, mostrar el mismo placeholder de "cargando" ya existente.
 
-## Verificación
+### `src/components/layout/LessonVideoUploader.tsx` (línea ~296-311)
 
-Tras aplicar la migración:
-- Ejecutar `SELECT count(*) FROM information_schema.table_privileges WHERE table_schema='public'` para confirmar que ya no es 0.
-- Alumno abre curso "Meta Ads desde Cero" → ver módulos/lecciones sin 403.
-- Creador abre editor de un curso con video ya subido → el reproductor debe aparecer en vez del uploader.
+Misma sustitución: reemplazar `bunny-embed-config` + URL construida a mano por query `bunny-sign-embed` con `hostedVideoId`. `enabled: hasHostedVideo`.
+
+## 3. Limpieza
+
+- `bunny-embed-config` deja de ser usado por el cliente. Lo dejamos en el repo (por si otras funciones lo consumen internamente) pero **no se toca** — la instrucción es no modificar lo no mencionado.
+- Ningún cambio de esquema, RLS, ni de otras funciones.
 
 ## Detalles técnicos
 
-```text
-Migration file: supabase/migrations/<timestamp>_restore_public_grants.sql
-- DO $$ ... $$ loop → GRANT authenticated + service_role sobre cada tabla base de public
-- GRANT SELECT ON <lista pública> TO anon;
+```ts
+// SHA-256 hex en Deno
+const enc = new TextEncoder().encode(BUNNY_SECURITY_KEY + videoId + expires);
+const digest = await crypto.subtle.digest("SHA-256", enc);
+const token = [...new Uint8Array(digest)]
+  .map(b => b.toString(16).padStart(2, "0")).join("");
 ```
 
-No se modifica ninguna política RLS, ni código del frontend, ni edge functions.
+Requisito previo: la Video Library en Bunny debe tener **Token Authentication** habilitado para que Bunny valide el `token`/`expires`. Si no está activo, las URLs firmadas seguirán funcionando pero también las no firmadas (no rompe nada). Confirmaré en el mensaje final que hay que activarlo en el panel de Bunny.

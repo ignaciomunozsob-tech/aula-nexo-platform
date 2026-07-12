@@ -84,6 +84,16 @@ type LessonForm = {
   resources?: LessonResourceForm[];
 };
 
+const createLocalLesson = (): LessonForm => ({
+  id: `new-${Date.now()}`,
+  title: "Nueva lección",
+  type: "video",
+  video_url: "",
+  content_text: "",
+  description: "",
+  resources: [],
+});
+
 type ModuleForm = {
   id: string;
   title: string;
@@ -486,6 +496,61 @@ export default function CourseEditorPage() {
 
   const addModule = () => setModules([...modules, { id: `new-${Date.now()}`, title: "Nuevo módulo", lessons: [] }]);
 
+  const persistNewLesson = async (moduleIndex: number, lessonIndex: number) => {
+    if (!id) throw new Error("No se pudo determinar courseId");
+    const mod = modules[moduleIndex];
+    const les = mod?.lessons?.[lessonIndex];
+    if (!mod || !les) throw new Error("No se encontró la lección");
+    if (!mod.id?.startsWith("new-") && !les.id?.startsWith("new-")) return les.id;
+
+    let moduleId = mod.id;
+    if (mod.id?.startsWith("new-")) {
+      const { data, error } = await supabase
+        .from("course_modules")
+        .insert({ course_id: id, title: mod.title, order_index: moduleIndex })
+        .select("id")
+        .single();
+      if (error) throw error;
+      moduleId = data.id;
+    }
+
+    let lessonId = les.id;
+    if (les.id?.startsWith("new-")) {
+      const { data, error } = await supabase
+        .from("lessons")
+        .insert({
+          module_id: moduleId,
+          title: les.title,
+          type: les.type,
+          video_url: les.type === "video" ? (les.video_url || null) : null,
+          content_text: les.type === "text" ? (les.content_text || null) : null,
+          description: les.description || null,
+          order_index: lessonIndex,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      lessonId = data.id;
+    }
+
+    setModules((prev) => {
+      const next = [...prev];
+      if (next[moduleIndex]) {
+        next[moduleIndex] = { ...next[moduleIndex], id: moduleId };
+        next[moduleIndex].lessons = [...(next[moduleIndex].lessons || [])];
+        if (next[moduleIndex].lessons[lessonIndex]) {
+          next[moduleIndex].lessons[lessonIndex] = {
+            ...next[moduleIndex].lessons[lessonIndex],
+            id: lessonId,
+          };
+        }
+      }
+      return next;
+    });
+
+    return lessonId;
+  };
+
   const deleteModule = (mi: number) => {
     const mod = modules[mi];
     const next = [...modules];
@@ -507,7 +572,7 @@ export default function CourseEditorPage() {
     const updated = [...modules];
     updated[mi].lessons = [
       ...(updated[mi].lessons || []),
-      { id: `new-${Date.now()}`, title: "Nueva lección", type: "video", video_url: "", content_text: "", description: "", resources: [] },
+      createLocalLesson(),
     ];
     setModules(updated);
   };
@@ -1020,12 +1085,19 @@ export default function CourseEditorPage() {
                                         <LessonVideoUploader
                                           lessonId={les.id}
                                           currentUrl={les.video_url || null}
+                                          prepareLesson={async () => persistNewLesson(mi, li)}
                                           onUrlChange={(url) => {
-                                            const u = [...modules];
-                                            if (u[mi]?.lessons?.[li]) {
-                                              u[mi].lessons[li].video_url = url;
-                                              setModules(u);
-                                            }
+                                            setModules((prev) => {
+                                              const u = [...prev];
+                                              if (u[mi]?.lessons?.[li]) {
+                                                u[mi].lessons = [...u[mi].lessons];
+                                                u[mi].lessons[li] = {
+                                                  ...u[mi].lessons[li],
+                                                  video_url: url,
+                                                };
+                                              }
+                                              return u;
+                                            });
                                           }}
                                         />
                                       )}

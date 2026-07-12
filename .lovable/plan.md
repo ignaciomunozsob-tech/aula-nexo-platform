@@ -1,54 +1,48 @@
-## Lo que entendí
+## Problema
 
-1. **Bunny es invisible para el usuario final**. Ni tú ni tus creadores ni los alumnos deberían ver "bunny", "video id", ni links de Bunny. Es solo el hosting por atrás.
-2. **Auto-asociar los videos huérfanos**: yo hago el match, sin UI de arrastrar.
-3. **En el editor del curso (vista creador)**: al subir un video (o cuando ya hay uno), debe aparecer un **reproductor real** con el video, no un texto "Video listo".
+Todas las tablas del esquema `public` quedaron **sin permisos (GRANT)** para los roles `authenticated` y `anon`. Verificado con `information_schema.table_privileges`: cero filas para el esquema `public`.
 
-## Qué voy a hacer
+Con RLS activa pero sin GRANT, PostgREST responde **403 permission denied** en todo:
+- Alumno abre un curso → falla al leer `courses`, `course_modules`, `lessons`.
+- Creador entra al editor → falla al leer `lessons.video_url`, por lo que la lección aparece como "sin video" y se muestra el uploader de nuevo.
 
-### 1. Auto-asociación de videos huérfanos (una sola vez)
+Esto no es un bug de las políticas RLS (las políticas están correctas) ni del player: es una falta de GRANT a nivel Postgres.
 
-Script/edge function `bunny-auto-link` (admin-only, uso interno):
-- Lista todos los videos de tu biblioteca Bunny.
-- Cruza con `lessons.bunny_video_id` para detectar los huérfanos.
-- Para cada huérfano, busca la lección con título más parecido (comparación normalizada: minúsculas, sin tildes, sin puntuación) **entre lecciones sin video del mismo curso si se puede inferir, o globalmente**.
-- Aplica solo los matches con similitud alta (umbral configurable, ej. ≥ 0.85) y devuelve un reporte con:
-  - Vinculados automáticamente.
-  - Dudosos (similitud media) — te los muestro para que confirmes uno por uno.
-  - Sin match.
-- La yo la ejecuto por ti vía `curl_edge_functions` y te paso el resultado en el chat. Los dudosos te los presento y los resuelves con "sí/no".
-- Al terminar, se elimina la función (igual que hicimos con `bunny-refresh-all`).
+## Solución
 
-### 2. Reproductor real en el editor del curso (creador)
+Una sola migración SQL que reponga los GRANTs en todas las tablas de `public`, respetando qué tablas deben ser legibles por `anon`:
 
-Reemplazar el bloque "Video listo ✅" de `LessonVideoUploader.tsx` por un **preview con el iframe de Bunny Stream** (`https://iframe.mediadelivery.net/embed/{libraryId}/{videoId}`), usando la edge function `bunny-embed-config` que ya existe para obtener la URL firmada si aplica.
+1. **Bulk grant a `authenticated` y `service_role`** en todas las tablas base de `public` (loop sobre `pg_class`):
+   - `authenticated` → `SELECT, INSERT, UPDATE, DELETE`
+   - `service_role` → `ALL`
+   
+   La RLS sigue filtrando fila por fila; el GRANT solo abre la puerta de la Data API.
 
-Cambios visuales:
-- Cuando la lección tiene un video Bunny en estado `ready` → se muestra el **player embebido** (no texto).
-- Debajo del player, un botón discreto **"Reemplazar video"** que abre el selector de archivo.
-- Se elimina toda mención a "Bunny" en el UI. Los estados pasan a decir:
-  - "Subiendo video… X%"
-  - "Procesando video…" (lo que antes decía "procesando en Bunny")
-  - "Video listo" solo como fallback si el player no carga.
-- Videos legacy (bucket `protected-content`) también se muestran con un `<video>` player en vez de solo el nombre de archivo.
+2. **GRANT SELECT explícito a `anon`** solo en las tablas con política pública real, según `pg_policies`:
+   - `courses`, `events`, `ebooks`, `one_on_one_sessions` (published viewable publicly)
+   - `course_modules` (viewable si el curso está publicado)
+   - `categories`
+   - `communities` (viewable when published)
+   - `creator_availability_rules`, `creator_availability_settings`, `session_availability_rules`
+   - `profiles` (necesario para resolver `creator_slug` en el storefront público)
 
-### 3. Limpieza de textos "Bunny" en el resto de la app
+   El resto (lessons, enrollments, orders, lesson_progress, creator_billing_info, 2FA, etc.) **no** recibe acceso `anon`: siguen siendo solo para usuarios autenticados vía sus políticas RLS existentes.
 
-Revisar y quitar menciones a "Bunny" visibles al usuario en:
-- `LessonVideoUploader.tsx` (toasts y estados).
-- Cualquier página de admin/creator donde aparezca la palabra.
+3. **Re-grant de columnas específicas** ya hecho previamente en `lessons` (`bunny_video_id, bunny_status, video_source`) sigue vigente; no se toca.
 
-Se mantiene "Bunny" solo en nombres de funciones/columnas internas y en `AdminVideoMigrationPage` (que es puramente admin y ayuda a debuggear).
+## Verificación
 
-## Fuera de alcance
+Tras aplicar la migración:
+- Ejecutar `SELECT count(*) FROM information_schema.table_privileges WHERE table_schema='public'` para confirmar que ya no es 0.
+- Alumno abre curso "Meta Ads desde Cero" → ver módulos/lecciones sin 403.
+- Creador abre editor de un curso con video ya subido → el reproductor debe aparecer en vez del uploader.
 
-- No cambio el player del alumno (solo el del editor del creador), a menos que también esté mostrando algo raro — dime si es el caso.
-- No borro videos huérfanos que no logren match automático; te los reporto y decides.
-- No toco esquema de base de datos.
+## Detalles técnicos
 
-## Orden de ejecución cuando pases a build
+```text
+Migration file: supabase/migrations/<timestamp>_restore_public_grants.sql
+- DO $$ ... $$ loop → GRANT authenticated + service_role sobre cada tabla base de public
+- GRANT SELECT ON <lista pública> TO anon;
+```
 
-1. Actualizo `LessonVideoUploader.tsx` con el player embebido y textos sin "Bunny".
-2. Creo `bunny-auto-link`, la ejecuto, te muestro el reporte.
-3. Confirmas los dudosos → aplico esos matches.
-4. Elimino la función temporal.
+No se modifica ninguna política RLS, ni código del frontend, ni edge functions.

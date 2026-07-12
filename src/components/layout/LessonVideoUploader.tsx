@@ -271,11 +271,47 @@ export default function LessonVideoUploader({
                 <X className="h-4 w-4" />
               </Button>
             </div>
+          ) : legacyFilename && !uploading ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                <Film className="h-5 w-5 text-primary" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm truncate">{legacyFilename}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Guardado en Lovable Cloud (video anterior)
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRemoveVideo}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="border-2 border-dashed rounded-lg p-3 text-center">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="video/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  disabled={uploading}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Reemplazar por un nuevo video
+                </Button>
+              </div>
+            </div>
           ) : bunnyStatus === "processing" ? (
-            <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <span className="text-sm flex-1">Tu video se está procesando en Bunny…</span>
-              <Button
+
                 type="button"
                 variant="ghost"
                 size="sm"

@@ -14,8 +14,34 @@ import { resolveProtectedUrl } from "@/lib/protectedMedia";
 interface LessonVideoUploaderProps {
   lessonId: string;
   currentUrl: string | null;
-  prepareLesson?: () => Promise<string>;
+  prepareLesson?: (currentLessonId: string) => Promise<string>;
   onUrlChange: (url: string) => void;
+}
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const isUuid = (value: string | null | undefined) => !!value && UUID_RE.test(value);
+
+async function getFunctionErrorMessage(error: any) {
+  const fallback = error?.message || "No se pudo iniciar la subida";
+  const response = error?.context;
+  if (!response || typeof response !== "object") return fallback;
+
+  try {
+    const clone = typeof response.clone === "function" ? response.clone() : response;
+    if (typeof clone.json === "function") {
+      const payload = await clone.json();
+      return payload?.detail || payload?.error || fallback;
+    }
+  } catch {
+    try {
+      const clone = typeof response.clone === "function" ? response.clone() : response;
+      if (typeof clone.text === "function") return (await clone.text()) || fallback;
+    } catch {}
+  }
+
+  return fallback;
 }
 
 // The uploader has two modes: paste a YouTube/Vimeo URL, or upload an MP4 that
@@ -39,6 +65,9 @@ export default function LessonVideoUploader({
     "idle" | "uploading" | "processing" | "ready" | "error"
   >("idle");
   const [hostedVideoId, setHostedVideoId] = useState<string | null>(null);
+  const [resolvedLessonId, setResolvedLessonId] = useState<string | null>(() =>
+    isUuid(lessonId) ? lessonId : null,
+  );
   const [legacyFilename, setLegacyFilename] = useState<string | null>(null);
   const [mode, setMode] = useState<"url" | "upload">(() => {
     if (!currentUrl) return "upload";
@@ -47,7 +76,15 @@ export default function LessonVideoUploader({
 
   const isExternalUrl =
     !!currentUrl && /youtube\.com|youtu\.be|vimeo\.com/i.test(currentUrl);
-  const isPersistedLessonId = /^[0-9a-f-]{36}$/i.test(lessonId);
+  const persistedLessonId = isUuid(resolvedLessonId)
+    ? resolvedLessonId
+    : isUuid(lessonId)
+      ? lessonId
+      : null;
+
+  useEffect(() => {
+    if (isUuid(lessonId)) setResolvedLessonId(lessonId);
+  }, [lessonId]);
 
   // Signed embed URL for the hosted video (token generated server-side).
   const { data: bunnySignedEmbed } = useQuery({
@@ -67,21 +104,21 @@ export default function LessonVideoUploader({
 
   // Signed URL for legacy videos stored in our own bucket.
   const { data: legacySignedUrl } = useQuery({
-    queryKey: ["lesson-legacy-video", lessonId, legacyFilename],
-    queryFn: () => resolveProtectedUrl("lesson_video", lessonId),
-    enabled: !!legacyFilename,
+    queryKey: ["lesson-legacy-video", persistedLessonId, legacyFilename],
+    queryFn: () => resolveProtectedUrl("lesson_video", persistedLessonId!),
+    enabled: !!legacyFilename && !!persistedLessonId,
     staleTime: 50 * 60 * 1000,
   });
 
   // Load current lesson state
   useEffect(() => {
-    if (!isPersistedLessonId) return;
+    if (!persistedLessonId) return;
     let alive = true;
     (async () => {
       const { data } = await (supabase as any)
         .from("lessons")
         .select("bunny_status, bunny_video_id, video_source, video_url")
-        .eq("id", lessonId)
+        .eq("id", persistedLessonId)
         .maybeSingle();
       if (!alive || !data) return;
       if (data.video_source === "bunny" && data.bunny_video_id) {
@@ -101,16 +138,17 @@ export default function LessonVideoUploader({
     return () => {
       alive = false;
     };
-  }, [isPersistedLessonId, lessonId]);
+  }, [persistedLessonId]);
 
   // Poll status while processing
   useEffect(() => {
     if (hostedStatus !== "processing" && hostedStatus !== "uploading") return;
+    if (!persistedLessonId) return;
     let alive = true;
     const t = setInterval(async () => {
       try {
         const { data } = await supabase.functions.invoke("bunny-video-status", {
-          body: { lessonId },
+          body: { lessonId: persistedLessonId },
         });
         if (!alive) return;
         const s = (data as any)?.status;
@@ -129,7 +167,7 @@ export default function LessonVideoUploader({
       alive = false;
       clearInterval(t);
     };
-  }, [hostedStatus, lessonId, toast]);
+  }, [hostedStatus, persistedLessonId, toast]);
 
   const startUpload = async (file: File) => {
     if (!file.type.startsWith("video/")) {
@@ -154,27 +192,22 @@ export default function LessonVideoUploader({
     setHostedStatus("uploading");
 
     try {
-      let uploadLessonId = lessonId;
-      console.log("[LessonVideoUploader] startUpload", {
-        lessonId,
-        isPersistedLessonId,
-        hasPrepareLesson: !!prepareLesson,
-      });
-      if (!isPersistedLessonId) {
+      let uploadLessonId = persistedLessonId || lessonId;
+      if (!isUuid(uploadLessonId)) {
         if (!prepareLesson) {
           throw new Error("Guarda los cambios del curso antes de subir un video a una lección nueva.");
         }
-        uploadLessonId = await prepareLesson();
-        console.log("[LessonVideoUploader] prepareLesson returned", { uploadLessonId });
-        if (!/^[0-9a-f-]{36}$/i.test(uploadLessonId)) {
-          throw new Error(`No se pudo preparar la lección (id inválido: ${uploadLessonId})`);
-        }
+        uploadLessonId = await prepareLesson(uploadLessonId);
       }
+      if (!isUuid(uploadLessonId)) {
+        throw new Error("No se pudo preparar la lección para subir el video. Guarda el curso e intenta nuevamente.");
+      }
+      setResolvedLessonId(uploadLessonId);
 
       const { data, error } = await supabase.functions.invoke("bunny-create-video", {
         body: { lessonId: uploadLessonId, title: file.name },
       });
-      if (error) throw error;
+      if (error) throw new Error(await getFunctionErrorMessage(error));
       if (!data || (data as any).error) {
         throw new Error((data as any)?.detail || (data as any)?.error || "No se pudo iniciar la subida");
       }
@@ -213,6 +246,7 @@ export default function LessonVideoUploader({
 
       setProgress(100);
       setHostedStatus("processing");
+      setResolvedLessonId(uploadLessonId);
       setHostedVideoId(videoId);
       setLegacyFilename(null);
       onUrlChange(`bunny:${videoId}`);
@@ -246,6 +280,7 @@ export default function LessonVideoUploader({
     setHostedStatus("idle");
     setHostedVideoId(null);
     setLegacyFilename(null);
+    if (!persistedLessonId) return;
     await (supabase as any)
       .from("lessons")
       .update({
@@ -254,7 +289,7 @@ export default function LessonVideoUploader({
         video_source: "legacy",
         video_url: null,
       })
-      .eq("id", lessonId);
+      .eq("id", persistedLessonId);
   };
 
   const hasHostedVideo =

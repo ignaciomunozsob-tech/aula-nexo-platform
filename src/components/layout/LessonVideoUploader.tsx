@@ -348,6 +348,12 @@ export default function LessonVideoUploader({
     hostedStatus === "ready" && !!hostedVideoId && !uploading;
   const hasLegacyVideo = !!legacyFilename && !uploading;
   const isProcessing = hostedStatus === "processing" && !uploading;
+  // Once the video is marked ready, the signed embed URL may still be in flight.
+  // Show a skeleton preview instead of falling back to the "select file" state,
+  // which made it look like nothing had been uploaded.
+  const isLoadingHostedPreview = hasHostedVideo && !bunnyEmbedUrl;
+  const isLoadingLegacyPreview = hasLegacyVideo && !legacySignedUrl;
+
 
   return (
     <div className="space-y-3">

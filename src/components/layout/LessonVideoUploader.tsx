@@ -36,6 +36,7 @@ export default function LessonVideoUploader({
   const [mode, setMode] = useState<"url" | "upload">(
     currentUrl && /^https?:\/\//i.test(currentUrl) ? "url" : "upload"
   );
+  const [legacyFilename, setLegacyFilename] = useState<string | null>(null);
 
   const isExternalUrl = !!currentUrl && /^https?:\/\//i.test(currentUrl);
 
@@ -45,18 +46,27 @@ export default function LessonVideoUploader({
     (async () => {
       const { data } = await (supabase as any)
         .from("lessons")
-        .select("bunny_status, bunny_video_id, video_source")
+        .select("bunny_status, bunny_video_id, video_source, video_url")
         .eq("id", lessonId)
         .maybeSingle();
       if (!alive || !data) return;
       if (data.video_source === "bunny" && data.bunny_video_id) {
         setBunnyStatus(data.bunny_status || "ready");
+        setLegacyFilename(null);
+      } else if (
+        data.video_url &&
+        !/^https?:\/\//i.test(data.video_url) &&
+        !data.video_url.startsWith("bunny:")
+      ) {
+        // Legacy video still stored in Lovable Cloud (protected-content bucket).
+        setLegacyFilename(data.video_url.split("/").pop() || "video");
       }
     })();
     return () => {
       alive = false;
     };
   }, [lessonId]);
+
 
   // Poll status while processing
   useEffect(() => {
@@ -179,9 +189,16 @@ export default function LessonVideoUploader({
   };
 
   const handleRemoveVideo = async () => {
+    if (legacyFilename) {
+      const ok = window.confirm(
+        "Este video está guardado en Lovable Cloud. Si lo eliminas, la lección quedará sin video (el archivo seguirá en Storage por seguridad, pero la lección no lo mostrará). ¿Continuar?",
+      );
+      if (!ok) return;
+    }
     onUrlChange("");
     setProgress(0);
     setBunnyStatus("idle");
+    setLegacyFilename(null);
     await (supabase as any)
       .from("lessons")
       .update({
@@ -192,6 +209,7 @@ export default function LessonVideoUploader({
       })
       .eq("id", lessonId);
   };
+
 
   return (
     <div className="space-y-3">
@@ -253,6 +271,45 @@ export default function LessonVideoUploader({
                 <X className="h-4 w-4" />
               </Button>
             </div>
+          ) : legacyFilename && !uploading ? (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                <Film className="h-5 w-5 text-primary" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm truncate">{legacyFilename}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Guardado en Lovable Cloud (video anterior)
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRemoveVideo}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="border-2 border-dashed rounded-lg p-3 text-center">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="video/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  disabled={uploading}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Reemplazar por un nuevo video
+                </Button>
+              </div>
+            </div>
           ) : bunnyStatus === "processing" ? (
             <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
@@ -266,6 +323,7 @@ export default function LessonVideoUploader({
                 <X className="h-4 w-4" />
               </Button>
             </div>
+
           ) : (
             <div className="border-2 border-dashed rounded-lg p-4 text-center space-y-3">
               <input

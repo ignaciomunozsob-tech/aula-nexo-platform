@@ -146,6 +146,9 @@ export default function CourseEditorPage() {
   });
 
   const [modules, setModules] = useState<ModuleForm[]>([]);
+  const modulesRef = useRef<ModuleForm[]>([]);
+  useEffect(() => { modulesRef.current = modules; }, [modules]);
+  const UUID_RE_EDITOR = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const [deletedModuleIds, setDeletedModuleIds] = useState<string[]>([]);
   const [deletedLessonIds, setDeletedLessonIds] = useState<string[]>([]);
   const [showPublishDialog, setShowPublishDialog] = useState(false);

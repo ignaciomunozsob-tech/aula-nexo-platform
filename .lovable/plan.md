@@ -1,41 +1,54 @@
-## Contexto
+## Lo que entendí
 
-`/admin` no te deja entrar porque no hay ningún usuario con rol `admin` en la base. Eso también bloquea las edge functions `bunny-migrate-lesson` y `bunny-cleanup-legacy`, que validan admin. Vamos a evitar ese muro con una función server-side de un solo uso, protegida por un token que sólo yo pasaré.
+1. **Bunny es invisible para el usuario final**. Ni tú ni tus creadores ni los alumnos deberían ver "bunny", "video id", ni links de Bunny. Es solo el hosting por atrás.
+2. **Auto-asociar los videos huérfanos**: yo hago el match, sin UI de arrastrar.
+3. **En el editor del curso (vista creador)**: al subir un video (o cuando ya hay uno), debe aparecer un **reproductor real** con el video, no un texto "Video listo".
 
-## Plan
+## Qué voy a hacer
 
-### 1. Generar un secreto de migración
-- `generate_secret` → `BUNNY_MIGRATION_TOKEN` (64 caracteres, random). No lo verás, no lo compartes, sólo lo usa el edge function.
+### 1. Auto-asociación de videos huérfanos (una sola vez)
 
-### 2. Nueva edge function `bunny-migrate-batch`
-- Endpoint POST, sin JWT (auth por header `X-Migration-Token`).
-- Compara contra `BUNNY_MIGRATION_TOKEN`; si no coincide → 401.
-- Lista todas las lecciones con `video_source='legacy'` y `video_url` no-http.
-- Por cada una, hace exactamente lo mismo que `bunny-migrate-lesson`: crea video en Bunny, descarga del bucket, PUT a Bunny, update de la lección. Registra progreso en `video_migration_jobs` (para poder auditar después desde SQL).
-- Devuelve `{ total, done, errors: [...] }`.
+Script/edge function `bunny-auto-link` (admin-only, uso interno):
+- Lista todos los videos de tu biblioteca Bunny.
+- Cruza con `lessons.bunny_video_id` para detectar los huérfanos.
+- Para cada huérfano, busca la lección con título más parecido (comparación normalizada: minúsculas, sin tildes, sin puntuación) **entre lecciones sin video del mismo curso si se puede inferir, o globalmente**.
+- Aplica solo los matches con similitud alta (umbral configurable, ej. ≥ 0.85) y devuelve un reporte con:
+  - Vinculados automáticamente.
+  - Dudosos (similitud media) — te los muestro para que confirmes uno por uno.
+  - Sin match.
+- La yo la ejecuto por ti vía `curl_edge_functions` y te paso el resultado en el chat. Los dudosos te los presento y los resuelves con "sí/no".
+- Al terminar, se elimina la función (igual que hicimos con `bunny-refresh-all`).
 
-### 3. Ejecutarla desde acá
-- Con `supabase--curl_edge_functions`, POST a `/bunny-migrate-batch` con `X-Migration-Token`.
-- Timeout de edge functions es 150s. Si no alcanza para las 19, la función procesa por bloques (ej. 6 por invocación) y devuelve `remaining > 0`; la llamo de nuevo hasta que llegue a 0.
-- Verifico con SQL: `SELECT count(*) FROM lessons WHERE video_source='bunny'`.
+### 2. Reproductor real en el editor del curso (creador)
 
-### 4. Después de migrar
-- Reporto: cuántas OK, cuántas con error y el motivo.
-- **NO borro los originales del bucket.** Quedan intactos para rollback. Cuando confirmes que todo se ve bien en el player, hacemos la limpieza en un segundo paso (otro batch guardado por el mismo token, o te promovemos a admin y usas el botón rojo).
+Reemplazar el bloque "Video listo ✅" de `LessonVideoUploader.tsx` por un **preview con el iframe de Bunny Stream** (`https://iframe.mediadelivery.net/embed/{libraryId}/{videoId}`), usando la edge function `bunny-embed-config` que ya existe para obtener la URL firmada si aplica.
 
-### 5. Limpieza del token
-- Cuando termine, borro el edge function `bunny-migrate-batch` y el secreto `BUNNY_MIGRATION_TOKEN` para no dejar una puerta abierta.
+Cambios visuales:
+- Cuando la lección tiene un video Bunny en estado `ready` → se muestra el **player embebido** (no texto).
+- Debajo del player, un botón discreto **"Reemplazar video"** que abre el selector de archivo.
+- Se elimina toda mención a "Bunny" en el UI. Los estados pasan a decir:
+  - "Subiendo video… X%"
+  - "Procesando video…" (lo que antes decía "procesando en Bunny")
+  - "Video listo" solo como fallback si el player no carga.
+- Videos legacy (bucket `protected-content`) también se muestran con un `<video>` player en vez de solo el nombre de archivo.
+
+### 3. Limpieza de textos "Bunny" en el resto de la app
+
+Revisar y quitar menciones a "Bunny" visibles al usuario en:
+- `LessonVideoUploader.tsx` (toasts y estados).
+- Cualquier página de admin/creator donde aparezca la palabra.
+
+Se mantiene "Bunny" solo en nombres de funciones/columnas internas y en `AdminVideoMigrationPage` (que es puramente admin y ayuda a debuggear).
 
 ## Fuera de alcance
 
-- No tocamos `bunny-migrate-lesson` original ni el panel `/admin/video-migration` (siguen ahí para el futuro).
-- No cambiamos roles de usuario.
-- No borramos nada del bucket todavía.
+- No cambio el player del alumno (solo el del editor del creador), a menos que también esté mostrando algo raro — dime si es el caso.
+- No borro videos huérfanos que no logren match automático; te los reporto y decides.
+- No toco esquema de base de datos.
 
-## Detalle técnico
+## Orden de ejecución cuando pases a build
 
-- Archivos nuevos: `supabase/functions/bunny-migrate-batch/index.ts`.
-- Sin cambios de DB.
-- Sin cambios de frontend.
-
-¿Le doy?
+1. Actualizo `LessonVideoUploader.tsx` con el player embebido y textos sin "Bunny".
+2. Creo `bunny-auto-link`, la ejecuto, te muestro el reporte.
+3. Confirmas los dudosos → aplico esos matches.
+4. Elimino la función temporal.

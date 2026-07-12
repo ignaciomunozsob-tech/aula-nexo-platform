@@ -189,9 +189,16 @@ export default function LessonVideoUploader({
   };
 
   const handleRemoveVideo = async () => {
+    if (legacyFilename) {
+      const ok = window.confirm(
+        "Este video está guardado en Lovable Cloud. Si lo eliminas, la lección quedará sin video (el archivo seguirá en Storage por seguridad, pero la lección no lo mostrará). ¿Continuar?",
+      );
+      if (!ok) return;
+    }
     onUrlChange("");
     setProgress(0);
     setBunnyStatus("idle");
+    setLegacyFilename(null);
     await (supabase as any)
       .from("lessons")
       .update({
@@ -202,6 +209,7 @@ export default function LessonVideoUploader({
       })
       .eq("id", lessonId);
   };
+
 
   return (
     <div className="space-y-3">

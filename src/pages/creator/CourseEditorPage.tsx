@@ -1083,7 +1083,6 @@ export default function CourseEditorPage() {
 
                                       {les.type === "video" && (
                                         <LessonVideoUploader
-                                          key={les.id}
                                           lessonId={les.id}
                                           currentUrl={les.video_url || null}
                                           prepareLesson={async () => persistNewLesson(mi, li)}

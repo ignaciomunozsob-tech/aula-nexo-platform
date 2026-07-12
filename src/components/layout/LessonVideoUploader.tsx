@@ -23,6 +23,27 @@ const UUID_RE =
 
 const isUuid = (value: string | null | undefined) => !!value && UUID_RE.test(value);
 
+async function getFunctionErrorMessage(error: any) {
+  const fallback = error?.message || "No se pudo iniciar la subida";
+  const response = error?.context;
+  if (!response || typeof response !== "object") return fallback;
+
+  try {
+    const clone = typeof response.clone === "function" ? response.clone() : response;
+    if (typeof clone.json === "function") {
+      const payload = await clone.json();
+      return payload?.detail || payload?.error || fallback;
+    }
+  } catch {
+    try {
+      const clone = typeof response.clone === "function" ? response.clone() : response;
+      if (typeof clone.text === "function") return (await clone.text()) || fallback;
+    } catch {}
+  }
+
+  return fallback;
+}
+
 // The uploader has two modes: paste a YouTube/Vimeo URL, or upload an MP4 that
 // the platform hosts (behind the scenes on Bunny Stream; the UI never surfaces
 // the word "Bunny"). Once a video is ready, we render an actual inline player
@@ -186,7 +207,7 @@ export default function LessonVideoUploader({
       const { data, error } = await supabase.functions.invoke("bunny-create-video", {
         body: { lessonId: uploadLessonId, title: file.name },
       });
-      if (error) throw error;
+      if (error) throw new Error(await getFunctionErrorMessage(error));
       if (!data || (data as any).error) {
         throw new Error((data as any)?.detail || (data as any)?.error || "No se pudo iniciar la subida");
       }

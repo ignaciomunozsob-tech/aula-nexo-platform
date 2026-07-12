@@ -137,11 +137,16 @@ export default function CoursePlayerPage() {
   const allLessonsPre = modules?.flatMap((m: any) => (m.lessons as any[]) || []) || [];
   const currentLessonForUrl = allLessonsPre.find((l: any) => l.id === selectedLessonId);
   const isVideoLesson = currentLessonForUrl?.type === 'video';
+  const isBunnyVideo =
+    isVideoLesson &&
+    (currentLessonForUrl as any)?.video_source === 'bunny' &&
+    !!(currentLessonForUrl as any)?.bunny_video_id;
+  const bunnyLibraryId = import.meta.env.VITE_BUNNY_LIBRARY_ID as string | undefined;
 
   const { data: signedVideoUrl } = useQuery({
     queryKey: ['signed-video', currentLessonForUrl?.id],
     queryFn: () => resolveProtectedUrl('lesson_video', currentLessonForUrl!.id),
-    enabled: !!isVideoLesson && !!currentLessonForUrl?.id && (!!enrollment || isPreviewMode),
+    enabled: !!isVideoLesson && !isBunnyVideo && !!currentLessonForUrl?.id && (!!enrollment || isPreviewMode),
     staleTime: 50 * 60 * 1000, // refresh before the 60-min TTL
   });
   const isYouTubeUrl = !!signedVideoUrl && /youtube\.com|youtu\.be/i.test(signedVideoUrl);

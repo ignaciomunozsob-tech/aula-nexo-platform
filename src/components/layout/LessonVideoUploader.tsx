@@ -154,31 +154,24 @@ export default function LessonVideoUploader({
       const { data, error } = await supabase.functions.invoke("bunny-create-video", {
         body: { lessonId, title: file.name },
       });
-      if (error || !data) throw error || new Error("No se pudo iniciar la subida");
-      const {
-        videoId,
-        libraryId: libId,
-        tusEndpoint,
-        authorizationSignature,
-        authorizationExpire,
-      } = data as {
+      if (error) throw error;
+      if (!data || (data as any).error) {
+        throw new Error((data as any)?.detail || (data as any)?.error || "No se pudo iniciar la subida");
+      }
+      const { videoId, endpoint, headers } = data as {
         videoId: string;
-        libraryId: string;
-        tusEndpoint: string;
-        authorizationSignature: string;
-        authorizationExpire: number;
+        endpoint: string;
+        headers: Record<string, string>;
       };
+      if (!endpoint || !headers) {
+        throw new Error("Respuesta inválida del servidor (falta endpoint/headers)");
+      }
 
       await new Promise<void>((resolve, reject) => {
         const upload = new tus.Upload(file, {
-          endpoint: tusEndpoint,
+          endpoint,
           retryDelays: [0, 1000, 3000, 5000, 10000],
-          headers: {
-            AuthorizationSignature: authorizationSignature,
-            AuthorizationExpire: String(authorizationExpire),
-            VideoId: videoId,
-            LibraryId: libId,
-          },
+          headers,
           metadata: { filetype: file.type, title: file.name },
           chunkSize: 50 * 1024 * 1024,
           onError: (err) => reject(err),

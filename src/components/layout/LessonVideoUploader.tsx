@@ -45,6 +45,7 @@ export default function LessonVideoUploader({
 
   const isExternalUrl =
     !!currentUrl && /youtube\.com|youtu\.be|vimeo\.com/i.test(currentUrl);
+  const isPersistedLessonId = /^[0-9a-f-]{36}$/i.test(lessonId);
 
   // Signed embed URL for the hosted video (token generated server-side).
   const { data: bunnySignedEmbed } = useQuery({
@@ -145,6 +146,15 @@ export default function LessonVideoUploader({
       });
       return;
     }
+    if (!isPersistedLessonId) {
+      toast({
+        title: "Guarda la lección primero",
+        description: "Guarda los cambios del curso antes de subir un video a una lección nueva.",
+        variant: "destructive",
+      });
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
 
     setUploading(true);
     setProgress(0);
@@ -158,11 +168,18 @@ export default function LessonVideoUploader({
       if (!data || (data as any).error) {
         throw new Error((data as any)?.detail || (data as any)?.error || "No se pudo iniciar la subida");
       }
-      const { videoId, endpoint, headers } = data as {
-        videoId: string;
-        endpoint: string;
-        headers: Record<string, string>;
-      };
+      const uploadConfig = data as any;
+      const videoId = String(uploadConfig.videoId || "");
+      const endpoint = String(uploadConfig.endpoint || uploadConfig.tusEndpoint || "");
+      const headers = (uploadConfig.headers ||
+        (uploadConfig.authorizationSignature && uploadConfig.authorizationExpire && uploadConfig.libraryId
+          ? {
+              AuthorizationSignature: String(uploadConfig.authorizationSignature),
+              AuthorizationExpire: String(uploadConfig.authorizationExpire),
+              VideoId: videoId,
+              LibraryId: String(uploadConfig.libraryId),
+            }
+          : null)) as Record<string, string> | null;
       if (!endpoint || !headers) {
         throw new Error("Respuesta inválida del servidor (falta endpoint/headers)");
       }

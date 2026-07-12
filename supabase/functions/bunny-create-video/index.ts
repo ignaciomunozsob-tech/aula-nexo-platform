@@ -135,6 +135,14 @@ Deno.serve(async (req) => {
     return json({
       videoId,
       libraryId: BUNNY_LIBRARY_ID,
+      endpoint: 'https://video.bunnycdn.com/tusupload',
+      headers: {
+        AuthorizationSignature: signature,
+        AuthorizationExpire: String(expiration),
+        VideoId: videoId,
+        LibraryId: BUNNY_LIBRARY_ID,
+      },
+      // legacy fields kept for backwards compat with older clients
       tusEndpoint: 'https://video.bunnycdn.com/tusupload',
       authorizationSignature: signature,
       authorizationExpire: expiration,

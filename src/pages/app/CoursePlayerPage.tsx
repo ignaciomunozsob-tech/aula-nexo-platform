@@ -418,10 +418,10 @@ export default function CoursePlayerPage() {
                 className="bg-black overflow-hidden mb-6"
                 style={{ aspectRatio: '16 / 9', borderRadius: 12 }}
               >
-                {isBunnyVideo && bunnyLibraryId ? (
-                  (currentLessonForUrl as any)?.bunny_status === 'ready' ? (
+                {isBunnyVideo ? (
+                  (currentLessonForUrl as any)?.bunny_status === 'ready' && bunnyEmbedUrl ? (
                     <iframe
-                      src={`https://iframe.mediadelivery.net/embed/${bunnyLibraryId}/${(currentLessonForUrl as any).bunny_video_id}`}
+                      src={bunnyEmbedUrl}
                       loading="lazy"
                       className="w-full h-full"
                       style={{ border: 'none' }}
@@ -431,7 +431,7 @@ export default function CoursePlayerPage() {
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-white/80 text-sm">
                       <Loader2 className="h-6 w-6 animate-spin" />
-                      Tu video se está procesando…
+                      {(currentLessonForUrl as any)?.bunny_status === 'ready' ? 'Cargando video…' : 'Tu video se está procesando…'}
                     </div>
                   )
                 ) : signedVideoUrl ? (

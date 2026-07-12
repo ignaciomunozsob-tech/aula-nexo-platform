@@ -44,10 +44,6 @@ Deno.serve(async (req) => {
       { lesson_id: lessonId, status: 'running', error_message: null },
       { onConflict: 'lesson_id' },
     )
-    await admin.rpc('noop').catch(() => {}) // ignore
-    await admin.from('video_migration_jobs').update({
-      attempts: 1,
-    }).eq('lesson_id', lessonId)
 
     const fail = async (msg: string, http = 500) => {
       await admin.from('video_migration_jobs').update({

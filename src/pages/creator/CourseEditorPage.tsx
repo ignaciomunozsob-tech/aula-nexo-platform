@@ -1128,9 +1128,35 @@ export default function CourseEditorPage() {
                                         <LessonVideoUploader
                                           lessonId={les.id}
                                           currentUrl={les.video_url || null}
+                                          courseId={id}
+                                          moduleId={mod.id}
+                                          moduleTitle={mod.title}
+                                          moduleOrderIndex={mi}
+                                          lessonTitle={les.title}
+                                          lessonOrderIndex={li}
+                                          lessonType={les.type}
                                           prepareLesson={(currentLessonId) =>
                                             persistNewLesson(mi, li, currentLessonId)
                                           }
+                                          onLessonPersisted={({ lessonId: persistedLessonId, moduleId: persistedModuleId }) => {
+                                            setModules((prev) => {
+                                              const u = [...prev];
+                                              if (u[mi]) {
+                                                u[mi] = {
+                                                  ...u[mi],
+                                                  id: persistedModuleId || u[mi].id,
+                                                  lessons: [...(u[mi].lessons || [])],
+                                                };
+                                                if (u[mi].lessons[li]) {
+                                                  u[mi].lessons[li] = {
+                                                    ...u[mi].lessons[li],
+                                                    id: persistedLessonId,
+                                                  };
+                                                }
+                                              }
+                                              return u;
+                                            });
+                                          }}
                                           onUrlChange={(url) => {
                                             setModules((prev) => {
                                               const u = [...prev];

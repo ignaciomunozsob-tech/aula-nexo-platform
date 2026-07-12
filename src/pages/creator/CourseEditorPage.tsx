@@ -1088,11 +1088,17 @@ export default function CourseEditorPage() {
                                           currentUrl={les.video_url || null}
                                           prepareLesson={async () => persistNewLesson(mi, li)}
                                           onUrlChange={(url) => {
-                                            const u = [...modules];
-                                            if (u[mi]?.lessons?.[li]) {
-                                              u[mi].lessons[li].video_url = url;
-                                              setModules(u);
-                                            }
+                                            setModules((prev) => {
+                                              const u = [...prev];
+                                              if (u[mi]?.lessons?.[li]) {
+                                                u[mi].lessons = [...u[mi].lessons];
+                                                u[mi].lessons[li] = {
+                                                  ...u[mi].lessons[li],
+                                                  video_url: url,
+                                                };
+                                              }
+                                              return u;
+                                            });
                                           }}
                                         />
                                       )}

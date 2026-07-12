@@ -311,7 +311,10 @@ export default function LessonVideoUploader({
               </div>
             </div>
           ) : bunnyStatus === "processing" ? (
-
+            <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <span className="text-sm flex-1">Tu video se está procesando en Bunny…</span>
+              <Button
                 type="button"
                 variant="ghost"
                 size="sm"
@@ -320,6 +323,7 @@ export default function LessonVideoUploader({
                 <X className="h-4 w-4" />
               </Button>
             </div>
+
           ) : (
             <div className="border-2 border-dashed rounded-lg p-4 text-center space-y-3">
               <input

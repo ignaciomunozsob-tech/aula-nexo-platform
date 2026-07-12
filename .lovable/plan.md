@@ -1,32 +1,41 @@
-## No hace falta re-subir nada
+## Contexto
 
-Ya construimos toda la infraestructura para migrar los 19 videos legacy **directamente desde el bucket de Lovable Cloud a Bunny**, sin que tengas que tocar los archivos. La edge function `bunny-migrate-lesson` descarga cada video con permisos de servicio y lo sube por API a tu Video Library de Bunny.
+`/admin` no te deja entrar porque no hay ningún usuario con rol `admin` en la base. Eso también bloquea las edge functions `bunny-migrate-lesson` y `bunny-cleanup-legacy`, que validan admin. Vamos a evitar ese muro con una función server-side de un solo uso, protegida por un token que sólo yo pasaré.
 
-## Pasos (sin cambios de código)
+## Plan
 
-1. Entrar a **`/admin/video-migration`** con tu cuenta admin.
-2. Verás "Videos legacy detectados en la base: **19**". Click en **"Encolar todas"** → crea 19 jobs en estado `pending`.
-3. Click en **"Iniciar migración"** → la página procesa uno por uno invocando `bunny-migrate-lesson`. Se muestra la barra `X de Y migrados`. **Deja la pestaña abierta** hasta que termine (el loop corre desde el navegador).
-4. Por cada lección migrada, la base queda actualizada así:
-   - `bunny_video_id` = id de Bunny
-   - `video_source` = `bunny`
-   - `bunny_status` = `processing` (pasa a `ready` cuando Bunny termina de codificar; el player ya sabe mostrar el spinner mientras tanto)
-   - `video_url` reemplazado por la URL CDN de Bunny
-5. Si alguno falla, aparece en "Errores" con el motivo. Botón **"Reintentar todas"** los vuelve a `pending`.
-6. **Importante:** el archivo original en el bucket `protected-content` **NO se borra** durante la migración (rollback safety). El botón rojo **"Eliminar originales de Storage"** sólo se habilita cuando los 19 están en `done`, y ahí sí borra los archivos legacy en un solo paso.
+### 1. Generar un secreto de migración
+- `generate_secret` → `BUNNY_MIGRATION_TOKEN` (64 caracteres, random). No lo verás, no lo compartes, sólo lo usa el edge function.
 
-## Consideraciones
+### 2. Nueva edge function `bunny-migrate-batch`
+- Endpoint POST, sin JWT (auth por header `X-Migration-Token`).
+- Compara contra `BUNNY_MIGRATION_TOKEN`; si no coincide → 401.
+- Lista todas las lecciones con `video_source='legacy'` y `video_url` no-http.
+- Por cada una, hace exactamente lo mismo que `bunny-migrate-lesson`: crea video en Bunny, descarga del bucket, PUT a Bunny, update de la lección. Registra progreso en `video_migration_jobs` (para poder auditar después desde SQL).
+- Devuelve `{ total, done, errors: [...] }`.
 
-- **Tiempo estimado:** cada video se descarga desde Storage y se sube a Bunny secuencialmente. Depende del tamaño total; para 19 lecciones típicas cuenta ~1-3 min por video.
-- **Tras la migración, encoding en Bunny:** Bunny tarda unos minutos extra en generar las calidades HLS. Durante ese rato el player muestra "Tu video se está procesando…". No es necesario esperarlo para pasar a la siguiente lección.
-- **Nada se pierde si algo sale mal:** los originales quedan en Storage hasta que tú decidas borrarlos manualmente.
-- **YouTube/Vimeo y PDFs:** no se tocan.
+### 3. Ejecutarla desde acá
+- Con `supabase--curl_edge_functions`, POST a `/bunny-migrate-batch` con `X-Migration-Token`.
+- Timeout de edge functions es 150s. Si no alcanza para las 19, la función procesa por bloques (ej. 6 por invocación) y devuelve `remaining > 0`; la llamo de nuevo hasta que llegue a 0.
+- Verifico con SQL: `SELECT count(*) FROM lessons WHERE video_source='bunny'`.
+
+### 4. Después de migrar
+- Reporto: cuántas OK, cuántas con error y el motivo.
+- **NO borro los originales del bucket.** Quedan intactos para rollback. Cuando confirmes que todo se ve bien en el player, hacemos la limpieza en un segundo paso (otro batch guardado por el mismo token, o te promovemos a admin y usas el botón rojo).
+
+### 5. Limpieza del token
+- Cuando termine, borro el edge function `bunny-migrate-batch` y el secreto `BUNNY_MIGRATION_TOKEN` para no dejar una puerta abierta.
 
 ## Fuera de alcance
 
-Ningún archivo, edge function, ni tabla se modifica. Solo se ejecuta el flujo ya implementado.
+- No tocamos `bunny-migrate-lesson` original ni el panel `/admin/video-migration` (siguen ahí para el futuro).
+- No cambiamos roles de usuario.
+- No borramos nada del bucket todavía.
 
-## ¿Preguntas antes de ejecutar?
+## Detalle técnico
 
-- ¿Confirmas que en Bunny ya tienes activado **Token Authentication** y el **Referrer allowlist** con `soynovu.cl`, `www.soynovu.cl` y el dominio de preview? Si no, los videos migrados podrían no reproducirse bien en producción.
-- ¿Quieres que además, cuando termine todo, dispare automáticamente la limpieza de los originales, o prefieres apretar el botón manualmente cuando revises que todo se ve OK?
+- Archivos nuevos: `supabase/functions/bunny-migrate-batch/index.ts`.
+- Sin cambios de DB.
+- Sin cambios de frontend.
+
+¿Le doy?

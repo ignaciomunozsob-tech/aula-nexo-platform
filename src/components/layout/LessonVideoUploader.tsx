@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import * as tus from "tus-js-client";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,8 +15,9 @@ interface LessonVideoUploaderProps {
   onUrlChange: (url: string) => void;
 }
 
-const BUCKET = "protected-content";
-
+// Videos live in Bunny Stream. We keep YouTube/Vimeo URLs in the same `video_url`
+// column for the "URL" mode. The bunny video id is stored separately in
+// `lessons.bunny_video_id` by the edge functions.
 export default function LessonVideoUploader({
   lessonId,
   currentUrl,
@@ -28,38 +30,61 @@ export default function LessonVideoUploader({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [bunnyStatus, setBunnyStatus] = useState<
+    "idle" | "uploading" | "processing" | "ready" | "error"
+  >("idle");
   const [mode, setMode] = useState<"url" | "upload">(
-    currentUrl && !/^https?:\/\//i.test(currentUrl) ? "upload" : "url"
+    currentUrl && /^https?:\/\//i.test(currentUrl) ? "url" : "upload"
   );
 
-  const isUploadedVideo = !!currentUrl && !/^https?:\/\//i.test(currentUrl);
+  const isExternalUrl = !!currentUrl && /^https?:\/\//i.test(currentUrl);
 
-  const uploadWithProgress = (
-    url: string,
-    token: string,
-    file: File,
-    onProgress: (pct: number) => void
-  ) =>
-    new Promise<void>((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open("PUT", url, true);
-      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-      xhr.setRequestHeader("x-upsert", "true");
-      xhr.setRequestHeader("cache-control", "public, max-age=31536000, immutable");
-      xhr.setRequestHeader(
-        "Content-Type",
-        file.type || "application/octet-stream"
-      );
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
-      };
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) resolve();
-        else reject(new Error(`Upload falló (${xhr.status}): ${xhr.responseText}`));
-      };
-      xhr.onerror = () => reject(new Error("Error de red durante la subida"));
-      xhr.send(file);
-    });
+  // Load current lesson bunny state
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("lessons")
+        .select("bunny_status, bunny_video_id, video_source")
+        .eq("id", lessonId)
+        .maybeSingle();
+      if (!alive || !data) return;
+      if (data.video_source === "bunny" && data.bunny_video_id) {
+        setBunnyStatus(data.bunny_status || "ready");
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [lessonId]);
+
+  // Poll status while processing
+  useEffect(() => {
+    if (bunnyStatus !== "processing" && bunnyStatus !== "uploading") return;
+    let alive = true;
+    const t = setInterval(async () => {
+      try {
+        const { data } = await supabase.functions.invoke("bunny-video-status", {
+          body: { lessonId },
+        });
+        if (!alive) return;
+        const s = (data as any)?.status;
+        if (s === "ready") {
+          setBunnyStatus("ready");
+          toast({ title: "Video listo ✅" });
+        } else if (s === "error") {
+          setBunnyStatus("error");
+          toast({ title: "Bunny reportó un error al procesar", variant: "destructive" });
+        } else if (s) {
+          setBunnyStatus(s);
+        }
+      } catch {}
+    }, 5000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [bunnyStatus, lessonId, toast]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -86,42 +111,62 @@ export default function LessonVideoUploader({
 
     setUploading(true);
     setProgress(0);
+    setBunnyStatus("uploading");
 
     try {
-      const { data: authData } = await supabase.auth.getUser();
-      if (!authData.user) throw new Error("No estás autenticado");
+      // Ask backend to create the Bunny video and give us a TUS signature.
+      const { data, error } = await supabase.functions.invoke("bunny-create-video", {
+        body: { lessonId, title: file.name },
+      });
+      if (error || !data) throw error || new Error("No se pudo iniciar la subida");
+      const {
+        videoId,
+        libraryId,
+        tusEndpoint,
+        authorizationSignature,
+        authorizationExpire,
+      } = data as {
+        videoId: string;
+        libraryId: string;
+        tusEndpoint: string;
+        authorizationSignature: string;
+        authorizationExpire: number;
+      };
 
-      const fileExt = file.name.split(".").pop()?.toLowerCase();
-      const allowedExts = ["mp4", "mov", "webm", "avi", "mkv"];
-      if (!fileExt || !allowedExts.includes(fileExt)) {
-        throw new Error("Formato de video no soportado");
-      }
+      await new Promise<void>((resolve, reject) => {
+        const upload = new tus.Upload(file, {
+          endpoint: tusEndpoint,
+          retryDelays: [0, 1000, 3000, 5000, 10000],
+          headers: {
+            AuthorizationSignature: authorizationSignature,
+            AuthorizationExpire: String(authorizationExpire),
+            VideoId: videoId,
+            LibraryId: libraryId,
+          },
+          metadata: {
+            filetype: file.type,
+            title: file.name,
+          },
+          chunkSize: 50 * 1024 * 1024,
+          onError: (err) => reject(err),
+          onProgress: (bytesUploaded, bytesTotal) => {
+            setProgress(Math.round((bytesUploaded / bytesTotal) * 100));
+          },
+          onSuccess: () => resolve(),
+        });
+        upload.start();
+      });
 
-      const fileName = `${lessonId}-${Date.now()}.${fileExt}`;
-      const filePath = `${authData.user.id}/lessons/${fileName}`;
-
-      // Use signed upload URL + XHR so we get real upload progress.
-      const { data: signed, error: signErr } = await supabase.storage
-        .from(BUCKET)
-        .createSignedUploadUrl(filePath);
-      if (signErr || !signed) throw signErr || new Error("No se pudo iniciar la subida");
-
-      // signed.signedUrl is a full URL we PUT to. token is included for completeness.
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken =
-        sessionData.session?.access_token ||
-        // fallback to anon key from supabase client (public)
-        (supabase as any).supabaseKey ||
-        "";
-
-      await uploadWithProgress(signed.signedUrl, accessToken, file, setProgress);
-
-      // Store the storage PATH (not a URL). Access is mediated by get-protected-url.
-      onUrlChange(filePath);
       setProgress(100);
-      toast({ title: "Video subido correctamente ✅" });
+      setBunnyStatus("processing");
+      // Store the video id in the same field so parent forms have a value to save.
+      // The player uses `video_source='bunny'` + `bunny_video_id`; the URL is set
+      // once Bunny finishes encoding.
+      onUrlChange(`bunny:${videoId}`);
+      toast({ title: "Video subido — procesando en Bunny…" });
     } catch (err: any) {
       console.error("Upload error:", err);
+      setBunnyStatus("error");
       toast({
         title: "Error al subir",
         description: err?.message || "Intenta nuevamente",
@@ -133,9 +178,19 @@ export default function LessonVideoUploader({
     }
   };
 
-  const handleRemoveVideo = () => {
+  const handleRemoveVideo = async () => {
     onUrlChange("");
     setProgress(0);
+    setBunnyStatus("idle");
+    await (supabase as any)
+      .from("lessons")
+      .update({
+        bunny_video_id: null,
+        bunny_status: "ready",
+        video_source: "legacy",
+        video_url: null,
+      })
+      .eq("id", lessonId);
   };
 
   return (
@@ -168,7 +223,7 @@ export default function LessonVideoUploader({
           title={!allowDirectVideo ? "Disponible desde Plan Creador" : undefined}
         >
           {allowDirectVideo ? <Upload className="h-4 w-4 mr-1" /> : <Lock className="h-4 w-4 mr-1" />}
-          Subir MP4
+          Subir video
         </Button>
       </div>
       {!allowDirectVideo && mode === "upload" && (
@@ -179,16 +234,29 @@ export default function LessonVideoUploader({
 
       {mode === "url" ? (
         <Input
-          value={isUploadedVideo ? "" : currentUrl || ""}
+          value={isExternalUrl ? currentUrl || "" : ""}
           onChange={(e) => onUrlChange(e.target.value)}
           placeholder="https://www.youtube.com/watch?v=..."
         />
       ) : (
         <div className="space-y-2">
-          {isUploadedVideo && currentUrl && !uploading ? (
+          {bunnyStatus === "ready" && !uploading ? (
             <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
               <Film className="h-5 w-5 text-primary" />
-              <span className="text-sm flex-1 truncate">Video cargado</span>
+              <span className="text-sm flex-1 truncate">Video listo</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleRemoveVideo}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : bunnyStatus === "processing" ? (
+            <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <span className="text-sm flex-1">Tu video se está procesando en Bunny…</span>
               <Button
                 type="button"
                 variant="ghost"
@@ -212,7 +280,7 @@ export default function LessonVideoUploader({
                 <div className="space-y-2">
                   <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Subiendo… {progress}%
+                    Subiendo a Bunny… {progress}%
                   </div>
                   <Progress value={progress} className="h-2" />
                 </div>

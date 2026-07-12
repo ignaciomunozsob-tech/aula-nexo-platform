@@ -496,10 +496,29 @@ export default function CourseEditorPage() {
 
   const addModule = () => setModules([...modules, { id: `new-${Date.now()}`, title: "Nuevo módulo", lessons: [] }]);
 
-  const persistNewLesson = async (moduleIndex: number, lessonIndex: number) => {
+  const persistNewLesson = async (
+    moduleIndex: number,
+    lessonIndex: number,
+    currentLessonId?: string,
+  ) => {
     if (!id) throw new Error("No se pudo determinar courseId");
-    const mod = modules[moduleIndex];
-    const les = mod?.lessons?.[lessonIndex];
+    const currentModules = modules;
+    let resolvedModuleIndex = moduleIndex;
+    let resolvedLessonIndex = lessonIndex;
+
+    if (currentLessonId) {
+      const foundModuleIndex = currentModules.findIndex((m) =>
+        (m.lessons || []).some((l) => l.id === currentLessonId),
+      );
+      if (foundModuleIndex >= 0) {
+        resolvedModuleIndex = foundModuleIndex;
+        resolvedLessonIndex =
+          currentModules[foundModuleIndex].lessons?.findIndex((l) => l.id === currentLessonId) ?? lessonIndex;
+      }
+    }
+
+    const mod = currentModules[resolvedModuleIndex];
+    const les = mod?.lessons?.[resolvedLessonIndex];
     if (!mod || !les) throw new Error("No se encontró la lección");
     if (!mod.id?.startsWith("new-") && !les.id?.startsWith("new-")) return les.id;
 
@@ -507,7 +526,7 @@ export default function CourseEditorPage() {
     if (mod.id?.startsWith("new-")) {
       const { data, error } = await supabase
         .from("course_modules")
-        .insert({ course_id: id, title: mod.title, order_index: moduleIndex })
+        .insert({ course_id: id, title: mod.title, order_index: resolvedModuleIndex })
         .select("id")
         .single();
       if (error) throw error;
@@ -525,7 +544,7 @@ export default function CourseEditorPage() {
           video_url: les.type === "video" ? (les.video_url || null) : null,
           content_text: les.type === "text" ? (les.content_text || null) : null,
           description: les.description || null,
-          order_index: lessonIndex,
+          order_index: resolvedLessonIndex,
         })
         .select("id")
         .single();
@@ -535,12 +554,20 @@ export default function CourseEditorPage() {
 
     setModules((prev) => {
       const next = [...prev];
-      if (next[moduleIndex]) {
-        next[moduleIndex] = { ...next[moduleIndex], id: moduleId };
-        next[moduleIndex].lessons = [...(next[moduleIndex].lessons || [])];
-        if (next[moduleIndex].lessons[lessonIndex]) {
-          next[moduleIndex].lessons[lessonIndex] = {
-            ...next[moduleIndex].lessons[lessonIndex],
+      const targetModuleIndex = currentLessonId
+        ? next.findIndex((m) => (m.lessons || []).some((l) => l.id === currentLessonId))
+        : resolvedModuleIndex;
+      const safeModuleIndex = targetModuleIndex >= 0 ? targetModuleIndex : resolvedModuleIndex;
+      if (next[safeModuleIndex]) {
+        next[safeModuleIndex] = { ...next[safeModuleIndex], id: moduleId };
+        next[safeModuleIndex].lessons = [...(next[safeModuleIndex].lessons || [])];
+        const targetLessonIndex = currentLessonId
+          ? next[safeModuleIndex].lessons.findIndex((l) => l.id === currentLessonId)
+          : resolvedLessonIndex;
+        const safeLessonIndex = targetLessonIndex >= 0 ? targetLessonIndex : resolvedLessonIndex;
+        if (next[safeModuleIndex].lessons[safeLessonIndex]) {
+          next[safeModuleIndex].lessons[safeLessonIndex] = {
+            ...next[safeModuleIndex].lessons[safeLessonIndex],
             id: lessonId,
           };
         }
@@ -1085,7 +1112,9 @@ export default function CourseEditorPage() {
                                         <LessonVideoUploader
                                           lessonId={les.id}
                                           currentUrl={les.video_url || null}
-                                          prepareLesson={async () => persistNewLesson(mi, li)}
+                                          prepareLesson={(currentLessonId) =>
+                                            persistNewLesson(mi, li, currentLessonId)
+                                          }
                                           onUrlChange={(url) => {
                                             setModules((prev) => {
                                               const u = [...prev];

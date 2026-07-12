@@ -49,11 +49,11 @@ Deno.serve(async (req) => {
       return json({
         error: 'Invalid lessonId',
         detail: 'La lección todavía no fue guardada antes de iniciar la subida.',
-      }, 400)
+      })
     }
     if (!isUuid(lessonId)) {
       console.error('[bunny-create-video] invalid lessonId', lessonId)
-      return json({ error: 'Invalid lessonId', detail: lessonId }, 400)
+      return json({ error: 'Invalid lessonId', detail: lessonId })
     }
 
     console.log('[bunny-create-video] start', { lessonId, title, userId })

@@ -146,6 +146,9 @@ export default function CourseEditorPage() {
   });
 
   const [modules, setModules] = useState<ModuleForm[]>([]);
+  const modulesRef = useRef<ModuleForm[]>([]);
+  useEffect(() => { modulesRef.current = modules; }, [modules]);
+  const UUID_RE_EDITOR = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const [deletedModuleIds, setDeletedModuleIds] = useState<string[]>([]);
   const [deletedLessonIds, setDeletedLessonIds] = useState<string[]>([]);
   const [showPublishDialog, setShowPublishDialog] = useState(false);
@@ -500,40 +503,56 @@ export default function CourseEditorPage() {
     moduleIndex: number,
     lessonIndex: number,
     currentLessonId?: string,
-  ) => {
-    if (!id) throw new Error("No se pudo determinar courseId");
-    const currentModules = modules;
-    let resolvedModuleIndex = moduleIndex;
-    let resolvedLessonIndex = lessonIndex;
+  ): Promise<string> => {
+    if (!id) throw new Error("Guarda el curso antes de subir un video.");
 
+    // Always read the latest modules from the ref, not a stale render closure.
+    const latest = modulesRef.current;
+
+    // Locate lesson: prefer lookup by currentLessonId (survives reorders), fall back to indices.
+    let mi = moduleIndex;
+    let li = lessonIndex;
     if (currentLessonId) {
-      const foundModuleIndex = currentModules.findIndex((m) =>
+      const foundMi = latest.findIndex((m) =>
         (m.lessons || []).some((l) => l.id === currentLessonId),
       );
-      if (foundModuleIndex >= 0) {
-        resolvedModuleIndex = foundModuleIndex;
-        resolvedLessonIndex =
-          currentModules[foundModuleIndex].lessons?.findIndex((l) => l.id === currentLessonId) ?? lessonIndex;
+      if (foundMi >= 0) {
+        mi = foundMi;
+        const foundLi = (latest[foundMi].lessons || []).findIndex(
+          (l) => l.id === currentLessonId,
+        );
+        if (foundLi >= 0) li = foundLi;
       }
     }
 
-    const mod = currentModules[resolvedModuleIndex];
-    const les = mod?.lessons?.[resolvedLessonIndex];
-    if (!mod || !les) throw new Error("No se encontró la lección");
-    if (!mod.id?.startsWith("new-") && !les.id?.startsWith("new-")) return les.id;
+    const mod = latest[mi];
+    const les = mod?.lessons?.[li];
+    if (!mod || !les) {
+      throw new Error("No se encontró la lección. Guarda los cambios e intenta de nuevo.");
+    }
 
+    // Already persisted? Return the real UUID.
+    if (!mod.id?.startsWith("new-") && !les.id?.startsWith("new-")) {
+      if (!UUID_RE_EDITOR.test(les.id)) {
+        throw new Error("La lección tiene un ID inválido. Guarda el curso e intenta nuevamente.");
+      }
+      return les.id;
+    }
+
+    // Persist module if new
     let moduleId = mod.id;
     if (mod.id?.startsWith("new-")) {
       const { data, error } = await supabase
         .from("course_modules")
-        .insert({ course_id: id, title: mod.title, order_index: resolvedModuleIndex })
+        .insert({ course_id: id, title: mod.title, order_index: mi })
         .select("id")
         .single();
       if (error) throw error;
       moduleId = data.id;
     }
 
-    let lessonId = les.id;
+    // Persist lesson if new
+    let newLessonId = les.id;
     if (les.id?.startsWith("new-")) {
       const { data, error } = await supabase
         .from("lessons")
@@ -544,39 +563,36 @@ export default function CourseEditorPage() {
           video_url: les.type === "video" ? (les.video_url || null) : null,
           content_text: les.type === "text" ? (les.content_text || null) : null,
           description: les.description || null,
-          order_index: resolvedLessonIndex,
+          order_index: li,
         })
         .select("id")
         .single();
       if (error) throw error;
-      lessonId = data.id;
+      newLessonId = data.id;
     }
 
+    if (!UUID_RE_EDITOR.test(newLessonId)) {
+      throw new Error("No se pudo obtener un ID válido para la lección recién creada.");
+    }
+
+    // Sync state with the newly assigned real IDs (find by prior temp id).
+    const oldLessonId = les.id;
+    const oldModuleId = mod.id;
     setModules((prev) => {
-      const next = [...prev];
-      const targetModuleIndex = currentLessonId
-        ? next.findIndex((m) => (m.lessons || []).some((l) => l.id === currentLessonId))
-        : resolvedModuleIndex;
-      const safeModuleIndex = targetModuleIndex >= 0 ? targetModuleIndex : resolvedModuleIndex;
-      if (next[safeModuleIndex]) {
-        next[safeModuleIndex] = { ...next[safeModuleIndex], id: moduleId };
-        next[safeModuleIndex].lessons = [...(next[safeModuleIndex].lessons || [])];
-        const targetLessonIndex = currentLessonId
-          ? next[safeModuleIndex].lessons.findIndex((l) => l.id === currentLessonId)
-          : resolvedLessonIndex;
-        const safeLessonIndex = targetLessonIndex >= 0 ? targetLessonIndex : resolvedLessonIndex;
-        if (next[safeModuleIndex].lessons[safeLessonIndex]) {
-          next[safeModuleIndex].lessons[safeLessonIndex] = {
-            ...next[safeModuleIndex].lessons[safeLessonIndex],
-            id: lessonId,
-          };
-        }
-      }
+      const next = prev.map((m) => {
+        const isTarget = m.id === oldModuleId;
+        const nextModule = isTarget ? { ...m, id: moduleId } : { ...m };
+        nextModule.lessons = (m.lessons || []).map((l) =>
+          l.id === oldLessonId ? { ...l, id: newLessonId } : l,
+        );
+        return nextModule;
+      });
       return next;
     });
 
-    return lessonId;
+    return newLessonId;
   };
+
 
   const deleteModule = (mi: number) => {
     const mod = modules[mi];

@@ -54,6 +54,23 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
     enabled: !!eventIdProp || !!params.slug,
   });
 
+  // Meta Pixel: creator-level ViewContent
+  useEffect(() => {
+    if (!event?.creator_id) return;
+    supabase.rpc("get_creator_pixel_id_by_id", { _creator_id: event.creator_id }).then(({ data }) => {
+      const pid = (data as string | null) ?? null;
+      if (!pid) return;
+      initPixel(pid);
+      trackEventFor(pid, "ViewContent", {
+        value: event.price_clp || 0,
+        currency: "CLP",
+        content_type: "event",
+        content_ids: [event.id],
+        content_name: event.title,
+      });
+    });
+  }, [event?.id, event?.creator_id]);
+
   if (isLoading) {
     return <div className="flex items-center justify-center py-24"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }

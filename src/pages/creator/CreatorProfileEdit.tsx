@@ -328,44 +328,6 @@ export default function CreatorProfileEdit() {
           </CardContent>
         </Card>
 
-        {/* Meta Pixel */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" /> Meta Pixel (Facebook / Instagram Ads)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <Label>ID del Pixel</Label>
-              <Input
-                value={metaPixelId}
-                onChange={(e) => setMetaPixelId(e.target.value)}
-                placeholder="Ej: 1234567890123456"
-                className="mt-1"
-                inputMode="numeric"
-              />
-              <p className="text-xs text-muted-foreground mt-2">
-                Pega aquí el ID numérico de tu Pixel de Meta. Se disparará automáticamente
-                en tu perfil público, las páginas de tus cursos y en cada compra con los
-                eventos estándar: <strong>PageView</strong>, <strong>ViewContent</strong>,{' '}
-                <strong>InitiateCheckout</strong> y <strong>Purchase</strong> (con monto y moneda CLP).
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                ¿Cómo obtenerlo? Entra a{' '}
-                <a
-                  href="https://business.facebook.com/events_manager2"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  Meta Events Manager
-                </a>{' '}
-                → Conjuntos de datos → tu Pixel → copia el ID.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Redes Sociales */}
         <Card>

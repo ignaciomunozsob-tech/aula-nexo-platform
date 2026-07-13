@@ -74,7 +74,9 @@ export default function CheckoutPage({ embed = false }: Props) {
     if (viewContentFiredRef.current === key) return;
     const params = {
       value: products.main.price_clp, currency: 'CLP',
-      content_type: page.product_type, content_ids: [page.product_id],
+      content_type: 'product',
+      content_category: page.product_type,
+      content_ids: [page.product_id],
       content_name: products.main.title,
     };
     if (creator.meta_pixel_id) {

@@ -349,6 +349,7 @@ export default function CreatorProductsPage() {
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left p-4 font-medium">Evento</th>
+                    <th className="text-left p-4 font-medium">ID</th>
                     <th className="text-left p-4 font-medium">Fecha</th>
                     <th className="text-left p-4 font-medium">Estado</th>
                     <th className="text-left p-4 font-medium">Precio</th>
@@ -360,6 +361,7 @@ export default function CreatorProductsPage() {
                   {events.map(event => (
                     <tr key={event.id}>
                       <td className="p-4"><p className="font-medium">{event.title}</p></td>
+                      <td className="p-4"><ProductIdCell id={event.id} /></td>
                       <td className="p-4">
                         {new Date(event.event_date).toLocaleDateString('es-CL', {
                           day: 'numeric',

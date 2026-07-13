@@ -10,8 +10,9 @@ import { sanitizeHtml } from "@/lib/sanitize";
 import { useMercadoPagoCheckout } from "@/hooks/useMercadoPagoCheckout";
 import { useAuth } from "@/lib/auth";
 import { GuestCheckoutDialog } from "@/components/checkout/GuestCheckoutDialog";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { initPixel, trackEventFor } from "@/lib/metaPixel";
 
 interface Props {
   eventId?: string;

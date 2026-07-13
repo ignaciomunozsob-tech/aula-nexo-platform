@@ -20,6 +20,7 @@ import SessionBookingPage from "@/pages/SessionBookingPage";
 import ProductResolverPage from "@/pages/ProductResolverPage";
 import CheckoutPage from "@/pages/CheckoutPage";
 import PaymentResultPage from "@/pages/PaymentResultPage";
+import PurchaseConfirmedPage from "@/pages/PurchaseConfirmedPage";
 import LoginPage from "@/pages/auth/LoginPage";
 import SignupPage from "@/pages/auth/SignupPage";
 import NotFound from "@/pages/NotFound";

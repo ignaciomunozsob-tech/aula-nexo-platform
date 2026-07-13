@@ -97,7 +97,7 @@ export default function EventEditorPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('events')
-        .select('id, title, description, price_clp, category_id, status, cover_image_url, duration_minutes, max_attendees, event_date, event_type, location, creator_id, slug, is_novu_official')
+        .select('id, title, description, price_clp, redirect_url, category_id, status, cover_image_url, duration_minutes, max_attendees, event_date, event_type, location, creator_id, slug, is_novu_official')
         .eq('id', id!)
         .single();
       if (error) throw error;

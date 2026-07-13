@@ -210,6 +210,12 @@ export default function CreatorIntegrationsPage() {
                   Se dispara en todas tus páginas públicas y checkout.
                 </p>
               </div>
+              <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
+                <p className="font-medium text-foreground">Cómo crear una Conversión personalizada por producto</p>
+                <p>
+                  En Meta Events Manager → <strong>Conversiones personalizadas</strong>, filtra por el evento <strong>Purchase</strong> y agrega una regla: <code className="font-mono">content_ids</code> <strong>contiene</strong> el <strong>ID del producto</strong> (lo ves en <em>Mis productos</em> → columna ID, botón para copiar). No filtres por <code className="font-mono">content_type</code>: NOVU envía siempre <code className="font-mono">product</code> para que Meta lo acepte.
+                </p>
+              </div>
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" onClick={() => { setPixelInput(pixelId); setPixelDialogOpen(true); }}>
                   <Pencil className="h-4 w-4 mr-2" /> Editar

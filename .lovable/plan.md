@@ -1,59 +1,55 @@
+# Fix: Meta Pixel product_id legible para conversiones personalizadas
 
-# Página de confirmación de compra
+## Diagnóstico
 
-Nueva ruta pública `/compra-confirmada/:reference` que reemplaza (para el caso `success`) a la actual `/payment/success`. Mantiene `/payment/failure` y `/payment/pending` sin cambios.
+El error `#1885014 — combinación no válida de parámetros` ocurre porque Meta espera que `content_type` sea uno de los valores estándar (`product` o `product_group`) cuando se hacen conversiones personalizadas basadas en `content_ids` / `product_id`. Actualmente NOVU envía `content_type: 'course' | 'ebook' | 'event' | 'session'`, valores que Meta no reconoce como catálogo y por eso rechaza el objeto promocionado.
 
-## 1. Base de datos (migration)
+`PurchaseConfirmedPage` ya usa correctamente `content_type: 'product'`; el resto de los eventos (ViewContent, InitiateCheckout, Purchase legacy) no.
 
-Ampliar `orders` con columnas mínimas — el resto ya existe (`product_type`, `product_id`, `user_id`, `amount_clp`, `creator_id`, `guest_email`, `created_at`, `metadata`):
+## Cambios (solo frontend / Pixel)
 
-- `reference` text UNIQUE — formato `NOV-{año}-{5 dígitos}`
-- `installments` smallint — cuotas usadas en MP
-- `pixel_fired` boolean default false
-- `admin_email_sent` boolean default false
-- `creator_email_sent` boolean default false
+Reemplazar en todos los `trackEvent` / `trackEventFor` este patrón:
 
-Trigger `BEFORE INSERT` en `orders` para autogenerar `reference` si viene null (año actual + 5 dígitos random, reintenta en colisión).
+Antes:
+```
+content_type: 'course',           // o 'ebook' | 'event' | 'session' | page.product_type
+content_ids: [productId],
+```
 
-Nueva RPC `get_order_by_reference(_ref text)` (SECURITY DEFINER) que devuelve los mismos campos que `get_order_public` + `reference`, `installments`, `pixel_fired`, más el nombre + imagen del producto y nombre/slug del creador. Sin exponer datos internos.
+Después:
+```
+content_type: 'product',
+content_ids: [productId],         // el UUID sigue siendo el product_id que ve el creador
+content_category: 'course',       // el tipo real de NOVU, para segmentar sin romper Meta
+content_name: <title>,            // ya está en varios, uniformar
+```
 
-Nueva RPC `mark_order_pixel_fired(_ref text)` que setea `pixel_fired=true` (idempotente).
+Así `content_ids` = `product_id` sigue siendo el mismo UUID que se muestra en el panel del creador (`ProductIdCell`) y que se guarda en `orders.product_id`, pero Meta ya lo acepta como catálogo válido y las conversiones personalizadas por `product_id` (Custom Conversions → URL/Event Parameter → `content_ids` contains `<uuid>`) empiezan a matchear.
 
-Los campos "tiene_cuenta" y "id_comprador" ya viven en `orders.user_id` + `metadata.is_new_user`; no se duplican.
+### Archivos a editar
 
-## 2. MercadoPago
+1. `src/pages/CheckoutPage.tsx` — ViewContent: `content_type: 'product'`, mover `page.product_type` a `content_category`.
+2. `src/hooks/useMercadoPagoCheckout.ts` — InitiateCheckout: idem.
+3. `src/pages/CourseDetailPage.tsx` — ViewContent: idem (`'course'` → category).
+4. `src/pages/EbookDetailPage.tsx` — idem.
+5. `src/pages/EventDetailPage.tsx` — idem.
+6. `src/pages/SessionBookingPage.tsx` — idem.
+7. `src/pages/PaymentResultPage.tsx` — Purchase legacy: idem (usa `order.product_type`).
+8. `src/pages/PurchaseConfirmedPage.tsx` — ya está en `'product'`; agregar `content_category` con el tipo real para consistencia.
 
-- `create-payment`: guardar `back_urls.success` apuntando a `${SITE}/compra-confirmada/{reference}` (usando la `reference` recién generada, ya persistida en `orders`). Los flujos `failure` y `pending` siguen igual.
-- `mercadopago-webhook`: al marcar `status=paid`, capturar `payment.installments` en `orders.installments`. Aquí se disparan los emails a admin (ya existe, se mantiene) y **nuevo** email al creador (`creator-new-sale`), controlados por `admin_email_sent` / `creator_email_sent` para evitar duplicados.
+### Bonus de diagnóstico para el creador
 
-## 3. Frontend
+En `CreatorIntegrationsPage.tsx`, agregar una nota corta bajo la descripción del Meta Pixel indicando que para crear una **Conversión personalizada** en Meta debe filtrar por `content_ids` (no por `content_type`) y pegar el `product_id` visible en su tabla de productos. Sin cambios de lógica, solo copy.
 
-Nueva página `src/pages/PurchaseConfirmedPage.tsx` (ruta `/compra-confirmada/:reference`, agregada al router antes del catch-all):
+## Fuera de alcance
 
-- Poll de `get_order_by_reference` (2s x 6) hasta `status=paid`.
-- Diseño según spec: check amarillo #fcc70e animado, título, card con portada + nombre + creador + monto + cuotas + `reference` en monospace.
-- Si `user_id` mapea a cuenta existente (no `metadata.is_new_user`) → botón amarillo "Acceder ahora →" al producto. Si es guest → card informativa con email y aviso de spam.
-- Botón secundario outline "Explorar más productos →" a `/courses`.
-- Meta Pixel: al confirmar `paid` y `pixel_fired=false`, resolver pixel del creador vía `get_creator_pixel_id_by_id`; si no hay, usar `NOVU_META_PIXEL_ID`. Disparar `Purchase` una sola vez, luego `mark_order_pixel_fired`. Guardado en `sessionStorage[fired_${reference}]` como segundo candado ante recargas rápidas.
+- No se toca backend, edge functions, `orders`, ni el `product_id` en sí.
+- No se cambia la lógica de qué pixel dispara (global vs creador).
+- No se agregan eventos nuevos.
 
-`PaymentResultPage` queda solo para `failure`/`pending`. Redirect de compatibilidad: si llega a `/payment/success?order=…` resolver la `reference` y redirigir a la nueva ruta.
+## Verificación
 
-## 4. Emails (Lovable Emails / templates existentes en `_shared/transactional-email-templates/`)
-
-- **Comprador sin cuenta**: ya se dispara `resetPasswordForEmail` en el webhook — mantener. No se cambia el remitente (Lovable Emails via `notificaciones.soynovu.cl`), no se introduce Resend porque el proyecto usa Lovable Emails. Si insistes en `hola@soynovu.cl` como From, requiere configurar ese buzón como sender verificado en la infra actual — lo dejo fuera del alcance salvo confirmación.
-- **Admin (`admin-new-sale`)**: ya existe. Solo se ajusta el `to` para que también incluya `ignacio@raffamarketing.cl` (variable en `send-transactional-email` o override en `templateData`).
-- **Creador (nuevo template `creator-new-sale.tsx`)**: crea plantilla React Email con nombre producto, comprador, monto bruto, comisión NOVU (10%), fee comunidad si aplica, ganancia neta, referencia, fecha y link a `/creator-app/finances`. Registrar en `registry.ts`. Enviar desde el webhook con `idempotencyKey=${order.id}-creator-sale` y guard `creator_email_sent`.
-
-Deploy de `send-transactional-email`, `mercadopago-webhook`, `create-payment`.
-
-## 5. Fuera de alcance (no se toca)
-
-- `/payment/failure` y `/payment/pending`.
-- Estructura de `orders.metadata` existente.
-- Otros pixels (`MetaPixelTracker` global) — solo se agrega el `Purchase` dedupeado en la nueva página.
-- Diseño global, sidebars, resto de rutas.
-
-## Archivos
-
-- **Nuevos**: `src/pages/PurchaseConfirmedPage.tsx`, `supabase/functions/_shared/transactional-email-templates/creator-new-sale.tsx`, 1 migration.
-- **Editados**: `src/App.tsx` (ruta + redirect de `/payment/success`), `src/pages/PaymentResultPage.tsx` (redirect success→nueva), `supabase/functions/create-payment/index.ts` (back_url + generar reference), `supabase/functions/mercadopago-webhook/index.ts` (installments, email creador, admin CC), `supabase/functions/_shared/transactional-email-templates/registry.ts`.
+1. Preview → abrir producto → Meta Pixel Helper debe mostrar ViewContent con `content_type=product` y `content_ids=[<uuid>]`.
+2. Iniciar checkout → InitiateCheckout con los mismos parámetros.
+3. Completar compra de prueba → Purchase con `content_type=product` + `value` + `currency=CLP`.
+4. En Meta Events Manager → Conversiones personalizadas → crear una con regla `content_ids contains <product_id>` y confirmar que Meta ya no devuelve #1885014.

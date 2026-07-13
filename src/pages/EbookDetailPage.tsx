@@ -52,7 +52,8 @@ export default function EbookDetailPage({ ebookId: ebookIdProp }: Props) {
       trackEventFor(pid, "ViewContent", {
         value: ebook.price_clp || 0,
         currency: "CLP",
-        content_type: "ebook",
+        content_type: "product",
+        content_category: "ebook",
         content_ids: [ebook.id],
         content_name: ebook.title,
       });

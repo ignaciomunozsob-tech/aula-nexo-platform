@@ -55,7 +55,8 @@ export default function SessionBookingPage({ sessionIdOverride }: Props = {}) {
       trackEventFor(pid, "ViewContent", {
         value: (session as any).price_clp || 0,
         currency: "CLP",
-        content_type: "session",
+        content_type: "product",
+        content_category: "session",
         content_ids: [sessionId],
         content_name: (session as any).title,
       });

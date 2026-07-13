@@ -32,7 +32,7 @@ export default function CreatorProfileEdit() {
   const [bio, setBio] = useState(profileData?.bio || '');
   const [creatorSlug, setCreatorSlug] = useState(profileData?.creator_slug || '');
   const [introVideoUrl, setIntroVideoUrl] = useState(profileData?.intro_video_url || '');
-  const [metaPixelId, setMetaPixelId] = useState('');
+  const [uploading, setUploading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(profileData?.avatar_url || '');
 

@@ -21,4 +21,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'admin-new-creator': adminNewCreator,
   'admin-new-sale': adminNewSale,
   'event-registration-confirmation': eventRegistrationConfirmation,
+  'creator-new-sale': creatorNewSale,
 }

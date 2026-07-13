@@ -255,19 +255,21 @@ export default function CourseDetailPage() {
     });
   }, [(course as any)?.creator_id]);
 
-  // Initialize creator pixel + fire ViewContent when the course loads
+  // Fire ViewContent once per (course, pixel) pair — avoid duplicate events
+  const viewContentFiredRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!course) return;
-    if (creatorPixelId) initPixel(creatorPixelId);
-    const params = {
+    if (!course || !creatorPixelId) return;
+    const key = `${course.id}:${creatorPixelId}`;
+    if (viewContentFiredRef.current === key) return;
+    viewContentFiredRef.current = key;
+    initPixel(creatorPixelId);
+    trackEventFor(creatorPixelId, 'ViewContent', {
       content_type: 'course',
       content_ids: [course.id],
       content_name: course.title,
       value: course.price_clp ?? 0,
       currency: 'CLP',
-    };
-    trackEvent('ViewContent', params);
-    if (creatorPixelId) trackEventFor(creatorPixelId, 'ViewContent', params);
+    });
   }, [course?.id, creatorPixelId]);
 
   const handleEnrollClick = () => {

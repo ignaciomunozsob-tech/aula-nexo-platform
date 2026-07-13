@@ -8,6 +8,7 @@ import { Plus, Edit, Eye, Users, BookOpen, FileText, Calendar, Video } from 'luc
 import { formatPrice, getCourseUrl } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NewProductDialog } from '@/components/creator/NewProductDialog';
+import { ProductIdCell } from '@/components/creator/ProductIdCell';
 import {
   Dialog,
   DialogContent,

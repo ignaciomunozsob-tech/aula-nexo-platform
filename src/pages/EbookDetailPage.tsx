@@ -1,4 +1,5 @@
 import { Link, useParams } from "react-router-dom";
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { formatPrice } from "@/lib/utils";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { useMercadoPagoCheckout } from "@/hooks/useMercadoPagoCheckout";
 import { GuestCheckoutDialog } from "@/components/checkout/GuestCheckoutDialog";
+import { initPixel, trackEventFor } from "@/lib/metaPixel";
 
 interface Props {
   ebookId?: string;

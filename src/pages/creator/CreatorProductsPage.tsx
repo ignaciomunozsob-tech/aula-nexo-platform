@@ -251,6 +251,7 @@ export default function CreatorProductsPage() {
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left p-4 font-medium">Producto</th>
+                    <th className="text-left p-4 font-medium">ID</th>
                     <th className="text-left p-4 font-medium">Estado</th>
                     <th className="text-left p-4 font-medium">Precio</th>
                     <th className="text-center p-4 font-medium">Alumnos</th>
@@ -261,6 +262,7 @@ export default function CreatorProductsPage() {
                   {courses.map(course => (
                     <tr key={course.id}>
                       <td className="p-4"><p className="font-medium">{course.title}</p></td>
+                      <td className="p-4"><ProductIdCell id={course.id} /></td>
                       <td className="p-4"><StatusBadge status={course.status} /></td>
                       <td className="p-4">{formatPrice(course.price_clp)}</td>
                       <td className="p-4 text-center">

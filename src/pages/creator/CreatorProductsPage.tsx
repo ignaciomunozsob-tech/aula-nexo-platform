@@ -208,6 +208,7 @@ export default function CreatorProductsPage() {
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left p-4 font-medium">Sesión</th>
+                    <th className="text-left p-4 font-medium">ID</th>
                     <th className="text-left p-4 font-medium">Duración</th>
                     <th className="text-left p-4 font-medium">Estado</th>
                     <th className="text-right p-4 font-medium">Acciones</th>
@@ -217,6 +218,7 @@ export default function CreatorProductsPage() {
                   {sessions.map((s: any) => (
                     <tr key={s.id}>
                       <td className="p-4 font-medium">{s.title}</td>
+                      <td className="p-4"><ProductIdCell id={s.id} /></td>
                       <td className="p-4">{s.duration_min} min</td>
                       <td className="p-4"><StatusBadge status={s.status} /></td>
                       <td className="p-4 text-right">

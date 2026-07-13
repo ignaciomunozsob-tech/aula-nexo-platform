@@ -37,7 +37,8 @@ export function useMercadoPagoCheckout() {
     const params = {
       value: meta.value ?? undefined,
       currency: 'CLP',
-      content_type: productType,
+      content_type: 'product',
+      content_category: productType,
       content_ids: [productId],
       content_name: meta.contentName,
     };

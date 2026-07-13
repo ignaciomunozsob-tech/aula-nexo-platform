@@ -145,11 +145,13 @@ Deno.serve(async (req) => {
     else if (['rejected', 'cancelled'].includes(mpStatus)) newStatus = 'failed';
 
     const wasPaidBefore = order.status === 'paid';
+    const installments: number | null = typeof payment?.installments === 'number' ? payment.installments : null;
     await admin.from('orders').update({
       mp_payment_id: String(payment.id),
       mp_payment_status: mpStatus,
       status: newStatus,
       paid_at: newStatus === 'paid' ? new Date().toISOString() : order.paid_at,
+      installments: installments ?? order.installments ?? null,
     }).eq('id', order.id);
 
     if (newStatus === 'paid' && !wasPaidBefore) {

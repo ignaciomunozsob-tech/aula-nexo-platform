@@ -306,6 +306,7 @@ export default function CreatorProductsPage() {
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left p-4 font-medium">Producto</th>
+                    <th className="text-left p-4 font-medium">ID</th>
                     <th className="text-left p-4 font-medium">Estado</th>
                     <th className="text-left p-4 font-medium">Precio</th>
                     <th className="text-right p-4 font-medium">Acciones</th>
@@ -315,6 +316,7 @@ export default function CreatorProductsPage() {
                   {ebooks.map(ebook => (
                     <tr key={ebook.id}>
                       <td className="p-4"><p className="font-medium">{ebook.title}</p></td>
+                      <td className="p-4"><ProductIdCell id={ebook.id} /></td>
                       <td className="p-4"><StatusBadge status={ebook.status} /></td>
                       <td className="p-4">{formatPrice(ebook.price_clp)}</td>
                       <td className="p-4 text-right">

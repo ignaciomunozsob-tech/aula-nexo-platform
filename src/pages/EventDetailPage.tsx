@@ -10,7 +10,7 @@ import { sanitizeHtml } from "@/lib/sanitize";
 import { useMercadoPagoCheckout } from "@/hooks/useMercadoPagoCheckout";
 import { useAuth } from "@/lib/auth";
 import { GuestCheckoutDialog } from "@/components/checkout/GuestCheckoutDialog";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { initPixel, trackEventFor } from "@/lib/metaPixel";
 

@@ -71,12 +71,7 @@ export default function CreatorProfileEdit() {
     setName(profileData?.name || '');
     setBio(profileData?.bio || '');
     setCreatorSlug(profileData?.creator_slug || '');
-    setIntroVideoUrl(profileData?.intro_video_url || '');
     setAvatarUrl(profileData?.avatar_url || '');
-    // meta_pixel_id is column-restricted; fetch via secure RPC
-    supabase.rpc('get_my_meta_pixel_id').then(({ data }) => {
-      setMetaPixelId((data as string | null) ?? '');
-    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileData?.id, profileData?.updated_at]);
 

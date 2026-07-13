@@ -76,7 +76,8 @@ export default function PaymentResultPage() {
     const params = {
       value: order.amount_clp ?? 0,
       currency: 'CLP',
-      content_type: order.product_type,
+      content_type: 'product',
+      content_category: order.product_type,
       content_ids: [order.product_id],
       order_id: order.id,
     };

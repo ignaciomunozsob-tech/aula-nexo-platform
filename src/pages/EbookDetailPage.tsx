@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -37,13 +37,17 @@ export default function EbookDetailPage({ ebookId: ebookIdProp }: Props) {
     enabled: !!ebookIdProp || !!params.slug,
   });
 
-  // Meta Pixel: creator-level ViewContent
+  // Meta Pixel: creator-level ViewContent (fires once per ebook)
+  const viewContentFiredRef = useRef<string | null>(null);
   useEffect(() => {
     const cid = (ebook as any)?.creator_id;
-    if (!cid || !ebook) return;
+    if (!cid || !ebook?.id) return;
+    if (viewContentFiredRef.current === ebook.id) return;
     supabase.rpc("get_creator_pixel_id_by_id", { _creator_id: cid }).then(({ data }) => {
       const pid = (data as string | null) ?? null;
       if (!pid) return;
+      if (viewContentFiredRef.current === ebook.id) return;
+      viewContentFiredRef.current = ebook.id;
       initPixel(pid);
       trackEventFor(pid, "ViewContent", {
         value: ebook.price_clp || 0,
@@ -53,7 +57,7 @@ export default function EbookDetailPage({ ebookId: ebookIdProp }: Props) {
         content_name: ebook.title,
       });
     });
-  }, [ebook]);
+  }, [ebook?.id]);
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-24"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;

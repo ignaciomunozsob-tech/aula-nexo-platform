@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -66,16 +66,19 @@ export default function CheckoutPage({ embed = false }: Props) {
     },
   });
 
-  // Meta Pixel: ViewContent
+  // Meta Pixel: ViewContent (fires once per product on this checkout)
+  const viewContentFiredRef = useRef<string | null>(null);
   useEffect(() => {
     if (!products?.main || !creator) return;
+    const key = `${page.product_id}:${creator.meta_pixel_id ?? ''}`;
+    if (viewContentFiredRef.current === key) return;
     const params = {
       value: products.main.price_clp, currency: 'CLP',
       content_type: page.product_type, content_ids: [page.product_id],
       content_name: products.main.title,
     };
-    // Global pixel handled by MetaPixelTracker on route change
     if (creator.meta_pixel_id) {
+      viewContentFiredRef.current = key;
       initPixel(creator.meta_pixel_id);
       trackEventFor(creator.meta_pixel_id, 'ViewContent', params);
     }

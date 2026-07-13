@@ -10,7 +10,7 @@ import { sanitizeHtml } from "@/lib/sanitize";
 import { useMercadoPagoCheckout } from "@/hooks/useMercadoPagoCheckout";
 import { useAuth } from "@/lib/auth";
 import { GuestCheckoutDialog } from "@/components/checkout/GuestCheckoutDialog";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { initPixel, trackEventFor } from "@/lib/metaPixel";
 
@@ -54,12 +54,16 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
     enabled: !!eventIdProp || !!params.slug,
   });
 
-  // Meta Pixel: creator-level ViewContent
+  // Meta Pixel: creator-level ViewContent (fires once per event)
+  const viewContentFiredRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!event?.creator_id) return;
+    if (!event?.creator_id || !event?.id) return;
+    if (viewContentFiredRef.current === event.id) return;
     supabase.rpc("get_creator_pixel_id_by_id", { _creator_id: event.creator_id }).then(({ data }) => {
       const pid = (data as string | null) ?? null;
       if (!pid) return;
+      if (viewContentFiredRef.current === event.id) return;
+      viewContentFiredRef.current = event.id;
       initPixel(pid);
       trackEventFor(pid, "ViewContent", {
         value: event.price_clp || 0,

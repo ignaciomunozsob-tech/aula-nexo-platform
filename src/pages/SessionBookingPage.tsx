@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,12 +41,16 @@ export default function SessionBookingPage({ sessionIdOverride }: Props = {}) {
     enabled: !!creatorSlug && !!sessionId,
   });
 
-  // Meta Pixel: creator-level ViewContent for the 1:1 session
+  // Meta Pixel: creator-level ViewContent for the 1:1 session (fires once)
+  const viewContentFiredRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!creatorSlug || !session) return;
+    if (!creatorSlug || !session || !sessionId) return;
+    if (viewContentFiredRef.current === sessionId) return;
     supabase.rpc("get_creator_pixel_id", { _creator_slug: creatorSlug }).then(({ data }) => {
       const pid = (data as string | null) ?? null;
       if (!pid) return;
+      if (viewContentFiredRef.current === sessionId) return;
+      viewContentFiredRef.current = sessionId;
       initPixel(pid);
       trackEventFor(pid, "ViewContent", {
         value: (session as any).price_clp || 0,

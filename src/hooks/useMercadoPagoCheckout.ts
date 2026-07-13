@@ -83,7 +83,14 @@ export function useMercadoPagoCheckout() {
       }
     } catch (e: any) {
       console.error(e);
-      toast.error(e?.message ?? 'No se pudo iniciar el pago');
+      const raw = String(e?.message ?? '');
+      let friendly = raw || 'No se pudo iniciar el pago';
+      if (raw.includes('creator_not_connected') || raw.includes('mercadopago_not_connected')) {
+        friendly = 'Este creador aún no ha conectado su cuenta de pagos. Inténtalo más tarde.';
+      } else if (raw.includes('product_not_found') || raw.includes('not_found')) {
+        friendly = 'Este producto ya no está disponible.';
+      }
+      toast.error(friendly);
       setLoading(false);
     }
   };
@@ -104,6 +111,8 @@ export function useMercadoPagoCheckout() {
 
   const submitGuestData = async (data: { name: string; email: string; phone: string }) => {
     if (!pending) return;
+    // Mostrar loading en el diálogo y el botón del producto mientras se contacta a MP
+    setLoading(true);
     setGuestDialogOpen(false);
     await doCheckout(pending.productType, pending.productId, pending.meta, data);
     setPending(null);

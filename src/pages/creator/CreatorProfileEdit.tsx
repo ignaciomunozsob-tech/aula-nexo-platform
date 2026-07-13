@@ -149,7 +149,6 @@ export default function CreatorProfileEdit() {
         bio,
         creator_slug: slug,
         links: linksArray,
-        meta_pixel_id: metaPixelId?.trim() || null,
       };
 
       const trimmedIntro = introVideoUrl?.trim();

@@ -113,41 +113,40 @@ Deno.serve(async (req) => {
     }
 
 
-    const main = await fetchProduct(admin, body.product_type, body.product_id);
+    // Parallelize independent lookups: product, app_settings, optional checkout_page
+    const [mainRes, settingsRes, pageRes] = await Promise.all([
+      fetchProduct(admin, body.product_type, body.product_id),
+      admin.from('app_settings').select('key, value').in('key', ['commission_pct', 'community_fee_clp']),
+      (body.checkout_page_id && body.include_bump)
+        ? admin.from('checkout_pages')
+            .select('id, creator_id, bump_enabled, bump_product_type, bump_product_id, bump_discount_pct')
+            .eq('id', body.checkout_page_id).maybeSingle()
+        : Promise.resolve({ data: null } as any),
+    ]);
+    const main = mainRes;
     if (!main) return json({ error: 'Product not found' }, 404);
     if (main.amount <= 0) return json({ error: 'Producto sin precio configurado' }, 400);
 
     // Optional order bump via checkout_page
     let bumpInfo: { type: ProductType; id: string; amount: number; title: string; cover: string | null } | null = null;
-    if (body.checkout_page_id && body.include_bump) {
-      const { data: page } = await admin.from('checkout_pages')
-        .select('id, creator_id, bump_enabled, bump_product_type, bump_product_id, bump_discount_pct')
-        .eq('id', body.checkout_page_id).maybeSingle();
-      if (page?.bump_enabled && page.bump_product_type && page.bump_product_id) {
-        const bp = await fetchProduct(admin, page.bump_product_type as ProductType, page.bump_product_id);
-        if (bp && bp.amount > 0) {
-          const discount = Math.max(0, Math.min(90, page.bump_discount_pct ?? 0));
-          const final = Math.round(bp.amount * (100 - discount) / 100);
-          bumpInfo = { type: page.bump_product_type as ProductType, id: page.bump_product_id, amount: final, title: bp.title, cover: bp.cover };
-        }
+    const page = pageRes?.data;
+    if (page?.bump_enabled && page.bump_product_type && page.bump_product_id) {
+      const bp = await fetchProduct(admin, page.bump_product_type as ProductType, page.bump_product_id);
+      if (bp && bp.amount > 0) {
+        const discount = Math.max(0, Math.min(90, page.bump_discount_pct ?? 0));
+        const final = Math.round(bp.amount * (100 - discount) / 100);
+        bumpInfo = { type: page.bump_product_type as ProductType, id: page.bump_product_id, amount: final, title: bp.title, cover: bp.cover };
       }
     }
 
     const totalAmount = main.amount + (bumpInfo?.amount ?? 0);
 
     // NOVU ya no usa planes: comisión fija del 10% sobre cada venta.
-    // Lee de app_settings para permitir que el admin la ajuste a futuro sin redeploy.
     let comisionPct = 10;
     let communityFeeDefault = 990;
-    {
-      const { data: settings } = await admin
-        .from('app_settings')
-        .select('key, value')
-        .in('key', ['commission_pct', 'community_fee_clp']);
-      for (const row of settings || []) {
-        if (row.key === 'commission_pct' && typeof row.value === 'number') comisionPct = row.value;
-        if (row.key === 'community_fee_clp' && typeof row.value === 'number') communityFeeDefault = row.value;
-      }
+    for (const row of settingsRes?.data || []) {
+      if (row.key === 'commission_pct' && typeof row.value === 'number') comisionPct = row.value;
+      if (row.key === 'community_fee_clp' && typeof row.value === 'number') communityFeeDefault = row.value;
     }
     const platformAmount = Math.round(totalAmount * comisionPct / 100);
     const communityFee = (body.product_type === 'course' && (main as any).community_enabled)
@@ -155,13 +154,12 @@ Deno.serve(async (req) => {
       : 0;
     const creatorAmount = totalAmount - platformAmount - communityFee;
 
-    // Marketplace: use the creator's MercadoPago access token + take 10% as marketplace_fee.
-    // Falls back to NOVU's own MP token only if marketplace is not configured for this creator.
-    const { data: mpAccount } = await admin
-      .from('creator_mercadopago_accounts')
-      .select('access_token')
-      .eq('creator_id', main.creator_id)
-      .maybeSingle();
+    // Parallelize: creator's MP token + creator profile slug (for product_url)
+    const [mpAccountRes, profRes] = await Promise.all([
+      admin.from('creator_mercadopago_accounts').select('access_token').eq('creator_id', main.creator_id).maybeSingle(),
+      admin.from('profiles').select('creator_slug').eq('id', main.creator_id).maybeSingle(),
+    ]);
+    const mpAccount = mpAccountRes.data;
 
     if (!mpAccount?.access_token) {
       return json({
@@ -170,6 +168,14 @@ Deno.serve(async (req) => {
       }, 409);
     }
     const sellerAccessToken = mpAccount.access_token;
+
+    const rawOrigin = req.headers.get('origin') ?? body.return_url ?? '';
+    const origin = isAllowedOrigin(rawOrigin) ? new URL(rawOrigin).origin : 'https://soynovu.cl';
+    const returnBase = `${origin}/payment`;
+
+    const productUrl = (profRes.data?.creator_slug && (main as any).slug)
+      ? `${origin}/${profRes.data.creator_slug}/${(main as any).slug}`
+      : null;
 
     const { data: order, error: orderErr } = await admin.from('orders').insert({
       user_id: userId,
@@ -181,7 +187,7 @@ Deno.serve(async (req) => {
       platform_amount_clp: platformAmount,
       community_fee_clp: communityFee,
       status: 'pending',
-      metadata: { title: main.title, has_bump: !!bumpInfo, is_new_user: isNewUser, marketplace: true, redirect_url: (main as any).redirect_url ?? null },
+      metadata: { title: main.title, has_bump: !!bumpInfo, is_new_user: isNewUser, marketplace: true, redirect_url: (main as any).redirect_url ?? null, product_url: productUrl },
       checkout_page_id: body.checkout_page_id ?? null,
       bump_product_type: bumpInfo?.type ?? null,
       bump_product_id: bumpInfo?.id ?? null,
@@ -189,24 +195,8 @@ Deno.serve(async (req) => {
       guest_email: userEmail,
       guest_name: guestName,
       guest_phone: guestPhone,
-    } as any).select().single();
+    } as any).select('id, metadata').single();
     if (orderErr || !order) { console.error('create-payment order error', orderErr); return json({ error: 'No se pudo crear la orden' }, 500); }
-
-    const rawOrigin = req.headers.get('origin') ?? body.return_url ?? '';
-    const origin = isAllowedOrigin(rawOrigin) ? new URL(rawOrigin).origin : 'https://soynovu.cl';
-    const returnBase = `${origin}/payment`;
-
-    // Resolve public product URL so we can send the user back to it if payment fails.
-    let productUrl: string | null = null;
-    try {
-      const { data: prof } = await admin.from('profiles').select('creator_slug').eq('id', main.creator_id).maybeSingle();
-      if (prof?.creator_slug && (main as any).slug) {
-        productUrl = `${origin}/${prof.creator_slug}/${(main as any).slug}`;
-        await admin.from('orders').update({
-          metadata: { ...(order.metadata ?? {}), product_url: productUrl },
-        }).eq('id', order.id);
-      }
-    } catch (e) { console.warn('product_url resolve failed', e); }
 
 
     const items: any[] = [{

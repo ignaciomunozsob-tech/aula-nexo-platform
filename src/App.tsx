@@ -1,192 +1,214 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import { AuthProvider } from "@/lib/auth";
 import { PublicLayout } from "@/components/layout/PublicLayout";
-import { StudentLayout } from "@/components/layout/StudentLayout";
-import { CreatorLayout } from "@/components/layout/CreatorLayout";
-import { AdminLayout } from "@/components/layout/AdminLayout";
-import AdminDashboard from "@/pages/admin/AdminDashboard";
-import AdminCoursesPage from "@/pages/admin/AdminCoursesPage";
-import AdminCourseEditorPage from "@/pages/admin/AdminCourseEditorPage";
-import AdminInstructorsPage from "@/pages/admin/AdminInstructorsPage";
-import AdminVideoMigrationPage from "@/pages/admin/AdminVideoMigrationPage";
-import HomePage from "@/pages/HomePage";
-import ComisionesPage from "@/pages/ComisionesPage";
-import TerminosPage from "@/pages/TerminosPage";
-import UnsubscribePage from "@/pages/UnsubscribePage";
-import TrustPage from "@/pages/TrustPage";
-import PrivacidadPage from "@/pages/PrivacidadPage";
-import CreatorPlanPage from "@/pages/creator/CreatorPlanPage";
-import PreciosPage from "@/pages/PreciosPage";
-
-import CoursesPage from "@/pages/CoursesPage";
-import CourseDetailPage from "@/pages/CourseDetailPage";
-import CreatorProfilePage from "@/pages/CreatorProfilePage";
-import LoginPage from "@/pages/auth/LoginPage";
-import SignupPage from "@/pages/auth/SignupPage";
-import ResetPasswordPage from "@/pages/auth/ResetPasswordPage";
-import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage";
-import Verify2FAPage from "@/pages/auth/Verify2FAPage";
-import StudentDashboard from "@/pages/app/StudentDashboard";
-import MyCoursesPage from "@/pages/app/MyCoursesPage";
-import StudentMarketplacePage from "@/pages/app/StudentMarketplacePage";
-import CoursePlayerPage from "@/pages/app/CoursePlayerPage";
-import StudentSettings from "@/pages/app/StudentSettings";
-import CreatorDashboard from "@/pages/creator/CreatorDashboard";
-import CreatorProductsPage from "@/pages/creator/CreatorProductsPage";
-import CourseEditorPage from "@/pages/creator/CourseEditorPage";
-import EbookEditorPage from "@/pages/creator/EbookEditorPage";
-import EventEditorPage from "@/pages/creator/EventEditorPage";
-import CreatorProfileEdit from "@/pages/creator/CreatorProfileEdit";
-import CreatorBillingPage from "@/pages/creator/CreatorBillingPage";
-import CreatorFinancesPage from "@/pages/creator/CreatorFinancesPage";
-import CreatorReviewsPage from "@/pages/creator/CreatorReviewsPage";
-import CreatorCommunitiesPage from "@/pages/creator/CreatorCommunitiesPage";
-import CommunityManagePage from "@/pages/creator/CommunityManagePage";
-import CommunityPage from "@/pages/community/CommunityPage";
-import CommunityPostPage from "@/pages/community/CommunityPostPage";
-import NotFound from "@/pages/NotFound";
-import PaymentResultPage from "@/pages/PaymentResultPage";
-import CheckoutPage from "@/pages/CheckoutPage";
-import CheckoutPagesPage from "@/pages/creator/CheckoutPagesPage";
-import CheckoutPageEditorPage from "@/pages/creator/CheckoutPageEditorPage";
-import CreatorIntegrationsPage from "@/pages/creator/CreatorIntegrationsPage";
-import CreatorAvailabilityPage from "@/pages/creator/CreatorAvailabilityPage";
-import CreatorBookingsPage from "@/pages/creator/CreatorBookingsPage";
-import SessionEditorPage from "@/pages/creator/SessionEditorPage";
-import SessionBookingPage from "@/pages/SessionBookingPage";
-import SessionBookingSuccessPage from "@/pages/SessionBookingSuccessPage";
-import EventDetailPage from "@/pages/EventDetailPage";
-import EbookDetailPage from "@/pages/EbookDetailPage";
-import ProductResolverPage from "@/pages/ProductResolverPage";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { MetaPixelTracker } from "@/components/MetaPixelTracker";
-import DebugPage from "@/pages/DebugPage";
 import { ThemeProvider } from "@/lib/theme";
 
-const queryClient = new QueryClient();
+// Eager: rutas críticas del funnel público
+import HomePage from "@/pages/HomePage";
+import CourseDetailPage from "@/pages/CourseDetailPage";
+import EventDetailPage from "@/pages/EventDetailPage";
+import EbookDetailPage from "@/pages/EbookDetailPage";
+import SessionBookingPage from "@/pages/SessionBookingPage";
+import ProductResolverPage from "@/pages/ProductResolverPage";
+import CheckoutPage from "@/pages/CheckoutPage";
+import PaymentResultPage from "@/pages/PaymentResultPage";
+import LoginPage from "@/pages/auth/LoginPage";
+import SignupPage from "@/pages/auth/SignupPage";
+import NotFound from "@/pages/NotFound";
+
+// Lazy: todo lo demás
+const CoursesPage = lazy(() => import("@/pages/CoursesPage"));
+const CreatorProfilePage = lazy(() => import("@/pages/CreatorProfilePage"));
+const ComisionesPage = lazy(() => import("@/pages/ComisionesPage"));
+const TerminosPage = lazy(() => import("@/pages/TerminosPage"));
+const PrivacidadPage = lazy(() => import("@/pages/PrivacidadPage"));
+const UnsubscribePage = lazy(() => import("@/pages/UnsubscribePage"));
+const TrustPage = lazy(() => import("@/pages/TrustPage"));
+const PreciosPage = lazy(() => import("@/pages/PreciosPage"));
+const DebugPage = lazy(() => import("@/pages/DebugPage"));
+
+const ResetPasswordPage = lazy(() => import("@/pages/auth/ResetPasswordPage"));
+const ForgotPasswordPage = lazy(() => import("@/pages/auth/ForgotPasswordPage"));
+const Verify2FAPage = lazy(() => import("@/pages/auth/Verify2FAPage"));
+
+const StudentLayout = lazy(() => import("@/components/layout/StudentLayout").then(m => ({ default: m.StudentLayout })));
+const StudentDashboard = lazy(() => import("@/pages/app/StudentDashboard"));
+const MyCoursesPage = lazy(() => import("@/pages/app/MyCoursesPage"));
+const StudentMarketplacePage = lazy(() => import("@/pages/app/StudentMarketplacePage"));
+const CoursePlayerPage = lazy(() => import("@/pages/app/CoursePlayerPage"));
+const StudentSettings = lazy(() => import("@/pages/app/StudentSettings"));
+
+const CreatorLayout = lazy(() => import("@/components/layout/CreatorLayout").then(m => ({ default: m.CreatorLayout })));
+const CreatorDashboard = lazy(() => import("@/pages/creator/CreatorDashboard"));
+const CreatorProductsPage = lazy(() => import("@/pages/creator/CreatorProductsPage"));
+const CourseEditorPage = lazy(() => import("@/pages/creator/CourseEditorPage"));
+const EbookEditorPage = lazy(() => import("@/pages/creator/EbookEditorPage"));
+const EventEditorPage = lazy(() => import("@/pages/creator/EventEditorPage"));
+const CreatorProfileEdit = lazy(() => import("@/pages/creator/CreatorProfileEdit"));
+const CreatorBillingPage = lazy(() => import("@/pages/creator/CreatorBillingPage"));
+const CreatorFinancesPage = lazy(() => import("@/pages/creator/CreatorFinancesPage"));
+const CreatorReviewsPage = lazy(() => import("@/pages/creator/CreatorReviewsPage"));
+const CreatorCommunitiesPage = lazy(() => import("@/pages/creator/CreatorCommunitiesPage"));
+const CommunityManagePage = lazy(() => import("@/pages/creator/CommunityManagePage"));
+const CheckoutPagesPage = lazy(() => import("@/pages/creator/CheckoutPagesPage"));
+const CheckoutPageEditorPage = lazy(() => import("@/pages/creator/CheckoutPageEditorPage"));
+const CreatorIntegrationsPage = lazy(() => import("@/pages/creator/CreatorIntegrationsPage"));
+const CreatorAvailabilityPage = lazy(() => import("@/pages/creator/CreatorAvailabilityPage"));
+const CreatorBookingsPage = lazy(() => import("@/pages/creator/CreatorBookingsPage"));
+const SessionEditorPage = lazy(() => import("@/pages/creator/SessionEditorPage"));
+const CreatorPlanPage = lazy(() => import("@/pages/creator/CreatorPlanPage"));
+
+const CommunityPage = lazy(() => import("@/pages/community/CommunityPage"));
+const CommunityPostPage = lazy(() => import("@/pages/community/CommunityPostPage"));
+const SessionBookingSuccessPage = lazy(() => import("@/pages/SessionBookingSuccessPage"));
+
+const AdminLayout = lazy(() => import("@/components/layout/AdminLayout").then(m => ({ default: m.AdminLayout })));
+const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
+const AdminCoursesPage = lazy(() => import("@/pages/admin/AdminCoursesPage"));
+const AdminCourseEditorPage = lazy(() => import("@/pages/admin/AdminCourseEditorPage"));
+const AdminInstructorsPage = lazy(() => import("@/pages/admin/AdminInstructorsPage"));
+const AdminVideoMigrationPage = lazy(() => import("@/pages/admin/AdminVideoMigrationPage"));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+
+const RouteFallback = () => (
+  <div className="flex items-center justify-center py-24">
+    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+  </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <AuthProvider>
         <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <ErrorBoundary>
-          <BrowserRouter>
-            <MetaPixelTracker />
-            <Routes>
-              {/* Public routes */}
-              <Route element={<PublicLayout />}>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/courses" element={<CoursesPage />} />
-                <Route path="/precios" element={<PreciosPage />} />
-                <Route path="/course/:slug" element={<CourseDetailPage />} />
-                <Route path="/event/:slug" element={<EventDetailPage />} />
-                <Route path="/ebook/:slug" element={<EbookDetailPage />} />
-                <Route path="/creator/:slug" element={<CreatorProfilePage />} />
-              </Route>
+          <Toaster />
+          <Sonner />
+          <ErrorBoundary>
+            <BrowserRouter>
+              <MetaPixelTracker />
+              <Suspense fallback={<RouteFallback />}>
+                <Routes>
+                  {/* Public routes */}
+                  <Route element={<PublicLayout />}>
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/courses" element={<CoursesPage />} />
+                    <Route path="/precios" element={<PreciosPage />} />
+                    <Route path="/course/:slug" element={<CourseDetailPage />} />
+                    <Route path="/event/:slug" element={<EventDetailPage />} />
+                    <Route path="/ebook/:slug" element={<EbookDetailPage />} />
+                    <Route path="/creator/:slug" element={<CreatorProfilePage />} />
+                  </Route>
 
-              {/* Comisiones route - standalone */}
-              <Route path="/comisiones" element={<ComisionesPage />} />
-              <Route path="/terminos" element={<TerminosPage />} />
-              <Route path="/privacidad" element={<PrivacidadPage />} />
-              <Route path="/unsubscribe" element={<UnsubscribePage />} />
-              <Route path="/trust" element={<TrustPage />} />
-              
+                  <Route path="/comisiones" element={<ComisionesPage />} />
+                  <Route path="/terminos" element={<TerminosPage />} />
+                  <Route path="/privacidad" element={<PrivacidadPage />} />
+                  <Route path="/unsubscribe" element={<UnsubscribePage />} />
+                  <Route path="/trust" element={<TrustPage />} />
 
-              {/* Debug route - dev only */}
-              {import.meta.env.DEV && <Route path="/debug" element={<DebugPage />} />}
+                  {import.meta.env.DEV && <Route path="/debug" element={<DebugPage />} />}
 
-              {/* Auth routes */}
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="/verify-2fa" element={<Verify2FAPage />} />
+                  {/* Auth */}
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/signup" element={<SignupPage />} />
+                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
+                  <Route path="/verify-2fa" element={<Verify2FAPage />} />
 
-              {/* Course preview route - standalone without layout restrictions */}
-              <Route path="/preview/course/:id" element={<CoursePlayerPage />} />
+                  {/* Course preview */}
+                  <Route path="/preview/course/:id" element={<CoursePlayerPage />} />
 
-              {/* Student routes */}
-              <Route path="/app" element={<StudentLayout />}>
-                <Route index element={<StudentDashboard />} />
-                <Route path="my-courses" element={<MyCoursesPage />} />
-                <Route path="marketplace" element={<StudentMarketplacePage />} />
-                <Route path="course/:id" element={<CoursePlayerPage />} />
-                <Route path="settings" element={<StudentSettings />} />
-              </Route>
+                  {/* Student */}
+                  <Route path="/app" element={<StudentLayout />}>
+                    <Route index element={<StudentDashboard />} />
+                    <Route path="my-courses" element={<MyCoursesPage />} />
+                    <Route path="marketplace" element={<StudentMarketplacePage />} />
+                    <Route path="course/:id" element={<CoursePlayerPage />} />
+                    <Route path="settings" element={<StudentSettings />} />
+                  </Route>
 
-              {/* Creator routes */}
-              <Route path="/creator-app" element={<CreatorLayout />}>
-                <Route index element={<CreatorDashboard />} />
-                <Route path="products" element={<CreatorProductsPage />} />
-                <Route path="courses" element={<CreatorProductsPage />} />
-                <Route path="courses/new" element={<CourseEditorPage />} />
-                <Route path="courses/:id/edit" element={<CourseEditorPage />} />
-                <Route path="ebooks/new" element={<EbookEditorPage />} />
-                <Route path="ebooks/:id/edit" element={<EbookEditorPage />} />
-                <Route path="events/new" element={<EventEditorPage />} />
-                <Route path="events/:id/edit" element={<EventEditorPage />} />
-                <Route path="finances" element={<CreatorFinancesPage />} />
-                <Route path="reviews" element={<CreatorReviewsPage />} />
-                <Route path="communities" element={<CreatorCommunitiesPage />} />
-                <Route path="communities/:id/manage" element={<CommunityManagePage />} />
-                <Route path="checkout-pages" element={<CheckoutPagesPage />} />
-                <Route path="checkout-pages/new" element={<CheckoutPageEditorPage />} />
-                <Route path="checkout-pages/:id/edit" element={<CheckoutPageEditorPage />} />
-                <Route path="profile" element={<CreatorProfileEdit />} />
-                <Route path="plan" element={<CreatorPlanPage />} />
-                <Route path="billing" element={<CreatorBillingPage />} />
-                <Route path="integrations" element={<CreatorIntegrationsPage />} />
-                <Route path="availability" element={<CreatorAvailabilityPage />} />
-                <Route path="bookings" element={<CreatorBookingsPage />} />
-                <Route path="sessions/new" element={<SessionEditorPage />} />
-                <Route path="sessions/:id/edit" element={<SessionEditorPage />} />
-              </Route>
+                  {/* Creator */}
+                  <Route path="/creator-app" element={<CreatorLayout />}>
+                    <Route index element={<CreatorDashboard />} />
+                    <Route path="products" element={<CreatorProductsPage />} />
+                    <Route path="courses" element={<CreatorProductsPage />} />
+                    <Route path="courses/new" element={<CourseEditorPage />} />
+                    <Route path="courses/:id/edit" element={<CourseEditorPage />} />
+                    <Route path="ebooks/new" element={<EbookEditorPage />} />
+                    <Route path="ebooks/:id/edit" element={<EbookEditorPage />} />
+                    <Route path="events/new" element={<EventEditorPage />} />
+                    <Route path="events/:id/edit" element={<EventEditorPage />} />
+                    <Route path="finances" element={<CreatorFinancesPage />} />
+                    <Route path="reviews" element={<CreatorReviewsPage />} />
+                    <Route path="communities" element={<CreatorCommunitiesPage />} />
+                    <Route path="communities/:id/manage" element={<CommunityManagePage />} />
+                    <Route path="checkout-pages" element={<CheckoutPagesPage />} />
+                    <Route path="checkout-pages/new" element={<CheckoutPageEditorPage />} />
+                    <Route path="checkout-pages/:id/edit" element={<CheckoutPageEditorPage />} />
+                    <Route path="profile" element={<CreatorProfileEdit />} />
+                    <Route path="plan" element={<CreatorPlanPage />} />
+                    <Route path="billing" element={<CreatorBillingPage />} />
+                    <Route path="integrations" element={<CreatorIntegrationsPage />} />
+                    <Route path="availability" element={<CreatorAvailabilityPage />} />
+                    <Route path="bookings" element={<CreatorBookingsPage />} />
+                    <Route path="sessions/new" element={<SessionEditorPage />} />
+                    <Route path="sessions/:id/edit" element={<SessionEditorPage />} />
+                  </Route>
 
-              {/* 1:1 Booking public */}
-              <Route path="/c/:creatorSlug/sesion/:sessionId" element={<SessionBookingPage />} />
-              <Route path="/booking/success" element={<SessionBookingSuccessPage />} />
+                  {/* 1:1 Booking */}
+                  <Route path="/c/:creatorSlug/sesion/:sessionId" element={<SessionBookingPage />} />
+                  <Route path="/booking/success" element={<SessionBookingSuccessPage />} />
 
-              {/* Admin routes */}
-              <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="courses" element={<AdminCoursesPage />} />
-                <Route path="courses/new" element={<AdminCourseEditorPage />} />
-                <Route path="courses/:id/edit" element={<AdminCourseEditorPage />} />
-                <Route path="instructors" element={<AdminInstructorsPage />} />
-                <Route path="video-migration" element={<AdminVideoMigrationPage />} />
-              </Route>
+                  {/* Admin */}
+                  <Route path="/admin" element={<AdminLayout />}>
+                    <Route index element={<AdminDashboard />} />
+                    <Route path="courses" element={<AdminCoursesPage />} />
+                    <Route path="courses/new" element={<AdminCourseEditorPage />} />
+                    <Route path="courses/:id/edit" element={<AdminCourseEditorPage />} />
+                    <Route path="instructors" element={<AdminInstructorsPage />} />
+                    <Route path="video-migration" element={<AdminVideoMigrationPage />} />
+                  </Route>
 
-              {/* Community routes */}
-              <Route path="/c/:slug" element={<CommunityPage />} />
-              <Route path="/c/:slug/p/:postId" element={<CommunityPostPage />} />
+                  {/* Community */}
+                  <Route path="/c/:slug" element={<CommunityPage />} />
+                  <Route path="/c/:slug/p/:postId" element={<CommunityPostPage />} />
 
-              {/* Payment result */}
-              <Route path="/payment/:result" element={<PaymentResultPage />} />
+                  {/* Payment result */}
+                  <Route path="/payment/:result" element={<PaymentResultPage />} />
 
-              {/* Custom checkout pages */}
-              <Route path="/p/:creatorSlug/:pageSlug" element={<CheckoutPage />} />
-              <Route path="/embed/:creatorSlug/:pageSlug" element={<CheckoutPage embed />} />
+                  {/* Custom checkout */}
+                  <Route path="/p/:creatorSlug/:pageSlug" element={<CheckoutPage />} />
+                  <Route path="/embed/:creatorSlug/:pageSlug" element={<CheckoutPage embed />} />
 
+                  {/* Public product URL resolver */}
+                  <Route element={<PublicLayout />}>
+                    <Route path="/:creatorSlug/:slug" element={<ProductResolverPage />} />
+                  </Route>
 
-
-              {/* Public product URL — resolves any product type: /:creatorSlug/:slug */}
-              <Route element={<PublicLayout />}>
-                <Route path="/:creatorSlug/:slug" element={<ProductResolverPage />} />
-              </Route>
-
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </ErrorBoundary>
-      </TooltipProvider>
-    </AuthProvider>
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
+          </ErrorBoundary>
+        </TooltipProvider>
+      </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

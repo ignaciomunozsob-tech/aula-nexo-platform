@@ -104,6 +104,7 @@ export default function PurchaseConfirmedPage() {
         currency: 'CLP',
         content_name: order.product_title ?? '',
         content_type: 'product',
+        content_category: order.product_type ?? undefined,
         content_ids: [order.product_id],
         num_items: 1,
       };

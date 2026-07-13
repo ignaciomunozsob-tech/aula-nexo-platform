@@ -243,7 +243,12 @@ Deno.serve(async (req) => {
       return json({ error: 'MercadoPago error' }, 502);
     }
 
-    await admin.from('orders').update({ mp_preference_id: mpJson.id }).eq('id', order.id);
+    // Fire-and-forget: persist mp_preference_id without blocking redirect.
+    const persistPref = admin.from('orders').update({ mp_preference_id: mpJson.id }).eq('id', order.id).then(
+      () => {}, (e) => console.warn('mp_preference_id update failed', e),
+    );
+    // @ts-ignore EdgeRuntime is available in Supabase Edge Functions
+    if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime?.waitUntil) EdgeRuntime.waitUntil(persistPref);
 
 
     return json({

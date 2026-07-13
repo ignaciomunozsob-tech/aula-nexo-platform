@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams, useSearchParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -10,8 +10,27 @@ export default function PaymentResultPage() {
   const { result } = useParams<{ result: 'success' | 'failure' | 'pending' }>();
   const [params] = useSearchParams();
   const orderId = params.get('order');
+  const navigate = useNavigate();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  // Legacy redirect: /payment/success -> /compra-confirmada/{reference}
+  useEffect(() => {
+    if (result !== 'success' || !orderId) return;
+    let cancelled = false;
+    (async () => {
+      // The public order RPC doesn't return reference; fetch it via a light select
+      const { data } = await supabase
+        .from('orders')
+        .select('reference')
+        .eq('id', orderId)
+        .maybeSingle();
+      if (!cancelled && data?.reference) {
+        navigate(`/compra-confirmada/${data.reference}`, { replace: true });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [result, orderId, navigate]);
 
   useEffect(() => {
     let active = true;

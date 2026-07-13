@@ -145,11 +145,13 @@ Deno.serve(async (req) => {
     else if (['rejected', 'cancelled'].includes(mpStatus)) newStatus = 'failed';
 
     const wasPaidBefore = order.status === 'paid';
+    const installments: number | null = typeof payment?.installments === 'number' ? payment.installments : null;
     await admin.from('orders').update({
       mp_payment_id: String(payment.id),
       mp_payment_status: mpStatus,
       status: newStatus,
       paid_at: newStatus === 'paid' ? new Date().toISOString() : order.paid_at,
+      installments: installments ?? order.installments ?? null,
     }).eq('id', order.id);
 
     if (newStatus === 'paid' && !wasPaidBefore) {
@@ -176,46 +178,87 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Notify admin of new sale (best-effort, idempotent)
-      try {
-        let productTitle = '—';
-        if (order.product_type === 'course') {
-          const { data } = await admin.from('courses').select('title').eq('id', order.product_id).maybeSingle();
-          productTitle = data?.title ?? productTitle;
-        } else if (order.product_type === 'ebook') {
-          const { data } = await admin.from('ebooks').select('title').eq('id', order.product_id).maybeSingle();
-          productTitle = data?.title ?? productTitle;
-        } else if (order.product_type === 'event') {
-          const { data } = await admin.from('events').select('title').eq('id', order.product_id).maybeSingle();
-          productTitle = data?.title ?? productTitle;
-        }
-        let creatorName = '—';
-        if (order.creator_id) {
-          const { data } = await admin.from('profiles').select('name').eq('id', order.creator_id).maybeSingle();
-          creatorName = data?.name ?? creatorName;
-        }
-        const amountClp: number = order.amount_clp ?? 0;
-        // Prefer the persisted breakdown from the order (respects app_settings.commission_pct
-        // at the time of purchase); fall back to the legacy 10% only if the columns are missing.
-        const communityFeeClp: number = order.community_fee_clp ?? 0;
-        const commissionClp: number = order.platform_amount_clp ?? Math.round(amountClp * 0.10);
-        const netClp: number = order.creator_amount_clp ?? (amountClp - commissionClp - communityFeeClp);
-        const buyer: string = order.guest_email ?? buyerEmail ?? '—';
+      // Resolve product title + creator name once, reused for admin + creator emails
+      let productTitle = '—';
+      if (order.product_type === 'course') {
+        const { data } = await admin.from('courses').select('title').eq('id', order.product_id).maybeSingle();
+        productTitle = data?.title ?? productTitle;
+      } else if (order.product_type === 'ebook') {
+        const { data } = await admin.from('ebooks').select('title').eq('id', order.product_id).maybeSingle();
+        productTitle = data?.title ?? productTitle;
+      } else if (order.product_type === 'event') {
+        const { data } = await admin.from('events').select('title').eq('id', order.product_id).maybeSingle();
+        productTitle = data?.title ?? productTitle;
+      } else if (order.product_type === 'community') {
+        const { data } = await admin.from('communities').select('name').eq('id', order.product_id).maybeSingle();
+        productTitle = data?.name ?? productTitle;
+      }
+      let creatorName = '—';
+      let creatorAuthEmail: string | null = null;
+      if (order.creator_id) {
+        const { data } = await admin.from('profiles').select('name').eq('id', order.creator_id).maybeSingle();
+        creatorName = data?.name ?? creatorName;
+        try {
+          const { data: uRes } = await admin.auth.admin.getUserById(order.creator_id);
+          creatorAuthEmail = uRes?.user?.email ?? null;
+        } catch { /* ignore */ }
+      }
+      const amountClp: number = order.amount_clp ?? 0;
+      const communityFeeClp: number = order.community_fee_clp ?? 0;
+      const commissionClp: number = order.platform_amount_clp ?? Math.round(amountClp * 0.10);
+      const netClp: number = order.creator_amount_clp ?? (amountClp - commissionClp - communityFeeClp);
+      const buyer: string = order.guest_email ?? buyerEmail ?? '—';
+      const saleDate = new Date().toLocaleString('es-CL', {
+        day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Santiago',
+      });
 
-        await admin.functions.invoke('send-transactional-email', {
-          body: {
-            templateName: 'admin-new-sale',
-            idempotencyKey: `${order.id}-admin-sale`,
-            templateData: {
-              productTitle, productType: order.product_type,
-              creatorName, buyerEmail: buyer,
-              amountClp, commissionClp, communityFeeClp, netClp,
-              orderId: order.id,
+      // Notify admin (idempotent via admin_email_sent guard)
+      if (!order.admin_email_sent) {
+        try {
+          await admin.functions.invoke('send-transactional-email', {
+            body: {
+              templateName: 'admin-new-sale',
+              idempotencyKey: `${order.id}-admin-sale`,
+              templateData: {
+                productTitle, productType: order.product_type,
+                creatorName, buyerEmail: buyer,
+                amountClp, commissionClp, communityFeeClp, netClp,
+                orderId: order.reference ?? order.id,
+              },
             },
-          },
-        });
-      } catch (e) {
-        console.warn('admin-new-sale email error', e);
+          });
+          await admin.from('orders').update({ admin_email_sent: true }).eq('id', order.id);
+        } catch (e) {
+          console.warn('admin-new-sale email error', e);
+        }
+      }
+
+      // Notify creator (idempotent via creator_email_sent guard)
+      if (!order.creator_email_sent && creatorAuthEmail) {
+        try {
+          await admin.functions.invoke('send-transactional-email', {
+            body: {
+              templateName: 'creator-new-sale',
+              recipientEmail: creatorAuthEmail,
+              idempotencyKey: `${order.id}-creator-sale`,
+              templateData: {
+                creatorName,
+                productTitle,
+                buyerLabel: buyer,
+                amountClp,
+                commissionClp,
+                communityFeeClp,
+                netClp,
+                reference: order.reference ?? '',
+                saleDate,
+                financesUrl: `${PUBLIC_SITE_URL}/creator-app/finances`,
+              },
+            },
+          });
+          await admin.from('orders').update({ creator_email_sent: true }).eq('id', order.id);
+        } catch (e) {
+          console.warn('creator-new-sale email error', e);
+        }
       }
 
       // Event confirmation email (paid events)

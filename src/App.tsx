@@ -20,6 +20,7 @@ import SessionBookingPage from "@/pages/SessionBookingPage";
 import ProductResolverPage from "@/pages/ProductResolverPage";
 import CheckoutPage from "@/pages/CheckoutPage";
 import PaymentResultPage from "@/pages/PaymentResultPage";
+import PurchaseConfirmedPage from "@/pages/PurchaseConfirmedPage";
 import LoginPage from "@/pages/auth/LoginPage";
 import SignupPage from "@/pages/auth/SignupPage";
 import NotFound from "@/pages/NotFound";
@@ -192,6 +193,7 @@ const App = () => (
 
                   {/* Payment result */}
                   <Route path="/payment/:result" element={<PaymentResultPage />} />
+                  <Route path="/compra-confirmada/:reference" element={<PurchaseConfirmedPage />} />
 
                   {/* Custom checkout */}
                   <Route path="/p/:creatorSlug/:pageSlug" element={<CheckoutPage />} />

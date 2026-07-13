@@ -195,7 +195,7 @@ Deno.serve(async (req) => {
       guest_email: userEmail,
       guest_name: guestName,
       guest_phone: guestPhone,
-    } as any).select('id, metadata').single();
+    } as any).select('id, reference, metadata').single();
     if (orderErr || !order) { console.error('create-payment order error', orderErr); return json({ error: 'No se pudo crear la orden' }, 500); }
 
 
@@ -216,7 +216,7 @@ Deno.serve(async (req) => {
       external_reference: order.id,
       marketplace_fee: platformAmount, // NOVU commission (in CLP, integer) — varies by creator plan
       back_urls: {
-        success: `${returnBase}/success?order=${order.id}`,
+        success: `${origin}/compra-confirmada/${order.reference}`,
         failure: `${returnBase}/failure?order=${order.id}`,
         pending: `${returnBase}/pending?order=${order.id}`,
       },

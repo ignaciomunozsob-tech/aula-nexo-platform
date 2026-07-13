@@ -1467,6 +1467,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          admin_email_sent: boolean
           amount_clp: number
           bump_amount_clp: number
           bump_product_id: string | null
@@ -1475,24 +1476,29 @@ export type Database = {
           community_fee_clp: number
           created_at: string
           creator_amount_clp: number
+          creator_email_sent: boolean
           creator_id: string | null
           guest_email: string | null
           guest_name: string | null
           guest_phone: string | null
           id: string
+          installments: number | null
           metadata: Json | null
           mp_payment_id: string | null
           mp_payment_status: string | null
           mp_preference_id: string | null
           paid_at: string | null
+          pixel_fired: boolean
           platform_amount_clp: number
           product_id: string
           product_type: Database["public"]["Enums"]["order_product_type"]
+          reference: string | null
           status: Database["public"]["Enums"]["order_status"]
           updated_at: string
           user_id: string
         }
         Insert: {
+          admin_email_sent?: boolean
           amount_clp: number
           bump_amount_clp?: number
           bump_product_id?: string | null
@@ -1501,24 +1507,29 @@ export type Database = {
           community_fee_clp?: number
           created_at?: string
           creator_amount_clp?: number
+          creator_email_sent?: boolean
           creator_id?: string | null
           guest_email?: string | null
           guest_name?: string | null
           guest_phone?: string | null
           id?: string
+          installments?: number | null
           metadata?: Json | null
           mp_payment_id?: string | null
           mp_payment_status?: string | null
           mp_preference_id?: string | null
           paid_at?: string | null
+          pixel_fired?: boolean
           platform_amount_clp?: number
           product_id: string
           product_type: Database["public"]["Enums"]["order_product_type"]
+          reference?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           updated_at?: string
           user_id: string
         }
         Update: {
+          admin_email_sent?: boolean
           amount_clp?: number
           bump_amount_clp?: number
           bump_product_id?: string | null
@@ -1527,19 +1538,23 @@ export type Database = {
           community_fee_clp?: number
           created_at?: string
           creator_amount_clp?: number
+          creator_email_sent?: boolean
           creator_id?: string | null
           guest_email?: string | null
           guest_name?: string | null
           guest_phone?: string | null
           id?: string
+          installments?: number | null
           metadata?: Json | null
           mp_payment_id?: string | null
           mp_payment_status?: string | null
           mp_preference_id?: string | null
           paid_at?: string | null
+          pixel_fired?: boolean
           platform_amount_clp?: number
           product_id?: string
           product_type?: Database["public"]["Enums"]["order_product_type"]
+          reference?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           updated_at?: string
           user_id?: string
@@ -2029,6 +2044,28 @@ export type Database = {
           status: string
         }[]
       }
+      get_order_by_reference: {
+        Args: { _reference: string }
+        Returns: {
+          amount_clp: number
+          buyer_email: string
+          creator_id: string
+          creator_name: string
+          creator_slug: string
+          id: string
+          installments: number
+          is_new_user: boolean
+          pixel_fired: boolean
+          product_cover_url: string
+          product_id: string
+          product_title: string
+          product_type: string
+          product_url: string
+          redirect_url: string
+          reference: string
+          status: string
+        }[]
+      }
       get_order_public: {
         Args: { _order_id: string }
         Returns: {
@@ -2147,6 +2184,7 @@ export type Database = {
         Returns: boolean
       }
       is_creator_2fa_valid: { Args: never; Returns: boolean }
+      mark_order_pixel_fired: { Args: { _reference: string }; Returns: boolean }
       move_to_dlq: {
         Args: {
           dlq_name: string

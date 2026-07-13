@@ -8,6 +8,7 @@ import { Plus, Edit, Eye, Users, BookOpen, FileText, Calendar, Video } from 'luc
 import { formatPrice, getCourseUrl } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NewProductDialog } from '@/components/creator/NewProductDialog';
+import { ProductIdCell } from '@/components/creator/ProductIdCell';
 import {
   Dialog,
   DialogContent,
@@ -207,6 +208,7 @@ export default function CreatorProductsPage() {
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left p-4 font-medium">Sesión</th>
+                    <th className="text-left p-4 font-medium">ID</th>
                     <th className="text-left p-4 font-medium">Duración</th>
                     <th className="text-left p-4 font-medium">Estado</th>
                     <th className="text-right p-4 font-medium">Acciones</th>
@@ -216,6 +218,7 @@ export default function CreatorProductsPage() {
                   {sessions.map((s: any) => (
                     <tr key={s.id}>
                       <td className="p-4 font-medium">{s.title}</td>
+                      <td className="p-4"><ProductIdCell id={s.id} /></td>
                       <td className="p-4">{s.duration_min} min</td>
                       <td className="p-4"><StatusBadge status={s.status} /></td>
                       <td className="p-4 text-right">
@@ -248,6 +251,7 @@ export default function CreatorProductsPage() {
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left p-4 font-medium">Producto</th>
+                    <th className="text-left p-4 font-medium">ID</th>
                     <th className="text-left p-4 font-medium">Estado</th>
                     <th className="text-left p-4 font-medium">Precio</th>
                     <th className="text-center p-4 font-medium">Alumnos</th>
@@ -258,6 +262,7 @@ export default function CreatorProductsPage() {
                   {courses.map(course => (
                     <tr key={course.id}>
                       <td className="p-4"><p className="font-medium">{course.title}</p></td>
+                      <td className="p-4"><ProductIdCell id={course.id} /></td>
                       <td className="p-4"><StatusBadge status={course.status} /></td>
                       <td className="p-4">{formatPrice(course.price_clp)}</td>
                       <td className="p-4 text-center">
@@ -301,6 +306,7 @@ export default function CreatorProductsPage() {
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left p-4 font-medium">Producto</th>
+                    <th className="text-left p-4 font-medium">ID</th>
                     <th className="text-left p-4 font-medium">Estado</th>
                     <th className="text-left p-4 font-medium">Precio</th>
                     <th className="text-right p-4 font-medium">Acciones</th>
@@ -310,6 +316,7 @@ export default function CreatorProductsPage() {
                   {ebooks.map(ebook => (
                     <tr key={ebook.id}>
                       <td className="p-4"><p className="font-medium">{ebook.title}</p></td>
+                      <td className="p-4"><ProductIdCell id={ebook.id} /></td>
                       <td className="p-4"><StatusBadge status={ebook.status} /></td>
                       <td className="p-4">{formatPrice(ebook.price_clp)}</td>
                       <td className="p-4 text-right">
@@ -342,6 +349,7 @@ export default function CreatorProductsPage() {
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left p-4 font-medium">Evento</th>
+                    <th className="text-left p-4 font-medium">ID</th>
                     <th className="text-left p-4 font-medium">Fecha</th>
                     <th className="text-left p-4 font-medium">Estado</th>
                     <th className="text-left p-4 font-medium">Precio</th>
@@ -353,6 +361,7 @@ export default function CreatorProductsPage() {
                   {events.map(event => (
                     <tr key={event.id}>
                       <td className="p-4"><p className="font-medium">{event.title}</p></td>
+                      <td className="p-4"><ProductIdCell id={event.id} /></td>
                       <td className="p-4">
                         {new Date(event.event_date).toLocaleDateString('es-CL', {
                           day: 'numeric',

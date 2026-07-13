@@ -68,7 +68,8 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
       trackEventFor(pid, "ViewContent", {
         value: event.price_clp || 0,
         currency: "CLP",
-        content_type: "event",
+        content_type: "product",
+        content_category: "event",
         content_ids: [event.id],
         content_name: event.title,
       });

@@ -193,6 +193,7 @@ const App = () => (
 
                   {/* Payment result */}
                   <Route path="/payment/:result" element={<PaymentResultPage />} />
+                  <Route path="/compra-confirmada/:reference" element={<PurchaseConfirmedPage />} />
 
                   {/* Custom checkout */}
                   <Route path="/p/:creatorSlug/:pageSlug" element={<CheckoutPage />} />

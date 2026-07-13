@@ -39,7 +39,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useMercadoPagoCheckout } from "@/hooks/useMercadoPagoCheckout";
 import { GuestCheckoutDialog } from "@/components/checkout/GuestCheckoutDialog";
-import { initPixel, trackEvent, trackEventFor } from "@/lib/metaPixel";
+import { initPixel, trackEventFor } from "@/lib/metaPixel";
 
 
 function formatCLP(value: number | null | undefined) {

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Clock, Calendar as CalIcon, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import DOMPurify from "dompurify";
+import { initPixel, trackEventFor } from "@/lib/metaPixel";
 
 interface Props {
   sessionIdOverride?: string;

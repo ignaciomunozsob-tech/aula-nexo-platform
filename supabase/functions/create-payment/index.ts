@@ -216,7 +216,7 @@ Deno.serve(async (req) => {
       external_reference: order.id,
       marketplace_fee: platformAmount, // NOVU commission (in CLP, integer) — varies by creator plan
       back_urls: {
-        success: `${returnBase}/success?order=${order.id}`,
+        success: `${origin}/compra-confirmada/${order.reference}`,
         failure: `${returnBase}/failure?order=${order.id}`,
         pending: `${returnBase}/pending?order=${order.id}`,
       },

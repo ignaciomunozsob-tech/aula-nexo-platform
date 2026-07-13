@@ -195,7 +195,7 @@ Deno.serve(async (req) => {
       guest_email: userEmail,
       guest_name: guestName,
       guest_phone: guestPhone,
-    } as any).select('id, metadata').single();
+    } as any).select('id, reference, metadata').single();
     if (orderErr || !order) { console.error('create-payment order error', orderErr); return json({ error: 'No se pudo crear la orden' }, 500); }
 
 

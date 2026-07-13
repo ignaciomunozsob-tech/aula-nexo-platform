@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { CheckCircle2, Loader2, Mail } from 'lucide-react';
+import { CheckCircle2, ExternalLink, Loader2, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
@@ -50,6 +50,7 @@ export default function PurchaseConfirmedPage() {
   const { reference } = useParams<{ reference: string }>();
   const [order, setOrder] = useState<OrderRow | null>(null);
   const [loading, setLoading] = useState(true);
+  const [redirectCountdown, setRedirectCountdown] = useState(5);
 
   // Poll until paid (webhook may lag a moment)
   useEffect(() => {
@@ -120,6 +121,20 @@ export default function PurchaseConfirmedPage() {
     })();
   }, [order]);
 
+  // Auto-redirect after successful payment if creator configured a redirect URL.
+  const redirectedRef = useRef(false);
+  useEffect(() => {
+    if (!order || order.status !== 'paid' || !order.redirect_url || redirectedRef.current) return;
+    if (redirectCountdown <= 0) {
+      redirectedRef.current = true;
+      if (window.top && window.top !== window.self) window.top.location.href = order.redirect_url;
+      else window.location.href = order.redirect_url;
+      return;
+    }
+    const timer = window.setTimeout(() => setRedirectCountdown((current) => current - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [order, redirectCountdown]);
+
   if (loading && !order) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-background">
@@ -147,6 +162,7 @@ export default function PurchaseConfirmedPage() {
 
   const hasAccount = !order.is_new_user;
   const targetLink = productLink(order);
+  const redirectUrl = order.status === 'paid' ? order.redirect_url : null;
 
   return (
     <div className="min-h-screen flex items-start md:items-center justify-center p-4 bg-background">
@@ -209,11 +225,29 @@ export default function PurchaseConfirmedPage() {
 
         {/* Actions */}
         <div className="mt-6 space-y-3">
+          {redirectUrl && (
+            <>
+              <Button
+                asChild
+                className="w-full h-12 font-semibold"
+                style={{ backgroundColor: '#fcc70e', color: '#0a0a0a' }}
+              >
+                <a href={redirectUrl}>
+                  Continuar <ExternalLink className="h-4 w-4 ml-2" />
+                </a>
+              </Button>
+              <p className="text-xs text-center text-muted-foreground">
+                Serás redirigido en {redirectCountdown} s…
+              </p>
+            </>
+          )}
+
           {hasAccount ? (
             <Button
               asChild
+              variant={redirectUrl ? 'outline' : 'default'}
               className="w-full h-12 font-semibold"
-              style={{ backgroundColor: '#fcc70e', color: '#0a0a0a' }}
+              style={redirectUrl ? undefined : { backgroundColor: '#fcc70e', color: '#0a0a0a' }}
             >
               <Link to={targetLink}>Acceder ahora →</Link>
             </Button>

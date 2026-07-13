@@ -1,31 +1,24 @@
-## Diagnóstico
+## Verificación en vivo del Meta Pixel por creador
 
-El nuevo mensaje "La lección no fue guardada antes de iniciar la subida" viene de la Edge Function `bunny-create-video`, que ahora devuelve ese detalle cuando el frontend le manda un `lessonId` que empieza con `new-...`. Los logs de la Edge Function confirman exactamente eso:
+Voy a comprobar en la app publicada que el Pixel del creador se inicializa y envía eventos correctamente en sus páginas públicas, ahora que las RPCs quedaron arregladas.
 
-```
-[bunny-create-video] temporary lessonId received new-1783892923595
-```
+### Qué voy a hacer
 
-El código del editor **en el preview** ya está corregido:
+1. Consultar en la base de datos qué creador(es) tienen un `meta_pixel_id` configurado y qué productos publicados tienen (curso / evento / ebook / sesión / perfil).
+2. Abrir con un navegador headless (Playwright) las páginas públicas correspondientes en `https://www.soynovu.cl`:
+   - Perfil del creador (`/:creator_slug`)
+   - Detalle de curso, evento, ebook y/o sesión (los que existan publicados)
+   - Checkout, si hay checkout page publicada
+3. En cada página verificar:
+   - Que se cargue el script `fbevents.js` de `connect.facebook.net`.
+   - Que `window.fbq` esté definido y tenga el Pixel ID del creador entre los IDs inicializados.
+   - Que se hayan disparado los eventos esperados (`PageView`, `ViewContent`).
+4. Capturar screenshots + logs de red/console como evidencia y reportar el resultado.
 
-- `CourseEditorPage.tsx` mantiene `modulesRef` sincronizado y `persistNewLesson` valida que el `id` devuelto sea un UUID real antes de retornarlo.
-- `LessonVideoUploader.tsx` llama `await prepareLesson(...)` y aborta si no obtiene un UUID.
-- La Edge Function ya rechaza limpiamente los `new-...` y devuelve `detail` legible.
+### Sin cambios de código
 
-El problema es que estás probando desde **`novuproject.lovable.app`** (dominio publicado, se ve en los logs de auth y en tu iPad). Esa URL sigue sirviendo el **bundle antiguo** del frontend, donde `prepareLesson` no persistía la lección antes de invocar Bunny. La Edge Function nueva atrapa ese bundle viejo y por eso ves el mensaje.
+Esta verificación es solo lectura: no toco archivos ni base de datos. Si algo falla, vuelvo con un plan de corrección antes de editar.
 
-## Plan
+### Si no hay ningún creador con Pixel configurado todavía
 
-1. **Publicar la app** para que el dominio `novuproject.lovable.app` cargue la versión corregida del editor (donde `persistNewLesson` sí crea el módulo/lección antes de pedir la firma a Bunny).
-2. Después de publicar, en el iPad:
-   - Cerrar la pestaña de `novuproject.lovable.app`.
-   - Abrirla de nuevo (mejor en modo privado o forzando recarga) para descartar el cache de Safari.
-   - Reintentar la subida del video.
-3. Si aún apareciera el error tras recargar el bundle nuevo, revisar en los logs de `bunny-create-video` cuál es el `lessonId` recibido:
-   - Si empieza por `new-` → el navegador sigue con bundle viejo (limpiar cache/Service Worker).
-   - Si es un UUID pero da otro error → el problema ya no es el ID temporal y lo atacamos desde el detalle nuevo que devuelve la función.
-
-## Notas técnicas
-
-- No hay cambios de código pendientes: el preview ya contiene el fix completo (`modulesRef`, validación UUID, `prepareLesson` awaited, Edge Function con `detail`).
-- El único paso pendiente es propagar ese bundle al dominio publicado vía Publicar.
+Te aviso y te pido que configures uno de prueba en Creator App → Integraciones para poder validarlo end-to-end.

@@ -1,4 +1,5 @@
 import { Link, useParams } from "react-router-dom";
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { formatPrice } from "@/lib/utils";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { useMercadoPagoCheckout } from "@/hooks/useMercadoPagoCheckout";
 import { GuestCheckoutDialog } from "@/components/checkout/GuestCheckoutDialog";
+import { initPixel, trackEventFor } from "@/lib/metaPixel";
 
 interface Props {
   ebookId?: string;
@@ -34,6 +36,24 @@ export default function EbookDetailPage({ ebookId: ebookIdProp }: Props) {
     },
     enabled: !!ebookIdProp || !!params.slug,
   });
+
+  // Meta Pixel: creator-level ViewContent
+  useEffect(() => {
+    const cid = (ebook as any)?.creator_id;
+    if (!cid || !ebook) return;
+    supabase.rpc("get_creator_pixel_id_by_id", { _creator_id: cid }).then(({ data }) => {
+      const pid = (data as string | null) ?? null;
+      if (!pid) return;
+      initPixel(pid);
+      trackEventFor(pid, "ViewContent", {
+        value: ebook.price_clp || 0,
+        currency: "CLP",
+        content_type: "ebook",
+        content_ids: [ebook.id],
+        content_name: ebook.title,
+      });
+    });
+  }, [ebook]);
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-24"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;

@@ -41,6 +41,23 @@ export default function SessionBookingPage({ sessionIdOverride }: Props = {}) {
     enabled: !!creatorSlug && !!sessionId,
   });
 
+  // Meta Pixel: creator-level ViewContent for the 1:1 session
+  useEffect(() => {
+    if (!creatorSlug || !session) return;
+    supabase.rpc("get_creator_pixel_id", { _creator_slug: creatorSlug }).then(({ data }) => {
+      const pid = (data as string | null) ?? null;
+      if (!pid) return;
+      initPixel(pid);
+      trackEventFor(pid, "ViewContent", {
+        value: (session as any).price_clp || 0,
+        currency: "CLP",
+        content_type: "session",
+        content_ids: [sessionId],
+        content_name: (session as any).title,
+      });
+    });
+  }, [creatorSlug, sessionId, session]);
+
   // Range: from selected date to +14 days (cap)
   const fromDate = selectedDate;
   const toDate = useMemo(() => {

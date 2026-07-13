@@ -71,6 +71,7 @@ export default function CreatorProfileEdit() {
     setName(profileData?.name || '');
     setBio(profileData?.bio || '');
     setCreatorSlug(profileData?.creator_slug || '');
+    setIntroVideoUrl(profileData?.intro_video_url || '');
     setAvatarUrl(profileData?.avatar_url || '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileData?.id, profileData?.updated_at]);

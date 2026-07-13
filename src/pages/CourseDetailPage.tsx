@@ -264,7 +264,8 @@ export default function CourseDetailPage() {
     viewContentFiredRef.current = key;
     initPixel(creatorPixelId);
     trackEventFor(creatorPixelId, 'ViewContent', {
-      content_type: 'course',
+      content_type: 'product',
+      content_category: 'course',
       content_ids: [course.id],
       content_name: course.title,
       value: course.price_clp ?? 0,

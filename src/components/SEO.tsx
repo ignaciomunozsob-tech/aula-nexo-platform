@@ -24,6 +24,7 @@ export function SEO({
   type = 'website',
   image,
   jsonLd,
+  noindex = false,
 }: SEOProps) {
   const url = path.startsWith('http') ? path : `${BASE_URL}${path}`;
   const trimmedTitle = title.length > 60 ? title.slice(0, 57) + '…' : title;
@@ -38,6 +39,7 @@ export function SEO({
       <title>{trimmedTitle}</title>
       <meta name="description" content={trimmedDesc} />
       <link rel="canonical" href={url} />
+      {noindex && <meta name="robots" content="noindex, nofollow" />}
 
       <meta property="og:title" content={trimmedTitle} />
       <meta property="og:description" content={trimmedDesc} />

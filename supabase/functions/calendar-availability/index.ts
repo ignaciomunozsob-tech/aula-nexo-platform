@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
           const cal = fb.calendars[id];
           if (cal?.busy && Array.isArray(cal.busy)) busy.push(...cal.busy);
         }
-        google_status = 'ok';
+        if (google_status === 'checking') google_status = 'ok';
         console.log('freeBusy ok', { calendars: calendarIds.length, busyBlocks: busy.length });
       } else {
         google_status = classifyGoogleError(fb);

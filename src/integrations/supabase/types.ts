@@ -1084,6 +1084,7 @@ export type Database = {
           course_id: string
           id: string
           purchased_at: string
+          source: string
           status: string
           user_id: string
         }
@@ -1091,6 +1092,7 @@ export type Database = {
           course_id: string
           id?: string
           purchased_at?: string
+          source?: string
           status?: string
           user_id: string
         }
@@ -1098,6 +1100,7 @@ export type Database = {
           course_id?: string
           id?: string
           purchased_at?: string
+          source?: string
           status?: string
           user_id?: string
         }
@@ -1123,6 +1126,7 @@ export type Database = {
           event_id: string
           id: string
           registered_at: string
+          source: string
           status: string
           user_id: string
         }
@@ -1130,6 +1134,7 @@ export type Database = {
           event_id: string
           id?: string
           registered_at?: string
+          source?: string
           status?: string
           user_id: string
         }
@@ -1137,6 +1142,7 @@ export type Database = {
           event_id?: string
           id?: string
           registered_at?: string
+          source?: string
           status?: string
           user_id?: string
         }

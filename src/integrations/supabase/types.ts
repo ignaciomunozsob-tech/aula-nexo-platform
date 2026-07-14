@@ -2167,6 +2167,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_user_roles: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"][]
+      }
       has_active_enrollment: {
         Args: { _course_id: string; _user_id: string }
         Returns: boolean

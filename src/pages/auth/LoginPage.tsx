@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
+import { RoleChoiceDialog } from "@/components/auth/RoleChoiceDialog";
 
 async function handleGoogleSignIn(toast: ReturnType<typeof useToast>["toast"]) {
   const result = await lovable.auth.signInWithOAuth("google", {
@@ -40,6 +41,7 @@ function friendlyAuthError(message?: string) {
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { signIn } = useAuth();
 
@@ -47,6 +49,56 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [pendingUser, setPendingUser] = useState<{ id: string; email: string; name?: string } | null>(null);
+
+  const getIntent = (): "creator" | "student" | null => {
+    try {
+      const v = localStorage.getItem("novu:login_intent");
+      return v === "creator" || v === "student" ? v : null;
+    } catch { return null; }
+  };
+  const clearIntent = () => { try { localStorage.removeItem("novu:login_intent"); } catch {} };
+
+  const goCreator = (user: { id: string; email: string; name?: string }) => {
+    clearIntent();
+    navigate("/verify-2fa", {
+      state: { userId: user.id, email: user.email, name: user.name, redirectTo: "/creator-app" },
+    });
+  };
+  const goStudent = () => {
+    clearIntent();
+    toast({ title: "Sesión iniciada ✅" });
+    navigate("/app");
+  };
+
+  const routeAfterLogin = async (userId: string, userEmail: string) => {
+    const [{ data: profile }, { data: roles }] = await Promise.all([
+      supabase.from("profiles").select("name").eq("id", userId).single(),
+      supabase.rpc("get_user_roles", { _user_id: userId }),
+    ]);
+    const roleList = (roles as string[] | null) ?? [];
+    const isCreator = roleList.includes("creator") || roleList.includes("admin");
+    const isStudent = roleList.includes("student");
+    const intent = getIntent();
+    const nextParam = searchParams.get("next");
+
+    const userInfo = { id: userId, email: userEmail, name: profile?.name };
+
+    // Both roles → ask
+    if (isCreator && isStudent) {
+      if (intent === "creator") return goCreator(userInfo);
+      if (intent === "student") return goStudent();
+      setPendingUser(userInfo);
+      setShowRoleModal(true);
+      return;
+    }
+    if (isCreator) return goCreator(userInfo);
+    // student only (or no role)
+    clearIntent();
+    toast({ title: "Sesión iniciada ✅" });
+    navigate(nextParam && nextParam.startsWith("/app") ? nextParam : "/app");
+  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +109,6 @@ export default function LoginPage() {
 
       if (error) {
         console.error("[LOGIN_ERROR]", error);
-
         toast({
           title: "No se pudo iniciar sesión",
           description: friendlyAuthError((error as any)?.message),
@@ -66,49 +117,19 @@ export default function LoginPage() {
         return;
       }
 
-      // Get user data
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user) {
-        toast({
-          title: "Error",
-          description: "No se pudo obtener información del usuario",
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: "No se pudo obtener información del usuario", variant: "destructive" });
         return;
       }
 
-      // Check if user needs to change password
-      const needsPasswordChange = user.user_metadata?.needs_password_change;
-
-      if (needsPasswordChange) {
+      if (user.user_metadata?.needs_password_change) {
         toast({ title: "Por favor, establece tu nueva contraseña" });
         navigate("/reset-password");
         return;
       }
 
-      // Check if user is a creator (role now lives in user_roles)
-      const [{ data: profile }, { data: role }] = await Promise.all([
-        supabase.from("profiles").select("name").eq("id", user.id).single(),
-        supabase.rpc("get_user_role", { _user_id: user.id }),
-      ]);
-
-      if (role === "creator") {
-        // Navigate to 2FA verification page; the code is sent from there
-        // to avoid a race where this component unmounts (due to auth state
-        // change) and the in-flight invoke gets aborted before completing.
-        navigate("/verify-2fa", {
-          state: {
-            userId: user.id,
-            email: user.email,
-            name: profile?.name,
-          },
-        });
-      } else {
-        // Students can login directly
-        toast({ title: "Sesión iniciada ✅" });
-        navigate("/app");
-      }
+      await routeAfterLogin(user.id, user.email!);
     } finally {
       setLoading(false);
     }
@@ -195,6 +216,17 @@ export default function LoginPage() {
           {loading ? "Ingresando..." : "Ingresar"}
         </Button>
       </form>
+
+      <RoleChoiceDialog
+        open={showRoleModal}
+        onOpenChange={setShowRoleModal}
+        onChoose={(role) => {
+          setShowRoleModal(false);
+          if (!pendingUser) return;
+          if (role === "creator") goCreator(pendingUser);
+          else goStudent();
+        }}
+      />
     </div>
   );
 }

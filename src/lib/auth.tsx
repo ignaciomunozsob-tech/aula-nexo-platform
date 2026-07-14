@@ -67,6 +67,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setTimeout(() => {
             fetchProfile(session.user.id);
           }, 0);
+
+          // Post-OAuth intent-based redirect (Google sign-in returns to '/')
+          if (event === "SIGNED_IN") {
+            const intent = (() => {
+              try { return localStorage.getItem("novu:login_intent"); } catch { return null; }
+            })();
+            if (intent === "creator" || intent === "student") {
+              setTimeout(async () => {
+                try {
+                  const { data: roles } = await supabase.rpc("get_user_roles", { _user_id: session.user.id });
+                  const list = (roles as string[] | null) ?? [];
+                  const isCreator = list.includes("creator") || list.includes("admin");
+                  const isStudent = list.includes("student");
+                  try { localStorage.removeItem("novu:login_intent"); } catch {}
+                  // Only redirect from home/login/signup to avoid interrupting flows
+                  const path = window.location.pathname;
+                  if (!["/", "/login", "/signup"].includes(path)) return;
+                  if (isCreator && isStudent) {
+                    // Honor intent when user has both roles
+                    window.location.assign(intent === "creator" ? "/creator-app" : "/app");
+                  } else if (isCreator) {
+                    window.location.assign("/creator-app");
+                  } else {
+                    window.location.assign("/app");
+                  }
+                } catch (e) { console.error("post-oauth routing", e); }
+              }, 0);
+            }
+          }
         } else {
           setProfile(null);
         }

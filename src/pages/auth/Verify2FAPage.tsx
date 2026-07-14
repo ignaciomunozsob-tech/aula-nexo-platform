@@ -113,7 +113,8 @@ export default function Verify2FAPage() {
       }
 
       toast({ title: "Verificación exitosa ✅" });
-      navigate("/creator-app");
+      const redirectTo = (location.state as any)?.redirectTo || "/creator-app";
+      navigate(redirectTo);
     } catch (error: any) {
       console.error("[2FA] Verification error:", error);
       toast({

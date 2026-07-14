@@ -133,18 +133,18 @@ function FeatureSection({
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10 md:gap-16 items-center">
         <div className={reverse ? "md:order-2" : ""}>
           <span className="novu-pill">{pill}</span>
-          <h2 className="mt-5 text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">{title}</h2>
-          <p className="mt-4 text-muted-foreground text-lg leading-relaxed">{subtitle}</p>
+          <h2 className="mt-5 text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight">{title}</h2>
+          <p className="mt-4 text-muted-foreground text-base leading-relaxed">{subtitle}</p>
           <ul className="mt-7 space-y-3">
             {bullets.map((b) => (
               <li key={b} className="flex items-start gap-3">
                 <span
-                  className="flex-shrink-0 mt-0.5 h-6 w-6 rounded-full flex items-center justify-center"
+                  className="flex-shrink-0 mt-0.5 h-5 w-5 rounded-full flex items-center justify-center"
                   style={{ background: "hsl(var(--novu-accent) / 0.15)" }}
                 >
-                  <Check className="h-3.5 w-3.5" strokeWidth={3} style={{ color: "hsl(var(--novu-accent))" }} />
+                  <Check className="h-3 w-3" strokeWidth={3} style={{ color: "hsl(var(--novu-accent))" }} />
                 </span>
-                <span className="text-foreground font-medium">{b}</span>
+                <span className="text-foreground text-sm font-medium">{b}</span>
               </li>
             ))}
           </ul>
@@ -235,15 +235,15 @@ export default function HomePage() {
       {/* 1. HERO */}
       <section className="px-4 sm:px-6 lg:px-8 pt-16 pb-20 md:pt-24 md:pb-28">
         <div className="max-w-5xl mx-auto text-center">
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tight text-balance">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-balance">
             Vende tus cursos
             <br />
             sin complicaciones
           </h1>
-          <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-5 text-base md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Crea tu curso, ponle precio y empieza a vender hoy mismo en tu propia página profesional
           </p>
-          <div className="mt-9 flex flex-wrap gap-3 justify-center">
+          <div className="mt-8 flex flex-wrap gap-3 justify-center">
             <Link to="/signup?role=creator" className="novu-btn-primary">
               Crear mi cuenta gratis
             </Link>
@@ -251,7 +251,7 @@ export default function HomePage() {
               Explorar cursos
             </Link>
           </div>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+          <div className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <CheckCircle2 className="h-4 w-4" style={{ color: "hsl(var(--novu-accent))" }} />
               Tu propia página de ventas
@@ -265,9 +265,7 @@ export default function HomePage() {
               Pagos directo a tu cuenta
             </span>
           </div>
-
-          {/* Mockup dashboard creador */}
-          <div className="mt-16 max-w-[900px] mx-auto">
+          <div className="mt-14 max-w-[900px] mx-auto">
             <BrowserFrame src={mockupDashboard} alt="Dashboard del creador NOVU" />
           </div>
         </div>
@@ -277,24 +275,26 @@ export default function HomePage() {
       <section className="px-4 sm:px-6 lg:px-8 py-16 md:py-20" style={{ background: "#f3f4f6" }}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight">Todo lo que necesitas para vender</h2>
-            <p className="mt-4 text-muted-foreground text-lg">Lanzar un producto digital nunca había sido tan simple</p>
+            <h2 className="text-2xl md:text-4xl font-bold tracking-tight">Todo lo que necesitas para vender</h2>
+            <p className="mt-3 text-muted-foreground text-base">
+              Lanzar un producto digital nunca había sido tan simple
+            </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {features.map((f) => (
-              <div key={f.title} className="novu-card flex flex-col gap-4" style={{ background: "#ffffff" }}>
+              <div key={f.title} className="novu-card flex flex-col gap-3" style={{ background: "#ffffff" }}>
                 <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center"
+                  className="w-9 h-9 rounded-lg flex items-center justify-center"
                   style={{ background: "hsl(var(--novu-accent) / 0.1)" }}
                 >
-                  <f.icon className="h-5 w-5" style={{ color: "hsl(var(--novu-accent))" }} />
+                  <f.icon className="h-4.5 w-4.5" style={{ color: "hsl(var(--novu-accent))" }} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-base font-semibold">{f.title}</h3>
+                    <h3 className="text-sm font-semibold">{f.title}</h3>
                     {f.soon && <SoonBadge />}
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
                 </div>
               </div>
             ))}
@@ -352,16 +352,16 @@ export default function HomePage() {
       <section className="px-4 sm:px-6 lg:px-8 py-16 md:py-20" style={{ background: "#0a0a0a" }}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight" style={{ color: "#ffffff" }}>
+            <h2 className="text-2xl md:text-4xl font-bold tracking-tight" style={{ color: "#ffffff" }}>
               Cursos destacados
             </h2>
-            <p className="mt-4 text-lg max-w-2xl mx-auto" style={{ color: "rgba(255,255,255,0.55)" }}>
+            <p className="mt-3 text-base max-w-2xl mx-auto" style={{ color: "rgba(255,255,255,0.5)" }}>
               Lo más vendido en NOVU
             </p>
           </div>
 
           {featuredCourses.length === 0 ? (
-            <p className="text-center" style={{ color: "rgba(255,255,255,0.4)" }}>
+            <p className="text-center text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
               Aún no hay cursos publicados.
             </p>
           ) : (
@@ -393,20 +393,20 @@ export default function HomePage() {
                         </div>
                       )}
                     </div>
-                    <div className="p-5 flex flex-col flex-1 gap-3">
+                    <div className="p-4 flex flex-col flex-1 gap-2.5">
                       <div className="flex flex-wrap items-center gap-2">
                         {c.is_novu_official && <NovuCertifiedBadge />}
                         {isLive && eventDate ? (
                           <span
-                            className="inline-flex items-center text-[11px] font-bold px-2.5 py-1 rounded-full"
+                            className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full"
                             style={{ background: "hsl(var(--novu-accent))", color: "#0a0a0a" }}
                           >
                             {formatEventDate(eventDate)}
                           </span>
                         ) : (
                           <span
-                            className="inline-flex items-center text-[11px] font-medium px-2.5 py-1 rounded-full"
-                            style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.6)" }}
+                            className="inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full"
+                            style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)" }}
                           >
                             Grabado · A tu ritmo
                           </span>
@@ -422,7 +422,7 @@ export default function HomePage() {
                         className="mt-auto flex items-center justify-between pt-3"
                         style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
                       >
-                        <div className="text-base font-bold" style={{ color: "#ffffff" }}>
+                        <div className="text-sm font-bold" style={{ color: "#ffffff" }}>
                           ${c.price_clp.toLocaleString("es-CL")}
                         </div>
                         <Link
@@ -430,7 +430,7 @@ export default function HomePage() {
                           className="inline-flex items-center gap-1 text-xs font-semibold transition-opacity hover:opacity-70"
                           style={{ color: "hsl(var(--novu-accent))" }}
                         >
-                          Ver curso <ArrowRight className="h-3.5 w-3.5" />
+                          Ver curso <ArrowRight className="h-3 w-3" />
                         </Link>
                       </div>
                     </div>
@@ -444,16 +444,16 @@ export default function HomePage() {
             <div className="mt-10 text-center">
               <Link
                 to="/courses"
-                className="inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-opacity hover:opacity-80"
+                className="inline-flex items-center justify-center gap-2 rounded-full font-medium transition-opacity hover:opacity-80"
                 style={{
-                  padding: "13px 28px",
-                  border: "1px solid rgba(255,255,255,0.2)",
-                  color: "rgba(255,255,255,0.8)",
+                  padding: "11px 24px",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  color: "rgba(255,255,255,0.7)",
                   background: "transparent",
-                  fontSize: "14px",
+                  fontSize: "13px",
                 }}
               >
-                Ver todos los cursos <ArrowRight className="h-4 w-4" />
+                Ver todos los cursos <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
           )}
@@ -464,24 +464,24 @@ export default function HomePage() {
       <section className="px-4 sm:px-6 lg:px-8 py-16 md:py-20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight">Vende lo que quieras</h2>
-            <p className="mt-4 text-muted-foreground text-lg">Cualquier producto digital que tengas</p>
+            <h2 className="text-2xl md:text-4xl font-bold tracking-tight">Vende lo que quieras</h2>
+            <p className="mt-3 text-muted-foreground text-base">Cualquier producto digital que tengas</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {productTypes.map((p) => (
               <div key={p.title} className="novu-card flex flex-col gap-3 h-full">
                 <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center"
+                  className="w-9 h-9 rounded-lg flex items-center justify-center"
                   style={{ background: "hsl(var(--novu-accent) / 0.1)" }}
                 >
-                  <p.icon className="h-5 w-5" style={{ color: "hsl(var(--novu-accent))" }} />
+                  <p.icon className="h-4 w-4" style={{ color: "hsl(var(--novu-accent))" }} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-sm font-semibold">{p.title}</h3>
                     {p.soon && <SoonBadge />}
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{p.desc}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">{p.desc}</p>
                 </div>
               </div>
             ))}
@@ -493,15 +493,15 @@ export default function HomePage() {
       <section className="px-4 sm:px-6 lg:px-8 py-16 md:py-20" style={{ background: "hsl(var(--bg-card-alt-raw))" }}>
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight">Preguntas frecuentes</h2>
+            <h2 className="text-2xl md:text-4xl font-bold tracking-tight">Preguntas frecuentes</h2>
           </div>
           <Accordion type="single" collapsible className="space-y-3">
             {faqs.map((f, i) => (
               <AccordionItem key={i} value={`q-${i}`} className="novu-card border-0" style={{ padding: 0 }}>
-                <AccordionTrigger className="px-6 py-5 text-left text-base font-semibold hover:no-underline">
+                <AccordionTrigger className="px-6 py-4 text-left text-sm font-semibold hover:no-underline">
                   {f.q}
                 </AccordionTrigger>
-                <AccordionContent className="px-6 pb-6 text-muted-foreground leading-relaxed text-sm">
+                <AccordionContent className="px-6 pb-5 text-muted-foreground leading-relaxed text-sm">
                   {f.a}
                   {f.whatsapp && (
                     <div className="mt-4">
@@ -509,11 +509,11 @@ export default function HomePage() {
                         href="https://wa.me/56933728004"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-sm font-semibold text-foreground hover:opacity-70 transition-opacity"
+                        className="inline-flex items-center gap-2 text-xs font-semibold text-foreground hover:opacity-70 transition-opacity"
                       >
-                        <MessageCircle className="h-4 w-4" style={{ color: "hsl(var(--novu-accent))" }} />
+                        <MessageCircle className="h-3.5 w-3.5" style={{ color: "hsl(var(--novu-accent))" }} />
                         Escribir al soporte
-                        <ArrowRight className="h-4 w-4" />
+                        <ArrowRight className="h-3.5 w-3.5" />
                       </a>
                     </div>
                   )}
@@ -525,24 +525,33 @@ export default function HomePage() {
       </section>
 
       {/* 10. CTA FINAL */}
-      <section className="px-4 sm:px-6 lg:px-8 py-20 md:py-28" style={{ background: "#000000" }}>
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl md:text-6xl font-black tracking-tight" style={{ color: "#ffffff" }}>
+      <section className="px-4 sm:px-6 lg:px-8 py-16 md:py-20" style={{ background: "hsl(var(--novu-accent))" }}>
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-2xl md:text-4xl font-bold tracking-tight" style={{ color: "#000000" }}>
             Tu conocimiento tiene valor. NOVU te ayuda a monetizarlo.
           </h2>
-          <div className="mt-9 flex flex-wrap gap-3 justify-center">
-            <Link to="/signup?role=creator" className="novu-btn-primary">
+          <div className="mt-8 flex flex-wrap gap-3 justify-center">
+            <Link
+              to="/signup?role=creator"
+              className="inline-flex items-center justify-center gap-2 rounded-full font-bold transition-opacity hover:opacity-80"
+              style={{
+                padding: "13px 26px",
+                background: "#000000",
+                color: "#ffffff",
+                fontSize: "14px",
+              }}
+            >
               Crear mi cuenta gratis
             </Link>
             <Link
               to="/courses"
-              className="inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-opacity hover:opacity-80"
+              className="inline-flex items-center justify-center gap-2 rounded-full font-medium transition-opacity hover:opacity-70"
               style={{
-                padding: "16px 32px",
-                border: "1px solid rgba(255,255,255,0.3)",
-                color: "rgba(255,255,255,0.85)",
+                padding: "13px 26px",
+                border: "1.5px solid rgba(0,0,0,0.25)",
+                color: "#000000",
                 background: "transparent",
-                fontSize: "15px",
+                fontSize: "14px",
               }}
             >
               Explorar cursos
@@ -552,10 +561,10 @@ export default function HomePage() {
       </section>
 
       {/* Footer slim */}
-      <footer className="px-4 sm:px-6 lg:px-8 py-10 border-t border-border">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
+      <footer className="px-4 sm:px-6 lg:px-8 py-8 border-t border-border">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
-            <span className="font-black text-foreground">NOVU</span>
+            <span className="font-bold text-foreground text-sm">NOVU</span>
             <span>· Vende tu conocimiento</span>
           </div>
           <div className="flex items-center gap-5">

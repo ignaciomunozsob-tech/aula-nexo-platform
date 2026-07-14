@@ -172,7 +172,7 @@ export default function CoursePlayerPage() {
         });
         if (cancelled) return;
         if ((data as any)?.status === 'ready') {
-          queryClient.invalidateQueries({ queryKey: ['course-modules', id] });
+          queryClient.invalidateQueries({ queryKey: ['course-modules-player', id] });
         }
       } catch (e) {
         console.error('[bunny-poll]', e);

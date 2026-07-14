@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { initPixel, trackEvent, trackEventFor } from '@/lib/metaPixel';
 import { NOVU_META_PIXEL_ID } from '@/config/branding';
+import { SEO } from '@/components/SEO';
 
 type OrderRow = {
   id: string;

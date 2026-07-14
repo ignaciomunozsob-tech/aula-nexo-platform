@@ -91,10 +91,10 @@ export function PublicNavbar() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuItem onClick={() => navigate(studentLoginUrl)}>
+                    <DropdownMenuItem onClick={() => goLogin('student', studentLoginUrl)}>
                       Iniciar como estudiante
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate(creatorLoginUrl)}>
+                    <DropdownMenuItem onClick={() => goLogin('creator', creatorLoginUrl)}>
                       Iniciar como creador
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -149,10 +149,10 @@ export function PublicNavbar() {
                 )
               ) : (
                 <div className="flex flex-col gap-2 px-2">
-                  <Button variant="ghost" onClick={() => { navigate(studentLoginUrl); setMobileMenuOpen(false); }}>
+                  <Button variant="ghost" onClick={() => { goLogin('student', studentLoginUrl); setMobileMenuOpen(false); }}>
                     Iniciar como estudiante
                   </Button>
-                  <Button variant="ghost" onClick={() => { navigate(creatorLoginUrl); setMobileMenuOpen(false); }}>
+                  <Button variant="ghost" onClick={() => { goLogin('creator', creatorLoginUrl); setMobileMenuOpen(false); }}>
                     Iniciar como creador
                   </Button>
                   <button

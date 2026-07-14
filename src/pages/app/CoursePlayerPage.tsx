@@ -158,6 +158,36 @@ export default function CoursePlayerPage() {
   });
   const bunnyEmbedUrl = bunnySignedEmbed?.url;
 
+  // Poll Bunny status every 15s while the video is still processing.
+  // When it becomes ready we invalidate the modules query so the iframe
+  // replaces the placeholder without any flicker.
+  useEffect(() => {
+    const status = (currentLessonForUrl as any)?.bunny_status;
+    const lessonId = (currentLessonForUrl as any)?.id;
+    if (!isBunnyVideo || !lessonId || !bunnyVideoIdForUrl || status === 'ready') return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const { data } = await supabase.functions.invoke('bunny-video-status', {
+          body: { lessonId },
+        });
+        if (cancelled) return;
+        if ((data as any)?.status === 'ready') {
+          queryClient.invalidateQueries({ queryKey: ['course-modules-player', id] });
+        }
+      } catch (e) {
+        console.error('[bunny-poll]', e);
+      }
+    };
+    const interval = window.setInterval(tick, 15000);
+    const first = window.setTimeout(tick, 1000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      window.clearTimeout(first);
+    };
+  }, [isBunnyVideo, bunnyVideoIdForUrl, (currentLessonForUrl as any)?.bunny_status, (currentLessonForUrl as any)?.id, id, queryClient]);
+
   const { data: signedVideoUrl } = useQuery({
     queryKey: ['signed-video', currentLessonForUrl?.id],
     queryFn: () => resolveProtectedUrl('lesson_video', currentLessonForUrl!.id),
@@ -439,7 +469,7 @@ export default function CoursePlayerPage() {
                           Tu video se está procesando
                         </p>
                         <p className="text-gray-400 text-sm max-w-md">
-                          Esto puede tomar unos minutos. Recarga la página en unos minutos para ver el progreso.
+                          Esto puede tomar unos minutos
                         </p>
                       </div>
                     </div>

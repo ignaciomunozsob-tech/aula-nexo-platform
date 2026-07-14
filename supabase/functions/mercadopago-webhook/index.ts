@@ -328,12 +328,12 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, order: any) 
   try {
     if (product_type === 'course') {
       await admin.from('enrollments').upsert(
-        { user_id, course_id: product_id, status: 'active' },
+        { user_id, course_id: product_id, status: 'active', source: 'payment' },
         { onConflict: 'user_id,course_id', ignoreDuplicates: false }
       );
     } else if (product_type === 'event') {
       await admin.from('event_registrations').upsert(
-        { user_id, event_id: product_id, status: 'active' },
+        { user_id, event_id: product_id, status: 'active', source: 'payment' },
         { onConflict: 'user_id,event_id', ignoreDuplicates: false }
       );
     } else if (product_type === 'community') {

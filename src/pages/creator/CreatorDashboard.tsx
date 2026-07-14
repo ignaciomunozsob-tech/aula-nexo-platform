@@ -121,6 +121,7 @@ export default function CreatorDashboard() {
           id,
           purchased_at,
           status,
+          source,
           course_id,
           user_id,
           profiles:user_id (
@@ -138,7 +139,7 @@ export default function CreatorDashboard() {
       if (enrollmentsError) throw enrollmentsError;
 
       // Map to SaleRow format
-      const rows: SaleRow[] = (enrollments || [])
+      const rows: (SaleRow & { source?: string })[] = (enrollments || [])
         .filter(e => isPaidStatus(e.status))
         .map(e => {
           const course = courseMap.get(e.course_id);
@@ -146,6 +147,7 @@ export default function CreatorDashboard() {
             enrollment_id: e.id,
             purchased_at: e.purchased_at,
             status: e.status,
+            source: (e as any).source || 'manual',
             course_id: e.course_id,
             course_title: course?.title || null,
             price_clp: course?.price_clp || null,
@@ -161,16 +163,18 @@ export default function CreatorDashboard() {
   });
 
   const stats = useMemo(() => {
-    const rows = sales || [];
+    const allRows = (sales || []) as (SaleRow & { source?: string })[];
+    const paidRows = allRows.filter((r) => r.source === 'payment');
+    const freeCount = allRows.length - paidRows.length;
 
-    const revenue = rows.reduce((acc, r) => acc + Number(r.price_clp || 0), 0);
-    const salesCount = rows.length;
+    const revenue = paidRows.reduce((acc, r) => acc + Number(r.price_clp || 0), 0);
+    const salesCount = paidRows.length;
     const avg = salesCount > 0 ? Math.round(revenue / salesCount) : 0;
 
-    const uniqStudents = new Set(rows.map((r) => r.buyer_user_id)).size;
+    const uniqStudents = new Set(paidRows.map((r) => r.buyer_user_id)).size;
 
     const byCourse = new Map<string, { title: string; revenue: number; sales: number }>();
-    for (const r of rows) {
+    for (const r of paidRows) {
       const cid = String(r.course_id);
       const title = r.course_title || "Curso";
       const price = Number(r.price_clp || 0);
@@ -181,7 +185,7 @@ export default function CreatorDashboard() {
 
     const top = Array.from(byCourse.values()).sort((a, b) => b.revenue - a.revenue)[0] || null;
 
-    return { revenue, salesCount, avg, uniqStudents, top };
+    return { revenue, salesCount, avg, uniqStudents, top, freeCount };
   }, [sales]);
 
   const loading = isLoadingCourses || isLoadingSales;
@@ -360,6 +364,11 @@ export default function CreatorDashboard() {
                 </Card>
               </div>
 
+              <p className="text-xs text-muted-foreground -mt-2">
+                Accesos gratuitos otorgados: {stats.freeCount}
+              </p>
+
+
               <Separator />
 
               <div>
@@ -380,6 +389,7 @@ export default function CreatorDashboard() {
                         <TableHead>Fecha</TableHead>
                         <TableHead>Estudiante</TableHead>
                         <TableHead>Curso</TableHead>
+                        <TableHead>Tipo</TableHead>
                         <TableHead className="text-right">Monto</TableHead>
                         <TableHead className="text-right">Estado</TableHead>
                       </TableRow>
@@ -412,8 +422,13 @@ export default function CreatorDashboard() {
                             <TableCell className="max-w-[360px]">
                               <span className="text-sm line-clamp-1">{r.course_title || "Curso"}</span>
                             </TableCell>
+                            <TableCell>
+                              <Badge variant={(r as any).source === 'payment' ? 'default' : 'outline'}>
+                                {(r as any).source === 'payment' ? 'Venta' : 'Gratuito'}
+                              </Badge>
+                            </TableCell>
                             <TableCell className="text-right font-medium whitespace-nowrap">
-                              {formatCLP(r.price_clp)}
+                              {(r as any).source === 'payment' ? formatCLP(r.price_clp) : '—'}
                             </TableCell>
                             <TableCell className="text-right">
                               <Badge

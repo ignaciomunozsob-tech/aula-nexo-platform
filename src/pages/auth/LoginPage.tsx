@@ -216,6 +216,17 @@ export default function LoginPage() {
           {loading ? "Ingresando..." : "Ingresar"}
         </Button>
       </form>
+
+      <RoleChoiceDialog
+        open={showRoleModal}
+        onOpenChange={setShowRoleModal}
+        onChoose={(role) => {
+          setShowRoleModal(false);
+          if (!pendingUser) return;
+          if (role === "creator") goCreator(pendingUser);
+          else goStudent();
+        }}
+      />
     </div>
   );
 }

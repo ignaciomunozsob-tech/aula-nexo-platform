@@ -163,12 +163,13 @@ export default function CoursePlayerPage() {
   // replaces the placeholder without any flicker.
   useEffect(() => {
     const status = (currentLessonForUrl as any)?.bunny_status;
-    if (!isBunnyVideo || !bunnyVideoIdForUrl || status === 'ready') return;
+    const lessonId = (currentLessonForUrl as any)?.id;
+    if (!isBunnyVideo || !lessonId || !bunnyVideoIdForUrl || status === 'ready') return;
     let cancelled = false;
     const tick = async () => {
       try {
         const { data } = await supabase.functions.invoke('bunny-video-status', {
-          body: { videoId: bunnyVideoIdForUrl },
+          body: { lessonId },
         });
         if (cancelled) return;
         if ((data as any)?.status === 'ready') {
@@ -179,14 +180,13 @@ export default function CoursePlayerPage() {
       }
     };
     const interval = window.setInterval(tick, 15000);
-    // First check after a short delay so we react quickly if it's already done
     const first = window.setTimeout(tick, 1000);
     return () => {
       cancelled = true;
       window.clearInterval(interval);
       window.clearTimeout(first);
     };
-  }, [isBunnyVideo, bunnyVideoIdForUrl, (currentLessonForUrl as any)?.bunny_status, id, queryClient]);
+  }, [isBunnyVideo, bunnyVideoIdForUrl, (currentLessonForUrl as any)?.bunny_status, (currentLessonForUrl as any)?.id, id, queryClient]);
 
   const { data: signedVideoUrl } = useQuery({
     queryKey: ['signed-video', currentLessonForUrl?.id],

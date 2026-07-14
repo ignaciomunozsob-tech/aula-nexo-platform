@@ -32,6 +32,7 @@ export default function CreatorBookingsPage() {
   const [date, setDate] = useState<Date>(new Date());
   const [selected, setSelected] = useState<CalEvent | null>(null);
   const { connection, loading: loadingConnection } = useGoogleConnection();
+  const needsGoogleReconnect = !!connection && connection.has_required_scopes === false;
 
   const range = useMemo(() => {
     const s = startOfMonth(date); const e = endOfMonth(date);
@@ -52,8 +53,9 @@ export default function CreatorBookingsPage() {
         },
         body: JSON.stringify(range),
       });
-      if (!res.ok) throw new Error("calendar_failed");
-      return res.json();
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body?.error || "calendar_failed");
+      return body;
     },
   });
 
@@ -112,6 +114,9 @@ export default function CreatorBookingsPage() {
   const now = Date.now();
   const upcoming = (listData || []).filter((b: any) => new Date(b.start_at).getTime() >= now && b.status === "confirmed");
   const past = (listData || []).filter((b: any) => new Date(b.start_at).getTime() < now || b.status === "cancelled");
+  const googleStatus = calData?.google_status as string | undefined;
+  const calendarApiDisabled = googleStatus === "calendar_api_disabled";
+  const calendarMissingScopes = googleStatus === "missing_scopes" || needsGoogleReconnect;
 
   const Row = ({ b }: { b: any }) => (
     <div className="flex items-center justify-between gap-3 py-3 border-b last:border-0">
@@ -163,6 +168,39 @@ export default function CreatorBookingsPage() {
             <Button asChild size="sm">
               <Link to="/creator-app/integrations">Conectar ahora</Link>
             </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {!loadingConnection && calendarMissingScopes && (
+        <Card className="border-amber-500/60 bg-amber-500/10">
+          <CardContent className="pt-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <AlertTriangle className="h-6 w-6 text-amber-600 shrink-0" />
+            <div className="flex-1">
+              <p className="font-semibold text-amber-900 dark:text-amber-200">
+                Reconecta Google Calendar
+              </p>
+              <p className="text-sm text-amber-900/80 dark:text-amber-200/80">
+                Tu conexión actual no tiene todos los permisos para leer calendarios secundarios y bloquear horarios ocupados.
+              </p>
+            </div>
+            <Button asChild size="sm">
+              <Link to="/creator-app/integrations">Reconectar</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {calendarApiDisabled && (
+        <Card className="border-destructive/50 bg-destructive/10">
+          <CardContent className="pt-6 flex items-start gap-4">
+            <AlertTriangle className="h-6 w-6 text-destructive shrink-0" />
+            <div>
+              <p className="font-semibold text-destructive">Google Calendar API desactivada</p>
+              <p className="text-sm text-destructive/90">
+                El proyecto de Google usado por NOVU debe tener activa la Google Calendar API para leer disponibilidad y crear eventos.
+              </p>
+            </div>
           </CardContent>
         </Card>
       )}

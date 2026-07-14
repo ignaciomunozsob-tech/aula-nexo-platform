@@ -134,6 +134,9 @@ export default function SessionBookingPage({ sessionIdOverride }: Props = {}) {
         setSubmitting(false);
         return;
       }
+      if (body.google_status && body.google_status !== "ok") {
+        console.warn("Reserva creada sin sincronizar Google Calendar", body.google_status);
+      }
       navigate(`/booking/success?id=${body.booking_id}&token=${body.ics_token}`);
     } catch (e: any) {
       toast.error(e.message);

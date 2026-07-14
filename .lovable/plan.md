@@ -1,49 +1,37 @@
-
 ## Diagnóstico
 
-En el código ya existe la infraestructura para conectar Google Calendar (tabla `creator_google_accounts`, funciones `google-oauth-start/callback`, `getValidAccessToken`, `calendar-availability` con freeBusy y `booking-create` que crea el evento con Meet). Que estés viendo horas ocupadas como disponibles y que las reservas no aparezcan en tu Google Calendar apunta a **dos causas** que voy a atacar juntas:
+El backend ya intentó leer y crear eventos en Google Calendar, pero Google está rechazando las llamadas por dos motivos:
 
-1. **Tu cuenta de Google no está conectada** (o está conectada pero solo se consulta el calendario `primary`). Cuando no hay fila en `creator_google_accounts` para tu `creator_id`, `getValidAccessToken` devuelve `null`, entonces:
-   - `calendar-availability` no llama a `freeBusy` → los bloqueos no se restan.
-   - `booking-create` no crea el evento en Google → no aparece en tu calendario.
-2. **Solo se revisa el calendario `primary`.** Si tienes bloqueos en un calendario secundario (ej: "Personal", trabajo), esos eventos no se restan porque no se incluyen en `freeBusy.items`.
+1. **Google Calendar API está desactivada** en el proyecto de Google asociado al `GOOGLE_OAUTH_CLIENT_ID` actual. Por eso no se pueden leer horarios ocupados ni crear eventos.
+2. La conexión OAuth actual no tiene permiso para listar calendarios secundarios: falta un scope de lectura/listado de calendarios.
+3. El texto `shdjfhg.supabase.co quiere leer tu calendario` no se corrige desde React: viene de la **pantalla de consentimiento OAuth configurada en Google Cloud** para ese Client ID. Ahí debe figurar el nombre público **NOVU**.
 
-Además, el formulario de reserva solo pide **nombre y email**, falta **teléfono**.
+## Plan de implementación
 
-## Cambios
+1. **Actualizar scopes de Google Calendar**
+   - Agregar el permiso necesario para listar calendarios visibles/seleccionados del creador.
+   - Mantener permisos actuales para:
+     - ver disponibilidad (`freebusy`)
+     - crear eventos
+     - obtener email de la cuenta conectada
 
-### 1. Pedir teléfono en la reserva (frontend + backend)
-- `src/pages/SessionBookingPage.tsx`: agregar campo "Teléfono" (opcional o requerido, ver preguntas) junto a nombre y email; enviarlo al edge function.
-- `supabase/functions/booking-create/index.ts`: aceptar `guest_phone`, guardarlo en `session_bookings.guest_phone` e incluirlo en la descripción del evento de Google Calendar y en el correo transaccional al creador.
-- Migración: agregar columna `guest_phone TEXT` a `session_bookings`.
-- Para usuarios logueados, precargar el teléfono si existe en `profiles` (si el campo existe) o pedirlo igualmente.
+2. **Forzar reconexión limpia**
+   - Ajustar el flujo para que al reconectar se pidan los permisos nuevos.
+   - Mostrar en Integraciones un estado claro si la cuenta conectada quedó con permisos incompletos y pedir “Reconectar Google Calendar”.
 
-### 2. FreeBusy sobre TODOS los calendarios del creador
-- `supabase/functions/calendar-availability/index.ts`: antes de llamar a `/freeBusy`, listar `GET /calendar/v3/users/me/calendarList` y armar `items` con todos los calendarios donde `selected !== false` y `accessRole` sea `owner/writer/reader`. Así los bloqueos de calendarios secundarios también invalidan slots.
-- Añadir logging del resultado para depurar (número de calendarios, cantidad de `busy` recibidos).
+3. **Mejorar errores visibles**
+   - Si Google responde que la Calendar API está desactivada, mostrar un mensaje claro en Integraciones/Bookings en vez de fallar silenciosamente.
+   - Si falta permiso, mostrar que debe reconectarse Google Calendar.
 
-### 3. Detectar cuenta no conectada y avisar
-- En `SessionEditorPage` y `CreatorBookingsPage`: mostrar banner de advertencia grande cuando `useGoogleConnection()` no tenga conexión, con botón directo "Conectar Google Calendar" que abre `/creator-app/integrations`.
-- En `CreatorIntegrationsPage`: agregar botón "Probar conexión" que llama a un nuevo endpoint `google-test` que consulta `calendarList` y muestra los calendarios detectados. Sirve para verificar que la conexión funciona y que sí se leen tus bloqueos.
+4. **Asegurar creación de evento en Google**
+   - Mantener la creación del evento en el calendario principal del creador.
+   - Guardar `google_event_id`, `google_html_link` y `meet_url` cuando Google lo cree.
+   - Si Google falla, devolver/registrar el motivo exacto para no confundirlo con una reserva exitosa completamente sincronizada.
 
-### 4. Que el evento aparezca en tu calendario aunque el usuario no acepte
-- En `booking-create`: el evento ya se crea en el calendario del creador (`tok.row.calendar_id`), así que aparecerá siempre. Verificar que `sendUpdates=all` y que se registre en logs el `htmlLink` del evento devuelto por Google para poder depurar.
-- Guardar `google_html_link` en `session_bookings` para poder linkearlo desde la vista del creador.
+5. **Acción requerida fuera del código**
+   - En Google Cloud, el dueño del OAuth Client debe:
+     - habilitar **Google Calendar API** para el proyecto `GOOGLE_OAUTH_CLIENT_ID` actual;
+     - cambiar el nombre de la app en la pantalla de consentimiento a **NOVU**;
+     - verificar que los dominios autorizados incluyan `soynovu.cl` y `lovable.app` si corresponde.
 
-### 5. Migración
-```sql
-ALTER TABLE public.session_bookings
-  ADD COLUMN IF NOT EXISTS guest_phone TEXT,
-  ADD COLUMN IF NOT EXISTS google_html_link TEXT;
-```
-
-## Detalles técnicos
-
-- FreeBusy admite hasta 50 calendarios por request; filtrar por `selected: true` cubre el 99% de los casos.
-- El evento se crea con `attendees: [{ email }]` — si el email es de un dominio Workspace distinto, Google puede rechazar invitaciones; en ese caso el evento igual queda en tu calendario del creador.
-- No se toca la lógica de pagos, ni el flujo de OAuth existente, ni las URLs de redirect.
-
-## Preguntas antes de implementar
-
-1. ¿Quieres que el **teléfono sea obligatorio** o solo opcional?
-2. ¿Prefieres que la lista de calendarios a considerar para freeBusy sea **automática** (todos los `selected`) o quieres una UI donde tú elijas manualmente cuáles bloquean tus horarios?
+Después de esto, habrá que desconectar y volver a conectar Google Calendar desde Integraciones para que Google emita tokens con los permisos nuevos.

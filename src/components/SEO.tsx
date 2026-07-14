@@ -10,6 +10,7 @@ interface SEOProps {
   type?: 'website' | 'article' | 'product' | 'profile';
   image?: string | null;  // absolute URL preferred
   jsonLd?: Record<string, any> | Record<string, any>[];
+  noindex?: boolean;
 }
 
 /**

@@ -61,7 +61,8 @@ Deno.serve(async (req) => {
     const listJson = await listRes.json();
     if (!listRes.ok) {
       const status = classifyGoogleError(listJson);
-      return j({ ok: false, status, message: messageForGoogleStatus(status), details: listJson });
+      console.error('google-calendar-diagnostics calendarList failed', listRes.status, JSON.stringify(listJson));
+      return j({ ok: false, status, message: messageForGoogleStatus(status) });
     }
 
     const calendarIds = Array.isArray(listJson.items)
@@ -79,7 +80,8 @@ Deno.serve(async (req) => {
     const fbJson = await fbRes.json();
     if (!fbRes.ok) {
       const status = classifyGoogleError(fbJson);
-      return j({ ok: false, status, message: messageForGoogleStatus(status), details: fbJson });
+      console.error('google-calendar-diagnostics freeBusy failed', fbRes.status, JSON.stringify(fbJson));
+      return j({ ok: false, status, message: messageForGoogleStatus(status) });
     }
 
     return j({ ok: true, status: 'ok', calendars_checked: calendarIds.length || 1 });

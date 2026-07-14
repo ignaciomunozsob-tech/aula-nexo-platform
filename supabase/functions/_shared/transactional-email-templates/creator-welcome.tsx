@@ -1,8 +1,9 @@
 import * as React from 'npm:react@18.3.1'
 import {
-  Body, Button, Container, Head, Heading, Html, Preview, Section, Text,
+  Body, Img, Button, Container, Head, Heading, Html, Preview, Section, Text,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
+import { LOGO_URL } from './brand.ts'
 
 interface Props { name?: string }
 
@@ -12,7 +13,7 @@ const Email = ({ name }: Props) => (
     <Preview>Bienvenido a NOVU — empieza a vender tu conocimiento hoy.</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Text style={brand}>NOVU</Text>
+        <Img src={LOGO_URL} alt="NOVU" width="56" height="56" style={logo} />
         <Heading style={h1}>¡Bienvenido a NOVU{name ? `, ${name}` : ''}!</Heading>
         <Text style={text}>
           Tu cuenta de creador ya está activa. NOVU es <strong>gratis</strong>: sólo cobramos 10% por venta.
@@ -55,3 +56,4 @@ const ctaBox: React.CSSProperties = { textAlign: 'center' as const, margin: '32p
 const ctaButton: React.CSSProperties = { backgroundColor: '#fcc70e', color: '#0a0a0a', fontWeight: 700, fontSize: '16px', padding: '14px 28px', borderRadius: '10px', textDecoration: 'none', display: 'inline-block' }
 const muted: React.CSSProperties = { fontSize: '14px', lineHeight: 1.6, color: '#666', margin: '24px 0 0 0' }
 const footer: React.CSSProperties = { fontSize: '12px', color: '#999', textAlign: 'center' as const, marginTop: '32px' }
+const logo: React.CSSProperties = { display: 'block', margin: '0 0 24px 0', borderRadius: '12px' }

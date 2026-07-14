@@ -1,6 +1,7 @@
 import * as React from 'npm:react@18.3.1'
 import { Body, Button, Container, Head, Heading, Html, Preview, Section, Text, Hr } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
+import { LOGO_URL } from './brand.ts'
 
 interface Props {
   creatorName?: string
@@ -34,7 +35,7 @@ const Email = ({
     <Preview>🎉 Nueva venta en NOVU: {productTitle} · {fmt(amountClp)}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Text style={brand}>NOVU</Text>
+        <Img src={LOGO_URL} alt="NOVU" width="56" height="56" style={logo} />
         <Heading style={h1}>🎉 Nueva venta</Heading>
         <Text style={hi}>Hola{creatorName ? ` ${creatorName}` : ''}, tienes una nueva venta.</Text>
 
@@ -97,3 +98,4 @@ const brkRowTotal: React.CSSProperties = { fontSize: '17px', color: '#0a0a0a', m
 const hr: React.CSSProperties = { borderColor: '#fcc70e', margin: '12px 0' }
 const btn: React.CSSProperties = { backgroundColor: '#fcc70e', color: '#0a0a0a', padding: '12px 24px', borderRadius: '10px', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }
 const footer: React.CSSProperties = { fontSize: '12px', color: '#999', textAlign: 'center' as const, marginTop: '32px' }
+const logo: React.CSSProperties = { display: 'block', margin: '0 0 24px 0', borderRadius: '12px' }

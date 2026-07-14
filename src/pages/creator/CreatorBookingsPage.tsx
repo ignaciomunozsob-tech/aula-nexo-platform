@@ -260,6 +260,9 @@ export default function CreatorBookingsPage() {
               <div className="space-y-2 text-sm">
                 <p><strong>Asistente:</strong> {selected.resource.raw.guest_name || "—"}</p>
                 <p><strong>Email:</strong> {selected.resource.raw.guest_email || "—"}</p>
+                <p><strong>Teléfono:</strong> {selected.resource.raw.guest_phone ? (
+                  <a href={`tel:${selected.resource.raw.guest_phone}`} className="hover:underline">{selected.resource.raw.guest_phone}</a>
+                ) : "—"}</p>
                 {selected.resource.raw.meet_url && (
                   <Button asChild size="sm" variant="outline" className="w-full">
                     <a href={selected.resource.raw.meet_url} target="_blank" rel="noreferrer">

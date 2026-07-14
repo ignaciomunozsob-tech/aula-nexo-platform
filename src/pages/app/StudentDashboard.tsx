@@ -34,6 +34,12 @@ export default function StudentDashboard() {
 
   return (
     <div className="p-8">
+      <SEO
+        title="Mis cursos — NOVU"
+        description="Continúa tu aprendizaje en NOVU."
+        path="/app"
+        noindex
+      />
       <div className="mb-8">
         <h1 className="text-2xl font-bold">
           Bienvenido, {profile?.name?.split(' ')[0] || 'Estudiante'}

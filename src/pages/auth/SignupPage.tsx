@@ -126,6 +126,12 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex">
+      <SEO
+        title="Crear cuenta — NOVU"
+        description="Regístrate gratis en NOVU y empieza a vender tus cursos, ebooks y talleres en Chile."
+        path="/signup"
+        noindex
+      />
       {/* Left side - Form */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">

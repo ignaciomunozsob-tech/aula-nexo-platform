@@ -364,6 +364,11 @@ export default function CreatorDashboard() {
                 </Card>
               </div>
 
+              <p className="text-xs text-muted-foreground -mt-2">
+                Accesos gratuitos otorgados: {stats.freeCount}
+              </p>
+
+
               <Separator />
 
               <div>

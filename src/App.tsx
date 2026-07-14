@@ -128,6 +128,8 @@ const App = () => (
 
                   {/* Auth */}
                   <Route path="/login" element={<LoginPage />} />
+                  <Route path="/login/creator" element={<LoginPage variant="creator" />} />
+                  <Route path="/login/student" element={<LoginPage variant="student" />} />
                   <Route path="/signup" element={<SignupPage />} />
                   <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />

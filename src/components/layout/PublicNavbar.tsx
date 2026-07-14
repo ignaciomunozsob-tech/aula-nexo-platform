@@ -32,8 +32,8 @@ export function PublicNavbar() {
 
   const isCreator = profile?.role === 'creator' || profile?.role === 'admin';
 
-  const studentLoginUrl = `/login?next=${encodeURIComponent('/app')}`;
-  const creatorLoginUrl = `/login?next=${encodeURIComponent('/creator-app')}`;
+  const studentLoginUrl = '/login/student';
+  const creatorLoginUrl = '/login/creator';
 
   const goLogin = (intent: 'creator' | 'student', url: string) => {
     try { localStorage.setItem('novu:login_intent', intent); } catch {}

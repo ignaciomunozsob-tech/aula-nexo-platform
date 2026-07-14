@@ -121,6 +121,7 @@ export default function CreatorDashboard() {
           id,
           purchased_at,
           status,
+          source,
           course_id,
           user_id,
           profiles:user_id (
@@ -138,7 +139,7 @@ export default function CreatorDashboard() {
       if (enrollmentsError) throw enrollmentsError;
 
       // Map to SaleRow format
-      const rows: SaleRow[] = (enrollments || [])
+      const rows: (SaleRow & { source?: string })[] = (enrollments || [])
         .filter(e => isPaidStatus(e.status))
         .map(e => {
           const course = courseMap.get(e.course_id);
@@ -146,6 +147,7 @@ export default function CreatorDashboard() {
             enrollment_id: e.id,
             purchased_at: e.purchased_at,
             status: e.status,
+            source: (e as any).source || 'manual',
             course_id: e.course_id,
             course_title: course?.title || null,
             price_clp: course?.price_clp || null,

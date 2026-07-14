@@ -60,8 +60,10 @@ Deno.serve(async (req) => {
     // Google freebusy — query ALL calendars the creator has selected in Google,
     // not just `primary`, so blocks on secondary calendars are respected.
     let busy: Array<{ start: string; end: string }> = [];
+    let google_status = 'no_connection';
     const tok = await getValidAccessToken(admin, sess.creator_id, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET);
     if (tok) {
+      google_status = 'checking';
       // 1) list calendars
       let calendarIds: string[] = [tok.row.calendar_id || 'primary'];
       try {
@@ -77,6 +79,7 @@ Deno.serve(async (req) => {
             .filter(Boolean);
           if (ids.length > 0) calendarIds = ids.slice(0, 50); // freeBusy hard cap
         } else {
+          google_status = classifyGoogleError(listJson);
           console.warn('calendarList failed, falling back to primary', listJson);
         }
       } catch (e) {
@@ -99,8 +102,10 @@ Deno.serve(async (req) => {
           const cal = fb.calendars[id];
           if (cal?.busy && Array.isArray(cal.busy)) busy.push(...cal.busy);
         }
+        google_status = 'ok';
         console.log('freeBusy ok', { calendars: calendarIds.length, busyBlocks: busy.length });
       } else {
+        google_status = classifyGoogleError(fb);
         console.error('freeBusy failed', fb);
       }
     } else {
@@ -143,7 +148,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return j({ slots, duration_min: duration, timezone: tz });
+    return j({ slots, duration_min: duration, timezone: tz, google_status });
   } catch (e) {
     console.error('calendar-availability error', e);
     return j({ error: 'unexpected' }, 500);
@@ -194,4 +199,11 @@ function tzOffsetMinutes(d: Date, tz: string): number {
 
 function j(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+}
+
+function classifyGoogleError(payload: any): string {
+  const raw = JSON.stringify(payload || {});
+  if (raw.includes('SERVICE_DISABLED') || raw.includes('accessNotConfigured')) return 'calendar_api_disabled';
+  if (raw.includes('ACCESS_TOKEN_SCOPE_INSUFFICIENT') || raw.includes('insufficientPermissions')) return 'missing_scopes';
+  return 'google_error';
 }

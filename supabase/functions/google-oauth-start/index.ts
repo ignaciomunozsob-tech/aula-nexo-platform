@@ -16,6 +16,7 @@ const SCOPES = [
   'email',
   'https://www.googleapis.com/auth/calendar.events',
   'https://www.googleapis.com/auth/calendar.freebusy',
+  'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
 ].join(' ');
 
 const ALLOWED_RETURN_ORIGINS = new Set([

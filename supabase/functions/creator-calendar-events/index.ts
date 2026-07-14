@@ -41,30 +41,54 @@ Deno.serve(async (req) => {
     let google_status: string = 'no_connection';
     const tok = await getValidAccessToken(admin, userId, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET);
     if (tok) {
-      const calId = tok.row.calendar_id || 'primary';
-      const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events`);
-      url.searchParams.set('timeMin', from);
-      url.searchParams.set('timeMax', to);
-      url.searchParams.set('singleEvents', 'true');
-      url.searchParams.set('orderBy', 'startTime');
-      url.searchParams.set('maxResults', '250');
-      const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${tok.accessToken}` } });
-      const data = await res.json();
-      if (!res.ok) {
-        console.error('google events fetch failed', res.status, JSON.stringify(data));
-        google_status = `error_${res.status}`;
+      let calendarIds: string[] = [tok.row.calendar_id || 'primary'];
+      const listRes = await fetch(
+        'https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader&maxResults=250',
+        { headers: { Authorization: `Bearer ${tok.accessToken}` } },
+      );
+      const listJson = await listRes.json();
+      if (listRes.ok && Array.isArray(listJson.items)) {
+        const ids = listJson.items
+          .filter((c: any) => c.selected !== false)
+          .map((c: any) => c.id)
+          .filter(Boolean);
+        if (ids.length > 0) calendarIds = ids.slice(0, 20);
       } else {
-        google_events = (data.items || [])
-          .filter((e: any) => e.start?.dateTime && e.end?.dateTime)
-          .map((e: any) => ({
-            id: e.id,
-            title: e.summary || '(sin título)',
-            start: e.start.dateTime,
-            end: e.end.dateTime,
-            html_link: e.htmlLink,
-          }));
-        google_status = `ok_${google_events.length}`;
-        console.log('google events ok', google_events.length, 'cal', calId);
+        google_status = classifyGoogleError(listJson);
+        console.error('google calendarList failed', listRes.status, JSON.stringify(listJson));
+      }
+
+      if (google_status === 'no_connection') {
+        const allEvents: typeof google_events = [];
+        for (const calId of calendarIds) {
+          const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events`);
+          url.searchParams.set('timeMin', from);
+          url.searchParams.set('timeMax', to);
+          url.searchParams.set('singleEvents', 'true');
+          url.searchParams.set('orderBy', 'startTime');
+          url.searchParams.set('maxResults', '250');
+          const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${tok.accessToken}` } });
+          const data = await res.json();
+          if (!res.ok) {
+            console.error('google events fetch failed', res.status, JSON.stringify(data));
+            google_status = classifyGoogleError(data);
+            break;
+          }
+          allEvents.push(...(data.items || [])
+            .filter((e: any) => e.start?.dateTime && e.end?.dateTime)
+            .map((e: any) => ({
+              id: `${calId}:${e.id}`,
+              title: e.summary || '(sin título)',
+              start: e.start.dateTime,
+              end: e.end.dateTime,
+              html_link: e.htmlLink,
+            })));
+        }
+        if (google_status === 'no_connection') {
+          google_events = allEvents;
+          google_status = `ok_${google_events.length}`;
+          console.log('google events ok', { events: google_events.length, calendars: calendarIds.length });
+        }
       }
     }
 
@@ -77,4 +101,11 @@ Deno.serve(async (req) => {
 
 function j(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+}
+
+function classifyGoogleError(payload: any): string {
+  const raw = JSON.stringify(payload || {});
+  if (raw.includes('SERVICE_DISABLED') || raw.includes('accessNotConfigured')) return 'calendar_api_disabled';
+  if (raw.includes('ACCESS_TOKEN_SCOPE_INSUFFICIENT') || raw.includes('insufficientPermissions')) return 'missing_scopes';
+  return 'google_error';
 }

@@ -89,8 +89,10 @@ Deno.serve(async (req) => {
     let meetUrl: string | null = null;
     let eventId: string | null = null;
     let htmlLink: string | null = null;
+    let googleStatus = 'no_connection';
     const tok = await getValidAccessToken(admin, sess.creator_id, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET);
     if (tok) {
+      googleStatus = 'checking';
       try {
         const descLines = [
           sess.description || '',
@@ -124,6 +126,7 @@ Deno.serve(async (req) => {
           eventId = ev.id;
           meetUrl = ev.hangoutLink || ev.conferenceData?.entryPoints?.find((e: any) => e.entryPointType === 'video')?.uri || null;
           htmlLink = ev.htmlLink || null;
+          googleStatus = 'ok';
           console.log('google event created', { eventId, htmlLink });
           await admin.from('session_bookings').update({
             google_event_id: eventId,
@@ -131,9 +134,11 @@ Deno.serve(async (req) => {
             google_html_link: htmlLink,
           }).eq('id', booking.id);
         } else {
+          googleStatus = classifyGoogleError(ev);
           console.error('google event create failed', ev);
         }
       } catch (e) {
+        googleStatus = 'google_error';
         console.error('google event exception', e);
       }
     } else {
@@ -145,6 +150,7 @@ Deno.serve(async (req) => {
       start_at: booking.start_at,
       end_at: booking.end_at,
       meet_url: meetUrl,
+      google_status: googleStatus,
       ics_token: booking.ics_token,
     });
   } catch (e) {
@@ -155,4 +161,11 @@ Deno.serve(async (req) => {
 
 function j(d: unknown, s = 200) {
   return new Response(JSON.stringify(d), { status: s, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+}
+
+function classifyGoogleError(payload: any): string {
+  const raw = JSON.stringify(payload || {});
+  if (raw.includes('SERVICE_DISABLED') || raw.includes('accessNotConfigured')) return 'calendar_api_disabled';
+  if (raw.includes('ACCESS_TOKEN_SCOPE_INSUFFICIENT') || raw.includes('insufficientPermissions')) return 'missing_scopes';
+  return 'google_error';
 }

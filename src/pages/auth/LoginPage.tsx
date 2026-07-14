@@ -144,15 +144,47 @@ export default function LoginPage({ variant = "generic" }: { variant?: LoginVari
     }
   };
 
+  const heading =
+    variant === "creator" ? "Ingresa a tu cuenta de creador"
+    : variant === "student" ? "Ingresa a tu cuenta de alumno"
+    : "Iniciar sesión";
+  const subheading =
+    variant === "creator" ? "Accede a tu dashboard, ventas y comunidades."
+    : variant === "student" ? "Continúa aprendiendo donde lo dejaste."
+    : null;
+  const otherVariant =
+    variant === "creator" ? { to: "/login/student", label: "¿Eres alumno? Ingresa aquí" }
+    : variant === "student" ? { to: "/login/creator", label: "¿Eres creador? Ingresa aquí" }
+    : null;
+
   return (
     <div className="max-w-md mx-auto px-4 py-16">
-      <h1 className="text-2xl font-bold">Iniciar sesión</h1>
+      {variant === "creator" && (
+        <span
+          className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full mb-3"
+          style={{ background: "hsl(var(--novu-accent))", color: "hsl(var(--novu-text-on-accent))" }}
+        >
+          Modo creador
+        </span>
+      )}
+      {variant === "student" && (
+        <span className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full mb-3 bg-muted text-muted-foreground">
+          Modo alumno
+        </span>
+      )}
+      <h1 className="text-2xl font-bold">{heading}</h1>
+      {subheading && <p className="text-sm text-muted-foreground mt-1">{subheading}</p>}
       <p className="text-sm text-muted-foreground mt-1">
         ¿No tienes cuenta?{" "}
-        <Link className="text-primary hover:underline" to="/signup">
+        <Link className="text-primary hover:underline" to={variant === "creator" ? "/signup?role=creator" : "/signup"}>
           Crear cuenta
         </Link>
       </p>
+      {otherVariant && (
+        <p className="text-xs text-muted-foreground mt-2">
+          <Link to={otherVariant.to} className="hover:underline">{otherVariant.label}</Link>
+        </p>
+      )}
 
       <div className="mt-8 space-y-3">
         <Button

@@ -4,6 +4,7 @@ import * as React from 'npm:react@18.3.1'
 
 import {
   Body,
+  Img,
   Button,
   Container,
   Head,
@@ -12,6 +13,7 @@ import {
   Preview,
   Text,
 } from 'npm:@react-email/components@0.0.22'
+import { LOGO_URL } from './brand.ts'
 
 interface MagicLinkEmailProps {
   siteName: string
@@ -26,6 +28,7 @@ export const MagicLinkEmail = ({ confirmationUrl }: MagicLinkEmailProps) => (
     <Preview>Tu enlace para entrar a NOVU</Preview>
     <Body style={main}>
       <Container style={container}>
+        <Img src={LOGO_URL} alt="NOVU" width="56" height="56" style={logo} />
         <Heading style={h1}>Entra a NOVU</Heading>
         <Text style={text}>
           Haz clic en el botón para iniciar sesión. Este enlace es de un solo uso y expira pronto.
@@ -61,3 +64,5 @@ const button = {
   display: 'inline-block',
 }
 const footer = { fontSize: '12px', color: '#8a8a8a', margin: '32px 0 0', lineHeight: '1.5' }
+
+const logo = { display: 'block', margin: '0 0 24px 0', borderRadius: '12px' }

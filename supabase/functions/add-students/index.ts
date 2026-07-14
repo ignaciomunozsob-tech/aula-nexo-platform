@@ -172,7 +172,7 @@ const handler = async (req: Request): Promise<Response> => {
 
         if (productType === "event") {
           const { error: regError } = await supabaseAdmin.from("event_registrations").insert({
-            event_id: productId, user_id: userId, status: "registered",
+            event_id: productId, user_id: userId, status: "registered", source: "manual",
           });
           if (regError && !regError.message?.toLowerCase().includes("duplicate")) {
             console.error(`[add-students] event reg error ${email}`, regError);
@@ -180,7 +180,7 @@ const handler = async (req: Request): Promise<Response> => {
           }
         } else {
           const { error: enrollError } = await supabaseAdmin.from("enrollments").insert({
-            course_id: productId, user_id: userId, status: "active",
+            course_id: productId, user_id: userId, status: "active", source: "manual",
           });
           if (enrollError && !enrollError.message?.toLowerCase().includes("duplicate")) {
             console.error(`[add-students] enroll error ${email}`, enrollError);

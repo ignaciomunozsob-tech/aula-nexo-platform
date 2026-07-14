@@ -160,6 +160,12 @@ export default function LoginPage({ variant = "generic" }: { variant?: LoginVari
 
   return (
     <div className="max-w-md mx-auto px-4 py-16">
+      <SEO
+        title="Iniciar sesión — NOVU"
+        description="Accede a tu cuenta de NOVU para gestionar tus cursos, ventas y comunidades."
+        path="/login"
+        noindex
+      />
       {variant === "creator" && (
         <span
           className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full mb-3"

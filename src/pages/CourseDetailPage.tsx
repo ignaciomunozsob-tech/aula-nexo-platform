@@ -80,7 +80,8 @@ export default function CourseDetailPage() {
     queryFn: async () => {
       if (!slug) throw new Error("Missing slug");
 
-      const { data: course, error: courseError } = await supabase
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+      const query = supabase
         .from("courses")
         .select(
           `
@@ -89,9 +90,10 @@ export default function CourseDetailPage() {
           instructor_name, instructor_bio, instructor_avatar_url,
           categories:category_id ( name, slug )
         `
-        )
-        .eq("slug", slug)
-        .single();
+        );
+      const { data: course, error: courseError } = await (isUuid
+        ? query.eq("id", slug).single()
+        : query.eq("slug", slug).single());
 
       if (courseError) throw courseError;
 

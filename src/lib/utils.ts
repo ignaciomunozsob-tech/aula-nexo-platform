@@ -52,9 +52,12 @@ export function getSessionId(): string {
 export function getCourseUrl(
   creatorSlug: string | null | undefined,
   courseSlug: string | null | undefined,
+  courseId?: string | null,
 ): string {
   if (creatorSlug && courseSlug) return `/${creatorSlug}/${courseSlug}`;
-  return `/course/${courseSlug ?? ''}`;
+  const identifier = courseSlug || courseId;
+  if (identifier) return `/course/${identifier}`;
+  return `/course`;
 }
 
 export function getEventUrl(

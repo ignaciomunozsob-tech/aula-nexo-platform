@@ -680,7 +680,7 @@ export default function CourseEditorPage() {
           {course?.id && (
             <>
               <Button variant="outline" className="w-full sm:w-auto" asChild>
-                <a href={`${window.location.origin}${getCourseUrl(profile?.creator_slug, course.slug)}`} target="_blank" rel="noreferrer">
+                <a href={`${window.location.origin}${getCourseUrl(profile?.creator_slug, course.slug, course.id)}`} target="_blank" rel="noreferrer">
                   <Link2 className="h-4 w-4 mr-2" />
                   Ver página pública
                 </a>

@@ -469,7 +469,7 @@ export default function CoursePlayerPage() {
                           Tu video se está procesando
                         </p>
                         <p className="text-gray-400 text-sm max-w-md">
-                          Esto puede tomar unos minutos. Recarga la página en unos minutos para ver el progreso.
+                          Esto puede tomar unos minutos
                         </p>
                       </div>
                     </div>

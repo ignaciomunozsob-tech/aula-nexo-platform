@@ -1,33 +1,68 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://novuproject.lovable.app/</loc>
+    <loc>https://soynovu.cl/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://novuproject.lovable.app/courses</loc>
+    <loc>https://soynovu.cl/marketplace</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://novuproject.lovable.app/precios</loc>
+    <loc>https://soynovu.cl/courses</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://soynovu.cl/precios</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://novuproject.lovable.app/comisiones</loc>
+    <loc>https://soynovu.cl/comisiones</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://novuproject.lovable.app/terminos</loc>
+    <loc>https://soynovu.cl/terminos</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://novuproject.lovable.app/privacidad</loc>
+    <loc>https://soynovu.cl/privacidad</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://soynovu.cl/course/edaf6a57-caa5-4e4d-9e75-932725720da3</loc>
+    <lastmod>2026-07-12</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soynovu.cl/course/ba7d63a2-d0b4-4f84-81ed-7a276f4c9e10</loc>
+    <lastmod>2026-06-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soynovu.cl/course/5d28ff8c-2763-4ba9-8ec0-c1ed1a0bc25d</loc>
+    <lastmod>2026-07-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soynovu.cl/course/c89d331b-f73e-4c26-b0e6-131861536ef3</loc>
+    <lastmod>2026-07-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://soynovu.cl/course/70d46d4c-017e-443c-a3f6-217cc284eeb7</loc>
+    <lastmod>2026-07-13</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
 </urlset>

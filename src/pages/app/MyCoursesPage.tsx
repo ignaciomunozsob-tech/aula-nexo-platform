@@ -89,6 +89,12 @@ export default function MyCoursesPage() {
 
   return (
     <div className="p-8">
+      <SEO
+        title="Mis cursos — NOVU"
+        description="Todos tus cursos, ebooks y sesiones adquiridos en NOVU."
+        path="/app/my-courses"
+        noindex
+      />
       <div className="flex justify-between items-start mb-8">
         <div>
           <h1 className="text-2xl font-bold">Mis Productos</h1>

@@ -14,6 +14,7 @@ interface Body {
   start_at: string; // ISO
   guest_email?: string;
   guest_name?: string;
+  guest_phone?: string;
 }
 
 Deno.serve(async (req) => {
@@ -61,6 +62,8 @@ Deno.serve(async (req) => {
       attendeeName = p?.name || attendeeName || attendeeEmail;
     }
 
+    const attendeePhone = (body.guest_phone || '').trim() || null;
+
     // Insert booking (unique index will reject double bookings)
     const { data: booking, error: insErr } = await admin
       .from('session_bookings')
@@ -70,6 +73,7 @@ Deno.serve(async (req) => {
         user_id: userId,
         guest_email: userId ? null : attendeeEmail,
         guest_name: userId ? null : attendeeName,
+        guest_phone: attendeePhone,
         start_at: start.toISOString(),
         end_at: end.toISOString(),
         status: 'confirmed',
@@ -84,9 +88,19 @@ Deno.serve(async (req) => {
     // Create Google event with Meet
     let meetUrl: string | null = null;
     let eventId: string | null = null;
+    let htmlLink: string | null = null;
     const tok = await getValidAccessToken(admin, sess.creator_id, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET);
     if (tok) {
       try {
+        const descLines = [
+          sess.description || '',
+          '',
+          '— Reserva NOVU —',
+          `Nombre: ${attendeeName || '—'}`,
+          `Email: ${attendeeEmail || '—'}`,
+          attendeePhone ? `Teléfono: ${attendeePhone}` : null,
+        ].filter((l) => l !== null).join('\n');
+
         const evRes = await fetch(
           `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(tok.row.calendar_id || 'primary')}/events?conferenceDataVersion=1&sendUpdates=all`,
           {
@@ -94,7 +108,7 @@ Deno.serve(async (req) => {
             headers: { Authorization: `Bearer ${tok.accessToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
               summary: `${sess.title} — Sesión 1:1 con ${attendeeName || attendeeEmail}`,
-              description: sess.description || '',
+              description: descLines,
               start: { dateTime: start.toISOString() },
               end: { dateTime: end.toISOString() },
               attendees: attendeeEmail ? [{ email: attendeeEmail, displayName: attendeeName || undefined }] : [],
@@ -109,13 +123,21 @@ Deno.serve(async (req) => {
         if (evRes.ok) {
           eventId = ev.id;
           meetUrl = ev.hangoutLink || ev.conferenceData?.entryPoints?.find((e: any) => e.entryPointType === 'video')?.uri || null;
-          await admin.from('session_bookings').update({ google_event_id: eventId, meet_url: meetUrl }).eq('id', booking.id);
+          htmlLink = ev.htmlLink || null;
+          console.log('google event created', { eventId, htmlLink });
+          await admin.from('session_bookings').update({
+            google_event_id: eventId,
+            meet_url: meetUrl,
+            google_html_link: htmlLink,
+          }).eq('id', booking.id);
         } else {
           console.error('google event create failed', ev);
         }
       } catch (e) {
         console.error('google event exception', e);
       }
+    } else {
+      console.warn('booking-create: creator has no Google connection, skipping event create', { creator_id: sess.creator_id });
     }
 
     return j({

@@ -27,6 +27,7 @@ export default function SessionBookingPage({ sessionIdOverride }: Props = {}) {
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const { data: session, isLoading: loadingSession } = useQuery({
@@ -101,8 +102,11 @@ export default function SessionBookingPage({ sessionIdOverride }: Props = {}) {
 
   const submit = async () => {
     if (!selectedSlot) return;
-    if (!user && (!guestName.trim() || !guestEmail.trim())) {
-      toast.error("Ingresa tu nombre y email"); return;
+    if (!user && (!guestName.trim() || !guestEmail.trim() || !guestPhone.trim())) {
+      toast.error("Ingresa tu nombre, email y teléfono"); return;
+    }
+    if (user && !guestPhone.trim()) {
+      toast.error("Ingresa tu teléfono de contacto"); return;
     }
     setSubmitting(true);
     try {
@@ -119,6 +123,7 @@ export default function SessionBookingPage({ sessionIdOverride }: Props = {}) {
           start_at: selectedSlot,
           guest_name: user ? undefined : guestName.trim(),
           guest_email: user ? undefined : guestEmail.trim(),
+          guest_phone: guestPhone.trim(),
         }),
       });
       const body = await res.json();
@@ -209,6 +214,15 @@ export default function SessionBookingPage({ sessionIdOverride }: Props = {}) {
                 </div>
               </>
             )}
+            <div>
+              <Label>Tu teléfono</Label>
+              <Input
+                type="tel"
+                placeholder="+56 9 1234 5678"
+                value={guestPhone}
+                onChange={(e) => setGuestPhone(e.target.value)}
+              />
+            </div>
             {user && profile && (
               <p className="text-sm text-muted-foreground">Reservando como <strong>{profile.name || user.email}</strong></p>
             )}

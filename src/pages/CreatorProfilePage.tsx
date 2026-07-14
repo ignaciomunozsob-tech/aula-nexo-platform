@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { initPixel, trackEventFor } from '@/lib/metaPixel';
+import { SEO } from '@/components/SEO';
 
 function getEmbedUrl(url: string): string | null {
   if (!url) return null;
@@ -191,6 +192,13 @@ export default function CreatorProfilePage() {
 
   return (
     <div className="page-container">
+      <SEO
+        title={`${creator.name || 'Creador'} — NOVU`}
+        description={creator.bio?.trim() || `Cursos y productos digitales de ${creator.name || 'este creador'} en NOVU.`}
+        path={`/creator/${creator.creator_slug || slug}`}
+        type="profile"
+        image={creator.avatar_url || undefined}
+      />
       {/* Profile Header with Video */}
       <div className="bg-gradient-to-br from-primary/10 to-background rounded-2xl p-8 mb-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

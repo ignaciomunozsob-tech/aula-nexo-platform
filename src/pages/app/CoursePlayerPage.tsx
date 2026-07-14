@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { formatDuration } from '@/lib/utils';
 import { resolveProtectedUrl } from '@/lib/protectedMedia';
 import { Button } from '@/components/ui/button';
+import { SEO } from '@/components/SEO';
 import { 
   Play, 
   FileText, 
@@ -387,6 +388,14 @@ export default function CoursePlayerPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      {course?.title && (
+        <SEO
+          title={`${course.title} — NOVU`}
+          description={`Continúa aprendiendo ${course.title} en NOVU.`}
+          path={`/app/course/${id}`}
+          noindex
+        />
+      )}
       {/* Preview Mode Banner */}
       {isPreviewMode && (
         <div className="bg-amber-100 border-b border-amber-300 px-4 py-3 flex items-center justify-center gap-2 text-amber-800 text-center text-sm">

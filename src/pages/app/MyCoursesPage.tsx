@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { BookOpen, Play, ShoppingBag, Calendar, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SEO } from '@/components/SEO';
 
 export default function MyCoursesPage() {
   const { user, signOut } = useAuth();
@@ -88,6 +89,12 @@ export default function MyCoursesPage() {
 
   return (
     <div className="p-8">
+      <SEO
+        title="Mis cursos — NOVU"
+        description="Todos tus cursos, ebooks y sesiones adquiridos en NOVU."
+        path="/app/my-courses"
+        noindex
+      />
       <div className="flex justify-between items-start mb-8">
         <div>
           <h1 className="text-2xl font-bold">Mis Productos</h1>

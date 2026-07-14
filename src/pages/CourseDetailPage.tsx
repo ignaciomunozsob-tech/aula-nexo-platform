@@ -322,15 +322,16 @@ export default function CourseDetailPage() {
     <>
       <SEO
         title={`${course.title} — NOVU`}
-        description={(course.description || '').replace(/<[^>]+>/g, '').slice(0, 160) || `Curso ${course.title} en NOVU.`}
-        path={`/course/${course.slug || course.id}`}
+        description={(course.description || '').replace(/<[^>]+>/g, '').slice(0, 155) || `Curso ${course.title} en NOVU.`}
+        path={`/course/${course.id}`}
         type="product"
+        image={course.cover_image_url || undefined}
         jsonLd={{
           '@context': 'https://schema.org',
           '@type': 'Course',
           name: course.title,
           description: (course.description || '').replace(/<[^>]+>/g, '').slice(0, 500),
-          provider: { '@type': 'Organization', name: 'NOVU', url: 'https://novuproject.lovable.app/' },
+          provider: { '@type': 'Organization', name: 'NOVU', url: 'https://soynovu.cl/' },
           ...(course.instructor_name ? { instructor: { '@type': 'Person', name: course.instructor_name } } : {}),
           ...(course.cover_image_url ? { image: course.cover_image_url } : {}),
           ...(course.price_clp != null ? {

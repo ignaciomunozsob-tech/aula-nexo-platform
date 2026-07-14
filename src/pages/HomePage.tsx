@@ -209,8 +209,8 @@ export default function HomePage() {
   return (
     <div className="bg-background">
       <SEO
-        title="NOVU — Vende cursos, ebooks y talleres digitales en Chile"
-        description="Crea tu cuenta gratis y vende cursos, ebooks y talleres en CLP con MercadoPago. Plataforma chilena para creadores digitales."
+        title="NOVU — Vende tus cursos sin complicaciones"
+        description="La plataforma chilena para creadores que quieren vender cursos, talleres, ebooks y productos digitales. Empieza gratis hoy."
         path="/"
         jsonLd={{
           '@context': 'https://schema.org',

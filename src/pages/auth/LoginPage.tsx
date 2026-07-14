@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
 import { RoleChoiceDialog } from "@/components/auth/RoleChoiceDialog";
+import { SEO } from "@/components/SEO";
 
 async function handleGoogleSignIn(toast: ReturnType<typeof useToast>["toast"]) {
   const result = await lovable.auth.signInWithOAuth("google", {
@@ -159,6 +160,12 @@ export default function LoginPage({ variant = "generic" }: { variant?: LoginVari
 
   return (
     <div className="max-w-md mx-auto px-4 py-16">
+      <SEO
+        title="Iniciar sesión — NOVU"
+        description="Accede a tu cuenta de NOVU para gestionar tus cursos, ventas y comunidades."
+        path="/login"
+        noindex
+      />
       {variant === "creator" && (
         <span
           className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full mb-3"

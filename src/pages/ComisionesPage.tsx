@@ -9,7 +9,7 @@ export default function ComisionesPage() {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="Comisiones y costos — NOVU"
+        title="Comisiones — NOVU"
         description="Una sola comisión del 10% por venta, con procesamiento de MercadoPago incluido. Sin letra chica."
         path="/comisiones"
       />

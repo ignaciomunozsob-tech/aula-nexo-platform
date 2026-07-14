@@ -5,8 +5,8 @@ export default function CoursesPage() {
   return (
     <div className="page-container py-8">
       <SEO
-        title="Marketplace de cursos, ebooks y talleres — NOVU"
-        description="Descubre cursos online, ebooks y eventos en vivo de creadores chilenos. Aprende a tu ritmo o en directo, con pagos en CLP."
+        title="Marketplace — NOVU"
+        description="Explora cursos, talleres y productos digitales de creadores chilenos en NOVU."
         path="/courses"
       />
       <div className="mb-8">

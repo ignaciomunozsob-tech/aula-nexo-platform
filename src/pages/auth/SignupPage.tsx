@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { SEO } from '@/components/SEO';
 
 const signupSchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(100),
@@ -125,6 +126,12 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex">
+      <SEO
+        title="Crear cuenta — NOVU"
+        description="Regístrate gratis en NOVU y empieza a vender tus cursos, ebooks y talleres en Chile."
+        path="/signup"
+        noindex
+      />
       {/* Left side - Form */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">

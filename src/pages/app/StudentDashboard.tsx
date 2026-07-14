@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { BookOpen, Play, Trophy, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SEO } from '@/components/SEO';
 
 export default function StudentDashboard() {
   const { profile } = useAuth();
@@ -33,6 +34,12 @@ export default function StudentDashboard() {
 
   return (
     <div className="p-8">
+      <SEO
+        title="Mis cursos — NOVU"
+        description="Continúa tu aprendizaje en NOVU."
+        path="/app"
+        noindex
+      />
       <div className="mb-8">
         <h1 className="text-2xl font-bold">
           Bienvenido, {profile?.name?.split(' ')[0] || 'Estudiante'}

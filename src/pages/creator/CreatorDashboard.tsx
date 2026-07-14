@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { SEO } from "@/components/SEO";
+
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -212,6 +214,12 @@ export default function CreatorDashboard() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8">
+      <SEO
+        title="Panel Creador — NOVU"
+        description="Panel de creador de NOVU."
+        path="/creator-app"
+        noindex
+      />
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>

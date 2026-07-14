@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { initPixel, trackEvent, trackEventFor } from '@/lib/metaPixel';
 import { NOVU_META_PIXEL_ID } from '@/config/branding';
+import { SEO } from '@/components/SEO';
 
 type OrderRow = {
   id: string;
@@ -166,6 +167,12 @@ export default function PurchaseConfirmedPage() {
 
   return (
     <div className="min-h-screen flex items-start md:items-center justify-center p-4 bg-background">
+      <SEO
+        title="Compra confirmada — NOVU"
+        description="Tu compra en NOVU fue confirmada."
+        path="/compra-confirmada"
+        noindex
+      />
       <div className="w-full max-w-[560px] mx-auto py-10">
         {/* Header */}
         <div className="text-center mb-6">

@@ -85,8 +85,8 @@ export default function PreciosPage() {
   return (
     <>
       <SEO
-        title="Precios — NOVU · Gratis, solo 10% por venta"
-        description="Sin mensualidad. Sin contratos. NOVU cobra una sola comisión del 10% por venta, con procesamiento de pago incluido."
+        title="Precios — NOVU"
+        description="Empieza gratis. Solo pagas cuando vendes. 10% de comisión por venta. Sin mensualidad."
         path="/precios"
       />
 

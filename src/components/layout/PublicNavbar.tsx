@@ -35,6 +35,11 @@ export function PublicNavbar() {
   const studentLoginUrl = `/login?next=${encodeURIComponent('/app')}`;
   const creatorLoginUrl = `/login?next=${encodeURIComponent('/creator-app')}`;
 
+  const goLogin = (intent: 'creator' | 'student', url: string) => {
+    try { localStorage.setItem('novu:login_intent', intent); } catch {}
+    navigate(url);
+  };
+
   const initials = profile?.name?.charAt(0).toUpperCase() || 'U';
 
   const handleProfileClick = () => {

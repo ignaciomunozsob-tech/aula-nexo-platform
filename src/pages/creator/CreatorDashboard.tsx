@@ -163,16 +163,18 @@ export default function CreatorDashboard() {
   });
 
   const stats = useMemo(() => {
-    const rows = sales || [];
+    const allRows = (sales || []) as (SaleRow & { source?: string })[];
+    const paidRows = allRows.filter((r) => r.source === 'payment');
+    const freeCount = allRows.length - paidRows.length;
 
-    const revenue = rows.reduce((acc, r) => acc + Number(r.price_clp || 0), 0);
-    const salesCount = rows.length;
+    const revenue = paidRows.reduce((acc, r) => acc + Number(r.price_clp || 0), 0);
+    const salesCount = paidRows.length;
     const avg = salesCount > 0 ? Math.round(revenue / salesCount) : 0;
 
-    const uniqStudents = new Set(rows.map((r) => r.buyer_user_id)).size;
+    const uniqStudents = new Set(paidRows.map((r) => r.buyer_user_id)).size;
 
     const byCourse = new Map<string, { title: string; revenue: number; sales: number }>();
-    for (const r of rows) {
+    for (const r of paidRows) {
       const cid = String(r.course_id);
       const title = r.course_title || "Curso";
       const price = Number(r.price_clp || 0);
@@ -183,7 +185,7 @@ export default function CreatorDashboard() {
 
     const top = Array.from(byCourse.values()).sort((a, b) => b.revenue - a.revenue)[0] || null;
 
-    return { revenue, salesCount, avg, uniqStudents, top };
+    return { revenue, salesCount, avg, uniqStudents, top, freeCount };
   }, [sales]);
 
   const loading = isLoadingCourses || isLoadingSales;

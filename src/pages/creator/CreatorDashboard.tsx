@@ -389,6 +389,7 @@ export default function CreatorDashboard() {
                         <TableHead>Fecha</TableHead>
                         <TableHead>Estudiante</TableHead>
                         <TableHead>Curso</TableHead>
+                        <TableHead>Tipo</TableHead>
                         <TableHead className="text-right">Monto</TableHead>
                         <TableHead className="text-right">Estado</TableHead>
                       </TableRow>

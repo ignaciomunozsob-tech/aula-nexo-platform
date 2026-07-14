@@ -2025,6 +2025,9 @@ export type Database = {
           calendar_id: string
           connected_at: string
           google_email: string
+          has_required_scopes: boolean
+          missing_scopes: string[]
+          scope: string
         }[]
       }
       get_my_meta_pixel_id: { Args: never; Returns: string }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { CheckCircle2, AlertCircle, Calendar, Link2, Loader2, Unplug, BarChart3, Pencil, Trash2 } from "lucide-react";
+import { CheckCircle2, AlertCircle, Calendar, Link2, Loader2, Unplug, BarChart3, Pencil, Trash2, RefreshCw } from "lucide-react";
 import { useGoogleConnection } from "@/hooks/useGoogleConnection";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +15,10 @@ export default function CreatorIntegrationsPage() {
   const { connection, loading, connect, disconnect, refresh } = useGoogleConnection();
   const { profile } = useAuth();
   const [busy, setBusy] = useState(false);
+  const [testingGoogle, setTestingGoogle] = useState(false);
+  const [googleDiagnostic, setGoogleDiagnostic] = useState<{ ok: boolean; status: string; message?: string } | null>(null);
   const [params, setParams] = useSearchParams();
+  const needsGoogleReconnect = !!connection && connection.has_required_scopes === false;
 
   // Meta Pixel state
   const [pixelId, setPixelId] = useState<string | null>(null);
@@ -86,11 +89,39 @@ export default function CreatorIntegrationsPage() {
   const handleConnect = async () => {
     setBusy(true);
     try {
+      setGoogleDiagnostic(null);
       const returnTo = `${window.location.origin}/creator-app/integrations`;
       await connect(returnTo);
     } catch (e: any) {
       toast.error("No se pudo iniciar la conexión", { description: e?.message });
       setBusy(false);
+    }
+  };
+
+  const handleTestGoogle = async () => {
+    setTestingGoogle(true);
+    setGoogleDiagnostic(null);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      if (!token) throw new Error("not_authenticated");
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-calendar-diagnostics`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body?.message || body?.error || "test_failed");
+      setGoogleDiagnostic(body);
+      if (body.ok) {
+        toast.success("Google Calendar sincroniza correctamente");
+      } else {
+        toast.error("Google Calendar requiere atención", { description: body.message || body.status });
+      }
+    } catch (e: any) {
+      setGoogleDiagnostic({ ok: false, status: "test_failed", message: e?.message });
+      toast.error("No se pudo probar la conexión", { description: e?.message });
+    } finally {
+      setTestingGoogle(false);
     }
   };
 
@@ -126,9 +157,14 @@ export default function CreatorIntegrationsPage() {
             <div className="flex-1">
               <CardTitle className="flex items-center gap-2">
                 Google Calendar
-                {connection && (
+                {connection && !needsGoogleReconnect && (
                   <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">
                     <CheckCircle2 className="h-3.5 w-3.5" /> Conectado
+                  </span>
+                )}
+                {needsGoogleReconnect && (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+                    <AlertCircle className="h-3.5 w-3.5" /> Reconectar
                   </span>
                 )}
               </CardTitle>
@@ -145,16 +181,41 @@ export default function CreatorIntegrationsPage() {
             </div>
           ) : connection ? (
             <div className="space-y-4">
+              {needsGoogleReconnect && (
+                <div className="rounded-lg bg-amber-500/10 border border-amber-500/40 p-3 text-xs text-amber-900 dark:text-amber-200">
+                  NOVU necesita permisos nuevos para leer tus calendarios secundarios. Reconecta Google Calendar y acepta los permisos solicitados.
+                </div>
+              )}
+              {googleDiagnostic && !googleDiagnostic.ok && (
+                <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-3 text-xs text-destructive">
+                  {googleDiagnostic.message || "La conexión de Google Calendar no pudo validarse."}
+                </div>
+              )}
+              {googleDiagnostic?.ok && (
+                <div className="rounded-lg bg-green-500/10 border border-green-500/30 p-3 text-xs text-green-700 dark:text-green-300">
+                  Google Calendar está activo y responde correctamente.
+                </div>
+              )}
               <div className="text-sm">
                 <p className="font-medium">{connection.google_email || "Cuenta de Google"}</p>
                 <p className="text-muted-foreground text-xs mt-0.5">
                   Conectado el {new Date(connection.connected_at).toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" })}
                 </p>
               </div>
-              <Button variant="outline" onClick={handleDisconnect} disabled={busy}>
-                <Unplug className="h-4 w-4 mr-2" />
-                Desconectar
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={handleConnect} disabled={busy}>
+                  {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                  {needsGoogleReconnect ? "Reconectar Google Calendar" : "Reconectar"}
+                </Button>
+                <Button variant="outline" onClick={handleTestGoogle} disabled={testingGoogle || busy}>
+                  {testingGoogle ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                  Probar conexión
+                </Button>
+                <Button variant="outline" onClick={handleDisconnect} disabled={busy || testingGoogle}>
+                  <Unplug className="h-4 w-4 mr-2" />
+                  Desconectar
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">

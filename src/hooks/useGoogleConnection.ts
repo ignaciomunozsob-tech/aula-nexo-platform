@@ -5,6 +5,9 @@ export interface GoogleConnection {
   google_email: string | null;
   calendar_id: string;
   connected_at: string;
+  scope: string | null;
+  has_required_scopes: boolean;
+  missing_scopes: string[] | null;
 }
 
 export function useGoogleConnection() {
@@ -31,7 +34,7 @@ export function useGoogleConnection() {
     const token = sess.session?.access_token;
     if (!token) throw new Error("not_authenticated");
     const res = await fetch(
-      "https://oahdxazzbqsdgfwwqbaj.supabase.co/functions/v1/google-oauth-start",
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-oauth-start`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -48,7 +51,7 @@ export function useGoogleConnection() {
     const token = sess.session?.access_token;
     if (!token) throw new Error("not_authenticated");
     const res = await fetch(
-      "https://oahdxazzbqsdgfwwqbaj.supabase.co/functions/v1/google-disconnect",
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-disconnect`,
       {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },

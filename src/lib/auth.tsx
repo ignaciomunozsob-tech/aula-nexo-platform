@@ -81,9 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                   const isCreator = list.includes("creator") || list.includes("admin");
                   const isStudent = list.includes("student");
                   try { localStorage.removeItem("novu:login_intent"); } catch {}
-                  // Only redirect from home/login/signup to avoid interrupting flows
+                  // Only redirect when Google OAuth returned to '/'.
+                  // LoginPage handles its own routing on /login and /signup.
                   const path = window.location.pathname;
-                  if (!["/", "/login", "/signup"].includes(path)) return;
+                  if (path !== "/") return;
                   if (isCreator && isStudent) {
                     // Honor intent when user has both roles
                     window.location.assign(intent === "creator" ? "/creator-app" : "/app");

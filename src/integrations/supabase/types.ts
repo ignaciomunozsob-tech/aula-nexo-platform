@@ -1694,8 +1694,10 @@ export type Database = {
           creator_id: string
           end_at: string
           google_event_id: string | null
+          google_html_link: string | null
           guest_email: string | null
           guest_name: string | null
+          guest_phone: string | null
           ics_token: string
           id: string
           meet_url: string | null
@@ -1710,8 +1712,10 @@ export type Database = {
           creator_id: string
           end_at: string
           google_event_id?: string | null
+          google_html_link?: string | null
           guest_email?: string | null
           guest_name?: string | null
+          guest_phone?: string | null
           ics_token?: string
           id?: string
           meet_url?: string | null
@@ -1726,8 +1730,10 @@ export type Database = {
           creator_id?: string
           end_at?: string
           google_event_id?: string | null
+          google_html_link?: string | null
           guest_email?: string | null
           guest_name?: string | null
+          guest_phone?: string | null
           ics_token?: string
           id?: string
           meet_url?: string | null
@@ -1981,7 +1987,9 @@ export type Database = {
         Returns: {
           attendee_email: string
           attendee_name: string
+          attendee_phone: string
           end_at: string
+          google_html_link: string
           id: string
           meet_url: string
           session_id: string

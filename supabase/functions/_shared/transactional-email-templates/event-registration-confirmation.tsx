@@ -1,8 +1,9 @@
 import * as React from 'npm:react@18.3.1'
 import {
-  Body, Button, Container, Head, Heading, Html, Preview, Section, Text,
+  Body, Img, Button, Container, Head, Heading, Html, Preview, Section, Text,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
+import { LOGO_URL } from './brand.ts'
 
 interface Props {
   attendeeName?: string
@@ -40,7 +41,7 @@ const Email = ({
     <Preview>Confirmada tu inscripción a {eventTitle}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Text style={brand}>NOVU</Text>
+        <Img src={LOGO_URL} alt="NOVU" width="56" height="56" style={logo} />
         <Heading style={h1}>¡Estás inscrito{attendeeName ? `, ${attendeeName}` : ''}!</Heading>
         <Text style={text}>
           Confirmamos tu inscripción a <strong>{eventTitle}</strong>
@@ -165,3 +166,4 @@ const ctaButton: React.CSSProperties = { backgroundColor: '#fcc70e', color: '#0a
 const ctaSecondary: React.CSSProperties = { backgroundColor: '#0a0a0a', color: '#ffffff', fontWeight: 700, fontSize: '15px', padding: '12px 24px', borderRadius: '10px', textDecoration: 'none', display: 'inline-block' }
 const muted: React.CSSProperties = { fontSize: '13px', lineHeight: 1.6, color: '#666', margin: '12px 0 0 0' }
 const footer: React.CSSProperties = { fontSize: '12px', color: '#999', textAlign: 'center' as const, marginTop: '32px' }
+const logo: React.CSSProperties = { display: 'block', margin: '0 0 24px 0', borderRadius: '12px' }

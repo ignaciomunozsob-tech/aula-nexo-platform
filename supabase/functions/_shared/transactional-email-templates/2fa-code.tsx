@@ -1,6 +1,6 @@
 import * as React from 'npm:react@18.3.1'
 import {
-  Body,
+  Body, Img,
   Container,
   Head,
   Heading,
@@ -10,6 +10,7 @@ import {
   Text,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
+import { LOGO_URL } from './brand.ts'
 
 interface Props {
   name?: string
@@ -23,7 +24,7 @@ const Email = ({ name, code = '000000' }: Props) => (
     <Body style={main}>
       <Container style={container}>
         <Section style={header}>
-          <Text style={brand}>NOVU</Text>
+          <Img src={LOGO_URL} alt="NOVU" width="56" height="56" style={logo} />
         </Section>
         <Heading style={h1}>Código de verificación</Heading>
         <Text style={text}>Hola{name ? ` ${name}` : ''},</Text>
@@ -110,3 +111,4 @@ const footer: React.CSSProperties = {
   textAlign: 'center' as const,
   marginTop: '32px',
 }
+const logo: React.CSSProperties = { display: 'block', margin: '0 0 24px 0', borderRadius: '12px' }

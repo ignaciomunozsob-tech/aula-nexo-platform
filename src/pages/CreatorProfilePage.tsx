@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { initPixel, trackEventFor } from '@/lib/metaPixel';
+import { SEO } from '@/components/SEO';
 
 function getEmbedUrl(url: string): string | null {
   if (!url) return null;

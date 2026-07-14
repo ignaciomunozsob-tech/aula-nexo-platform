@@ -422,8 +422,13 @@ export default function CreatorDashboard() {
                             <TableCell className="max-w-[360px]">
                               <span className="text-sm line-clamp-1">{r.course_title || "Curso"}</span>
                             </TableCell>
+                            <TableCell>
+                              <Badge variant={(r as any).source === 'payment' ? 'default' : 'outline'}>
+                                {(r as any).source === 'payment' ? 'Venta' : 'Gratuito'}
+                              </Badge>
+                            </TableCell>
                             <TableCell className="text-right font-medium whitespace-nowrap">
-                              {formatCLP(r.price_clp)}
+                              {(r as any).source === 'payment' ? formatCLP(r.price_clp) : '—'}
                             </TableCell>
                             <TableCell className="text-right">
                               <Badge

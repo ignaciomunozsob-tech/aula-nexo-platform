@@ -39,7 +39,9 @@ function friendlyAuthError(message?: string) {
   return message || "No se pudo iniciar sesión.";
 }
 
-export default function LoginPage() {
+type LoginVariant = "creator" | "student" | "generic";
+
+export default function LoginPage({ variant = "generic" }: { variant?: LoginVariant }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
@@ -51,6 +53,13 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [pendingUser, setPendingUser] = useState<{ id: string; email: string; name?: string } | null>(null);
+
+  // Persist the variant as login intent so Google OAuth can honor it.
+  useEffect(() => {
+    if (variant === "creator" || variant === "student") {
+      try { localStorage.setItem("novu:login_intent", variant); } catch {}
+    }
+  }, [variant]);
 
   const getIntent = (): "creator" | "student" | null => {
     try {

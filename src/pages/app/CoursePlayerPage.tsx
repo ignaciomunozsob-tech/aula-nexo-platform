@@ -158,6 +158,36 @@ export default function CoursePlayerPage() {
   });
   const bunnyEmbedUrl = bunnySignedEmbed?.url;
 
+  // Poll Bunny status every 15s while the video is still processing.
+  // When it becomes ready we invalidate the modules query so the iframe
+  // replaces the placeholder without any flicker.
+  useEffect(() => {
+    const status = (currentLessonForUrl as any)?.bunny_status;
+    if (!isBunnyVideo || !bunnyVideoIdForUrl || status === 'ready') return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const { data } = await supabase.functions.invoke('bunny-video-status', {
+          body: { videoId: bunnyVideoIdForUrl },
+        });
+        if (cancelled) return;
+        if ((data as any)?.status === 'ready') {
+          queryClient.invalidateQueries({ queryKey: ['course-modules', id] });
+        }
+      } catch (e) {
+        console.error('[bunny-poll]', e);
+      }
+    };
+    const interval = window.setInterval(tick, 15000);
+    // First check after a short delay so we react quickly if it's already done
+    const first = window.setTimeout(tick, 1000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      window.clearTimeout(first);
+    };
+  }, [isBunnyVideo, bunnyVideoIdForUrl, (currentLessonForUrl as any)?.bunny_status, id, queryClient]);
+
   const { data: signedVideoUrl } = useQuery({
     queryKey: ['signed-video', currentLessonForUrl?.id],
     queryFn: () => resolveProtectedUrl('lesson_video', currentLessonForUrl!.id),

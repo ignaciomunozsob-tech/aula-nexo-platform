@@ -57,10 +57,32 @@ Deno.serve(async (req) => {
       .gte('start_at', from.toISOString())
       .lte('start_at', to.toISOString());
 
-    // Google freebusy
+    // Google freebusy — query ALL calendars the creator has selected in Google,
+    // not just `primary`, so blocks on secondary calendars are respected.
     let busy: Array<{ start: string; end: string }> = [];
     const tok = await getValidAccessToken(admin, sess.creator_id, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET);
     if (tok) {
+      // 1) list calendars
+      let calendarIds: string[] = [tok.row.calendar_id || 'primary'];
+      try {
+        const listRes = await fetch(
+          'https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader&maxResults=250',
+          { headers: { Authorization: `Bearer ${tok.accessToken}` } },
+        );
+        const listJson = await listRes.json();
+        if (listRes.ok && Array.isArray(listJson.items)) {
+          const ids = listJson.items
+            .filter((c: any) => c.selected !== false)
+            .map((c: any) => c.id)
+            .filter(Boolean);
+          if (ids.length > 0) calendarIds = ids.slice(0, 50); // freeBusy hard cap
+        } else {
+          console.warn('calendarList failed, falling back to primary', listJson);
+        }
+      } catch (e) {
+        console.warn('calendarList exception, falling back to primary', e);
+      }
+
       const fbRes = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
         method: 'POST',
         headers: { Authorization: `Bearer ${tok.accessToken}`, 'Content-Type': 'application/json' },
@@ -68,12 +90,21 @@ Deno.serve(async (req) => {
           timeMin: from.toISOString(),
           timeMax: to.toISOString(),
           timeZone: tz,
-          items: [{ id: tok.row.calendar_id || 'primary' }],
+          items: calendarIds.map((id) => ({ id })),
         }),
       });
       const fb = await fbRes.json();
-      const cal = fb?.calendars?.[tok.row.calendar_id || 'primary'];
-      if (cal?.busy) busy = cal.busy;
+      if (fbRes.ok && fb?.calendars) {
+        for (const id of calendarIds) {
+          const cal = fb.calendars[id];
+          if (cal?.busy && Array.isArray(cal.busy)) busy.push(...cal.busy);
+        }
+        console.log('freeBusy ok', { calendars: calendarIds.length, busyBlocks: busy.length });
+      } else {
+        console.error('freeBusy failed', fb);
+      }
+    } else {
+      console.warn('calendar-availability: creator has no Google connection, availability will not reflect Google blocks', { creator_id: sess.creator_id });
     }
 
     // Build slots day by day in creator timezone

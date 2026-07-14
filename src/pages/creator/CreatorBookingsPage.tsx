@@ -5,8 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Video, X, Loader2, CalendarDays, List, Clock } from "lucide-react";
+import { Video, X, Loader2, CalendarDays, List, Clock, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
+import { useGoogleConnection } from "@/hooks/useGoogleConnection";
 import { Calendar, dateFnsLocalizer, Views, View } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, startOfMonth, endOfMonth, addDays } from "date-fns";
 import { es } from "date-fns/locale";
@@ -29,6 +31,7 @@ export default function CreatorBookingsPage() {
   const [view, setView] = useState<View>(Views.WEEK);
   const [date, setDate] = useState<Date>(new Date());
   const [selected, setSelected] = useState<CalEvent | null>(null);
+  const { connection, loading: loadingConnection } = useGoogleConnection();
 
   const range = useMemo(() => {
     const s = startOfMonth(date); const e = endOfMonth(date);
@@ -117,6 +120,7 @@ export default function CreatorBookingsPage() {
         <p className="text-sm text-muted-foreground">
           {new Date(b.start_at).toLocaleString("es-CL", { dateStyle: "medium", timeStyle: "short" })}
           {" · "}{b.attendee_name || b.attendee_email}
+          {b.attendee_phone && <> · <a href={`tel:${b.attendee_phone}`} className="hover:underline">{b.attendee_phone}</a></>}
           {b.status === "cancelled" && <span className="text-destructive"> · Cancelada</span>}
         </p>
       </div>
@@ -143,6 +147,25 @@ export default function CreatorBookingsPage() {
           Tus servicios agendados y eventos de Google Calendar.
         </p>
       </div>
+
+      {!loadingConnection && !connection && (
+        <Card className="border-amber-500/60 bg-amber-500/10">
+          <CardContent className="pt-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <AlertTriangle className="h-6 w-6 text-amber-600 shrink-0" />
+            <div className="flex-1">
+              <p className="font-semibold text-amber-900 dark:text-amber-200">
+                Conecta tu Google Calendar
+              </p>
+              <p className="text-sm text-amber-900/80 dark:text-amber-200/80">
+                Sin la conexión, los horarios bloqueados en tu calendario aparecen igual como disponibles y las reservas no se agregan a tu Google Calendar.
+              </p>
+            </div>
+            <Button asChild size="sm">
+              <Link to="/creator-app/integrations">Conectar ahora</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="calendar">
         <div className="-mx-4 sm:mx-0 overflow-x-auto px-4 sm:px-0">
@@ -237,6 +260,9 @@ export default function CreatorBookingsPage() {
               <div className="space-y-2 text-sm">
                 <p><strong>Asistente:</strong> {selected.resource.raw.guest_name || "—"}</p>
                 <p><strong>Email:</strong> {selected.resource.raw.guest_email || "—"}</p>
+                <p><strong>Teléfono:</strong> {selected.resource.raw.guest_phone ? (
+                  <a href={`tel:${selected.resource.raw.guest_phone}`} className="hover:underline">{selected.resource.raw.guest_phone}</a>
+                ) : "—"}</p>
                 {selected.resource.raw.meet_url && (
                   <Button asChild size="sm" variant="outline" className="w-full">
                     <a href={selected.resource.raw.meet_url} target="_blank" rel="noreferrer">

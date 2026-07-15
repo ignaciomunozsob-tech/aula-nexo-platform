@@ -145,6 +145,70 @@ Deno.serve(async (req) => {
       console.warn('booking-create: creator has no Google connection, skipping event create', { creator_id: sess.creator_id });
     }
 
+    // Send confirmation emails to attendee and creator (best-effort, non-blocking)
+    try {
+      const dateFmt = start.toLocaleDateString('es-CL', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Santiago',
+      });
+      const timeFmt = start.toLocaleTimeString('es-CL', {
+        hour: '2-digit', minute: '2-digit', timeZone: 'America/Santiago',
+      }) + ' hrs';
+
+      const { data: creatorProfile } = await admin
+        .from('profiles').select('name').eq('id', sess.creator_id).maybeSingle();
+      const creatorName = creatorProfile?.name ?? '';
+      let creatorEmail: string | null = null;
+      try {
+        const { data: uRes } = await admin.auth.admin.getUserById(sess.creator_id);
+        creatorEmail = uRes?.user?.email ?? null;
+      } catch { /* ignore */ }
+
+      const icsUrl = `https://soynovu.cl/booking/success?id=${booking.id}&token=${booking.ics_token}`;
+
+      if (attendeeEmail) {
+        await admin.functions.invoke('send-transactional-email', {
+          body: {
+            templateName: 'buyer-session-booking',
+            recipientEmail: attendeeEmail,
+            idempotencyKey: `booking-${booking.id}-buyer`,
+            templateData: {
+              attendeeName: attendeeName ?? '',
+              sessionTitle: sess.title,
+              creatorName,
+              dateFormatted: dateFmt,
+              timeFormatted: timeFmt,
+              durationMin: sess.duration_min,
+              meetUrl: meetUrl ?? '',
+              icsUrl,
+            },
+          },
+        });
+      }
+
+      if (creatorEmail) {
+        await admin.functions.invoke('send-transactional-email', {
+          body: {
+            templateName: 'creator-new-booking',
+            recipientEmail: creatorEmail,
+            idempotencyKey: `booking-${booking.id}-creator`,
+            templateData: {
+              creatorName,
+              sessionTitle: sess.title,
+              attendeeName: attendeeName ?? '',
+              attendeeEmail: attendeeEmail ?? '',
+              dateFormatted: dateFmt,
+              timeFormatted: timeFmt,
+              durationMin: sess.duration_min,
+              meetUrl: meetUrl ?? '',
+              bookingsUrl: 'https://soynovu.cl/creator-app/bookings',
+            },
+          },
+        });
+      }
+    } catch (e) {
+      console.warn('booking-create email dispatch error', e);
+    }
+
     return j({
       booking_id: booking.id,
       start_at: booking.start_at,

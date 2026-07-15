@@ -1,59 +1,98 @@
 
-## Diagnóstico del bug "inicié como creador y me mandó a alumno"
+# Flujo de compra unificado — Correos y redirecciones
 
-El listener `onAuthStateChange` en `src/lib/auth.tsx` (agregado en el turno anterior) dispara un `window.location.assign(...)` cuando encuentra `login_intent` en `localStorage`. Ese listener corre **también** durante el login por email/password en `/login`, y compite con la navegación de `LoginPage` hacia `/verify-2fa`. Resultado: pisa la ruta al `/verify-2fa` y manda a `/creator-app` o `/app` sin pasar por 2FA — y en algunos casos aterriza en `/app` porque el RPC de roles llega antes de que se hidrate el rol de creator.
+## Estado actual (auditoría)
 
-### Fix
+| Producto | Acceso otorgado | Email al comprador | Email al creador | Email admin | Redirección |
+|---|---|---|---|---|---|
+| Curso | ✅ enrollment | ❌ **falta** | ✅ | ✅ | ✅ `/compra-confirmada/{ref}` |
+| Ebook | ✅ (por orden) | ❌ **falta (con link de descarga)** | ✅ | ✅ | ✅ |
+| Evento (pago) | ✅ registration | ✅ `event-registration-confirmation` | ✅ | ✅ | ✅ |
+| Evento (gratis) | ✅ | ✅ | — | — | inline |
+| Comunidad | ✅ member | ❌ **falta** | ✅ | ✅ | ✅ |
+| Sesión 1:1 | ✅ booking | ❌ **falta** (solo tiene ICS token) | ❌ **falta** | — | `/booking-success` |
+| Nuevo usuario (guest) | — | ✅ password reset | — | — | — |
 
-En `src/lib/auth.tsx`, restringir el redirect post-OAuth **solo** a `window.location.pathname === "/"` (que es donde vuelve Google). Excluir explícitamente `/login` y `/signup` — allí `LoginPage` es la única fuente de verdad.
+**Problemas identificados:**
+1. Cursos, ebooks, comunidades y sesiones 1:1 no envían un correo de confirmación al comprador con acceso directo.
+2. Las reservas 1:1 no notifican al creador por correo.
+3. No hay un template unificado — cada producto necesita su propio correo con el CTA correcto.
 
 ---
 
-## Dos formularios de login separados
+## Flujo objetivo (unificado)
 
-### Rutas
-
-- `/login/creator` → variante **creador** (acento amarillo, copy "Ingresar a tu cuenta de creador", ícono creador).
-- `/login/student` → variante **alumno** (estilo estándar, copy "Ingresar a tu cuenta de alumno").
-- `/login` se mantiene como fallback genérico (para links antiguos, password reset, etc.).
-
-### Implementación
-
-`src/pages/auth/LoginPage.tsx` acepta una prop `variant?: "creator" | "student" | "generic"` (default `"generic"`):
-
-- Cabecera diferenciada:
-  - **creator**: badge amarillo con texto "Modo creador", título "Ingresa a tu cuenta de creador", subtítulo "Accede a tu dashboard, ventas y comunidades".
-  - **student**: título "Ingresa a tu cuenta de alumno", subtítulo "Continúa aprendiendo donde lo dejaste".
-  - **generic**: título actual "Iniciar sesión".
-- El botón principal en variante `creator` usa `novu-btn-primary` (amarillo); en `student` mantiene el `Button` estándar.
-- En el pie: link "¿Buscas [la otra variante]?" que lleva a `/login/student` o `/login/creator`.
-- Guardar `novu:login_intent` en `useEffect` según el `variant` (para que Google OAuth herede la intención sin depender del navbar).
-- La lógica de redirect (roles + intent + modal si tiene ambos) queda igual — sigue funcionando por `LoginPage.routeAfterLogin`.
-
-En `src/App.tsx` (router), añadir las dos nuevas rutas apuntando a componentes wrapper:
-
-```tsx
-<Route path="/login" element={<LoginPage />} />
-<Route path="/login/creator" element={<LoginPage variant="creator" />} />
-<Route path="/login/student" element={<LoginPage variant="student" />} />
+```text
+Compra iniciada
+   │
+   ├─ Usuario nuevo (guest) → crea auth user + envía email "configura tu contraseña"
+   │
+   ▼
+MercadoPago aprueba → webhook
+   │
+   ├─ 1. Otorgar acceso (enrollment / registration / member / order paid)
+   ├─ 2. Email al COMPRADOR (según producto) ← NUEVO
+   ├─ 3. Email al CREADOR (venta) ✅ existente
+   ├─ 4. Email al ADMIN (venta) ✅ existente
+   │
+   ▼
+Frontend redirige a /compra-confirmada/{reference}
+   │
+   ├─ Muestra resumen (producto, monto, cuotas, referencia)
+   ├─ Dispara Meta Pixel Purchase
+   ├─ Si el creador definió redirect_url → auto-redirige en 5s
+   └─ Si es usuario nuevo → banner "revisa tu correo para tu contraseña"
 ```
 
-### Navbar
-
-`src/components/layout/PublicNavbar.tsx`: cambiar `studentLoginUrl` a `/login/student` y `creatorLoginUrl` a `/login/creator`. Mantener el `goLogin` que ya guarda intent en localStorage.
-
-### Enlaces internos
-
-- `src/pages/auth/SignupPage.tsx` (si tiene "¿Ya tienes cuenta? Inicia sesión") — mantener `/login` genérico salvo que la variante sea evidente.
-- Los redirects de recuperación de contraseña siguen usando `/login` genérico.
+Sesiones 1:1 (booking-create) siguen el mismo patrón después de crear el evento en Google Calendar.
 
 ---
 
-## Archivos a modificar
+## Cambios a realizar
 
-- `src/lib/auth.tsx` — restringir redirect post-OAuth a `pathname === "/"`.
-- `src/pages/auth/LoginPage.tsx` — aceptar prop `variant`, aplicar copy/estilo, guardar intent según variante.
-- `src/App.tsx` — registrar rutas `/login/creator` y `/login/student`.
-- `src/components/layout/PublicNavbar.tsx` — apuntar botones a las nuevas rutas.
+### 1. Nuevos templates de correo al comprador
+En `supabase/functions/_shared/transactional-email-templates/`:
 
-No se toca la base de datos ni edge functions.
+- `buyer-course-purchase.tsx` — "Ya tienes acceso a {curso}" → CTA: ir al curso (`/app/course/{id}` o `redirect_url`).
+- `buyer-ebook-purchase.tsx` — "Tu ebook está listo" → CTA: descargar (link a `/app/my-courses` que renderiza el descargable) + nota sobre nuevo usuario.
+- `buyer-community-purchase.tsx` — "Bienvenido a {comunidad}" → CTA: ir a la comunidad.
+- `buyer-session-booking.tsx` — "Tu sesión con {creador} está confirmada" → fecha/hora, Meet URL, botón añadir a calendario (ICS token existente).
+- `creator-new-booking.tsx` — Nueva reserva 1:1 → datos del asistente, fecha, Meet URL.
+
+Todos con branding NOVU actual (logo, `#fcc70e`, Inter, fondo `#ffffff`). Registrarlos en `registry.ts`.
+
+### 2. Emisión desde `mercadopago-webhook`
+Después de `fulfillOrder(...)` y antes de emails de creador/admin, agregar un switch por `product_type` que llame `send-transactional-email` con el template correspondiente. Guard de idempotencia: nueva columna `buyer_email_sent boolean` en `orders` (migración).
+
+### 3. Emisión desde `booking-create`
+Después de insertar el booking + crear el evento en Google, invocar:
+- `buyer-session-booking` al asistente.
+- `creator-new-booking` al creador.
+
+Con `idempotencyKey = booking-{id}-buyer` / `-creator`.
+
+### 4. Ajustes a `PurchaseConfirmedPage`
+Sin cambios de flujo. Solo asegurar que el CTA "Acceder ahora" para ebook lleve a `/app/my-courses` (ya lo hace) y añadir mensaje explícito "también te enviamos un correo con el enlace" cuando el producto es ebook o curso.
+
+### 5. Migración DB
+```sql
+ALTER TABLE public.orders
+  ADD COLUMN IF NOT EXISTS buyer_email_sent boolean NOT NULL DEFAULT false;
+```
+
+### 6. Deploy
+`deploy_edge_functions` sobre `mercadopago-webhook`, `booking-create`, `send-transactional-email`.
+
+---
+
+## Fuera de alcance
+- Refactor del `PurchaseConfirmedPage` (ya funciona).
+- Cambios en templates existentes (`admin-new-sale`, `creator-new-sale`, `event-registration-confirmation`).
+- Emails de marketing / recordatorios (Lovable no soporta marketing).
+- Reembolsos / cancelaciones (flujo aparte).
+
+## Detalles técnicos
+- Todos los correos van por la infraestructura Lovable Emails existente (`send-transactional-email` + cola pgmq).
+- `idempotencyKey` derivado del `order.id` o `booking.id` para evitar duplicados en retries de MP.
+- Los templates reciben `redirectUrl` (si el creador lo configuró) para que el CTA respete la redirección personalizada.
+- Sin adjuntos: los ebooks se acceden vía link firmado desde el panel del alumno.

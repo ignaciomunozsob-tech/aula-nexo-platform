@@ -1478,6 +1478,7 @@ export type Database = {
           bump_amount_clp: number
           bump_product_id: string | null
           bump_product_type: string | null
+          buyer_email_sent: boolean
           checkout_page_id: string | null
           community_fee_clp: number
           created_at: string
@@ -1509,6 +1510,7 @@ export type Database = {
           bump_amount_clp?: number
           bump_product_id?: string | null
           bump_product_type?: string | null
+          buyer_email_sent?: boolean
           checkout_page_id?: string | null
           community_fee_clp?: number
           created_at?: string
@@ -1540,6 +1542,7 @@ export type Database = {
           bump_amount_clp?: number
           bump_product_id?: string | null
           bump_product_type?: string | null
+          buyer_email_sent?: boolean
           checkout_page_id?: string | null
           community_fee_clp?: number
           created_at?: string

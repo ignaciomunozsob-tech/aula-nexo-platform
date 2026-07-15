@@ -212,6 +212,79 @@ Deno.serve(async (req) => {
         day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Santiago',
       });
 
+      // Buyer confirmation email (course / ebook / community).
+      // Event has its own event-registration-confirmation template below.
+      if (!order.buyer_email_sent && buyerEmail && order.product_type !== 'event') {
+        try {
+          let templateName: string | null = null;
+          let templateData: Record<string, unknown> | null = null;
+          let productPublicUrl: string | null = order.metadata?.product_url ?? null;
+          let redirectUrl: string | null = order.metadata?.redirect_url ?? null;
+
+          // Try to enrich with product-specific redirect_url when not set on order metadata
+          if (!redirectUrl) {
+            if (order.product_type === 'course') {
+              const { data } = await admin.from('courses').select('redirect_url').eq('id', order.product_id).maybeSingle();
+              redirectUrl = data?.redirect_url ?? null;
+            } else if (order.product_type === 'ebook') {
+              const { data } = await admin.from('ebooks').select('redirect_url').eq('id', order.product_id).maybeSingle();
+              redirectUrl = data?.redirect_url ?? null;
+            }
+          }
+
+          const defaultAccessUrl = order.product_type === 'course'
+            ? `${PUBLIC_SITE_URL}/app/course/${order.product_id}`
+            : `${PUBLIC_SITE_URL}/app/my-courses`;
+          const accessUrl = redirectUrl || productPublicUrl || defaultAccessUrl;
+
+          if (order.product_type === 'course') {
+            templateName = 'buyer-course-purchase';
+            templateData = {
+              buyerName: '',
+              productTitle,
+              creatorName,
+              accessUrl,
+              isNewUser: isNew,
+              accountEmail: buyerEmail,
+            };
+          } else if (order.product_type === 'ebook') {
+            templateName = 'buyer-ebook-purchase';
+            templateData = {
+              buyerName: '',
+              productTitle,
+              creatorName,
+              accessUrl,
+              isNewUser: isNew,
+              accountEmail: buyerEmail,
+            };
+          } else if (order.product_type === 'community') {
+            templateName = 'buyer-community-purchase';
+            templateData = {
+              buyerName: '',
+              communityName: productTitle,
+              creatorName,
+              accessUrl,
+              isNewUser: isNew,
+              accountEmail: buyerEmail,
+            };
+          }
+
+          if (templateName && templateData) {
+            await admin.functions.invoke('send-transactional-email', {
+              body: {
+                templateName,
+                recipientEmail: buyerEmail,
+                idempotencyKey: `${order.id}-buyer-${order.product_type}`,
+                templateData,
+              },
+            });
+            await admin.from('orders').update({ buyer_email_sent: true }).eq('id', order.id);
+          }
+        } catch (e) {
+          console.warn('buyer purchase email error', e);
+        }
+      }
+
       // Notify admin (idempotent via admin_email_sent guard)
       if (!order.admin_email_sent) {
         try {

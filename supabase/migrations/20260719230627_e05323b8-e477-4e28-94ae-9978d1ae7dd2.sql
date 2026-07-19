@@ -1,0 +1,1 @@
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS capi_fired boolean NOT NULL DEFAULT false;

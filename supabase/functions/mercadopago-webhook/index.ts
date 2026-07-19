@@ -212,6 +212,65 @@ Deno.serve(async (req) => {
         day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Santiago',
       });
 
+      // Meta Conversions API (server-side Purchase event).
+      // Only fires if the creator has meta_pixel_id configured and we have the CAPI token.
+      // Uses order.reference as event_id so Meta deduplicates against the browser Pixel event.
+      if (!order.capi_fired && order.creator_id) {
+        try {
+          const capiToken = Deno.env.get('META_CAPI_ACCESS_TOKEN') ?? '';
+          const { data: creatorRow } = await admin
+            .from('profiles').select('meta_pixel_id').eq('id', order.creator_id).maybeSingle();
+          const pixelId = (creatorRow?.meta_pixel_id ?? '').toString().trim();
+          if (capiToken && pixelId) {
+            const emailForHash = (buyerEmail ?? order.guest_email ?? '').toString().trim().toLowerCase();
+            let emHash: string | null = null;
+            if (emailForHash) {
+              const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(emailForHash));
+              emHash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+            }
+            const ua = req.headers.get('user-agent') ?? undefined;
+            const xff = req.headers.get('x-forwarded-for') ?? '';
+            const clientIp = xff.split(',')[0]?.trim() || undefined;
+            const eventId = order.reference ?? order.id;
+            const body = {
+              data: [{
+                event_name: 'Purchase',
+                event_time: Math.floor(Date.now() / 1000),
+                event_id: eventId,
+                action_source: 'website',
+                event_source_url: `${PUBLIC_SITE_URL}/compra-confirmada/${eventId}`,
+                user_data: {
+                  ...(emHash ? { em: [emHash] } : {}),
+                  ...(clientIp ? { client_ip_address: clientIp } : {}),
+                  ...(ua ? { client_user_agent: ua } : {}),
+                },
+                custom_data: {
+                  value: amountClp,
+                  currency: 'CLP',
+                  content_ids: [String(order.product_id)],
+                  content_type: 'product',
+                  content_name: productTitle,
+                  content_category: order.product_type,
+                  num_items: 1,
+                },
+              }],
+            };
+            const capiRes = await fetch(
+              `https://graph.facebook.com/v19.0/${encodeURIComponent(pixelId)}/events?access_token=${encodeURIComponent(capiToken)}`,
+              { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
+            );
+            if (capiRes.ok) {
+              await admin.from('orders').update({ capi_fired: true }).eq('id', order.id);
+            } else {
+              const txt = await capiRes.text();
+              console.warn('meta capi non-ok', capiRes.status, txt);
+            }
+          }
+        } catch (e) {
+          console.warn('meta capi error', e);
+        }
+      }
+
       // Buyer confirmation email (course / ebook / community).
       // Event has its own event-registration-confirmation template below.
       if (!order.buyer_email_sent && buyerEmail && order.product_type !== 'event') {

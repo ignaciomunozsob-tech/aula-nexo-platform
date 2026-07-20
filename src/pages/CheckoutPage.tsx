@@ -142,9 +142,9 @@ export default function CheckoutPage({ embed = false }: Props) {
     if (prefill) {
       // Guest already left their details on the product page — go straight to MP.
       sessionStorage.removeItem(GUEST_PREFILL_KEY);
-      startCheckout(page.product_type, page.product_id, meta);
-      // Immediately submit the stashed guest data so we skip the dialog.
-      setTimeout(() => submitGuestData({ name: prefill.name, email: prefill.email, phone: prefill.phone }), 0);
+      checkoutAsGuest(page.product_type, page.product_id, meta, {
+        name: prefill.name, email: prefill.email, phone: prefill.phone,
+      });
       return;
     }
     startCheckout(page.product_type, page.product_id, meta);

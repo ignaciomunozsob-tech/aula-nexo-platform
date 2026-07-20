@@ -10,17 +10,26 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-export default function CheckoutPagesPage() {
+export interface CheckoutPagesPageProps {
+  /** When provided, only pages for this product are shown and "Nueva página" pre-fills the product. */
+  productFilter?: { type: 'course' | 'ebook' | 'event' | 'community'; id: string };
+}
+
+export default function CheckoutPagesPage({ productFilter }: CheckoutPagesPageProps = {}) {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [embedFor, setEmbedFor] = useState<any | null>(null);
 
-  const { data: pages, isLoading, refetch } = useQuery({
-    queryKey: ['checkout-pages', user?.id],
+  const { data: pages, isLoading } = useQuery({
+    queryKey: ['checkout-pages', user?.id, productFilter?.type, productFilter?.id],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      let q = (supabase as any)
         .from('checkout_pages').select('*').eq('creator_id', user!.id)
         .order('created_at', { ascending: false });
+      if (productFilter) {
+        q = q.eq('product_type', productFilter.type).eq('product_id', productFilter.id);
+      }
+      const { data, error } = await q;
       if (error) throw error;
       return data as any[];
     },
@@ -28,6 +37,10 @@ export default function CheckoutPagesPage() {
   });
 
   const creatorSlug = profile?.creator_slug;
+
+  const newPageHref = productFilter
+    ? `/creator-app/checkout-pages/new?product_type=${productFilter.type}&product_id=${productFilter.id}`
+    : '/creator-app/checkout-pages/new';
 
   const publicUrl = (slug: string) =>
     `${window.location.origin}/p/${creatorSlug}/${slug}`;
@@ -55,10 +68,12 @@ export default function CheckoutPagesPage() {
         <div>
           <h1 className="text-2xl font-bold">Páginas de pago</h1>
           <p className="text-muted-foreground text-sm">
-            Personaliza la página de checkout antes de pasar a MercadoPago.
+            {productFilter
+              ? 'Personaliza la página de checkout de este producto y activa order bump.'
+              : 'Personaliza la página de checkout antes de pasar a MercadoPago.'}
           </p>
         </div>
-        <Button onClick={() => navigate('/creator-app/checkout-pages/new')}>
+        <Button onClick={() => navigate(newPageHref)}>
           <Plus className="h-4 w-4 mr-2" /> Nueva página
         </Button>
       </div>

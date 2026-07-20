@@ -155,8 +155,19 @@ export function useMercadoPagoCheckout() {
     setPending(null);
   };
 
+  const checkoutAsGuest = async (
+    productType: ProductType,
+    productId: string,
+    meta: CheckoutMeta,
+    guest: { name: string; email: string; phone: string },
+  ) => {
+    setLoading(true);
+    await doCheckout(productType, productId, meta, guest);
+  };
+
   return {
     startCheckout,
+    checkoutAsGuest,
     loading,
     guestDialogOpen,
     setGuestDialogOpen,

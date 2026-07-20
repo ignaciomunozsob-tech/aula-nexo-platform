@@ -17,7 +17,7 @@ const GUEST_PREFILL_TTL_MS = 30 * 60 * 1000;
 export default function CheckoutPage({ embed = false }: Props) {
   const { creatorSlug, pageSlug } = useParams();
   const [includeBump, setIncludeBump] = useState(false);
-  const { startCheckout, loading, guestDialogOpen, setGuestDialogOpen, submitGuestData } = useMercadoPagoCheckout();
+  const { startCheckout, checkoutAsGuest, loading, guestDialogOpen, setGuestDialogOpen, submitGuestData } = useMercadoPagoCheckout();
 
   // Get checkout page (RPC returns only safe columns) — includes creator_id
   const { data: page, isLoading } = useQuery({

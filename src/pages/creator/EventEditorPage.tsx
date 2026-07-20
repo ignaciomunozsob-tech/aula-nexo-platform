@@ -14,6 +14,8 @@ import { ArrowLeft, Loader2, Upload, Trash2, Calendar, Clock, Users, Video } fro
 import { generateSlug, formatPrice } from '@/lib/utils';
 import StudentManagement from '@/components/creator/StudentManagement';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import CheckoutPagesPage from './CheckoutPagesPage';
 
 type EventFormSnapshot = {
   title: string;

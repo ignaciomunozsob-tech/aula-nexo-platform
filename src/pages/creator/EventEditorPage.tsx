@@ -335,6 +335,30 @@ export default function EventEditorPage() {
         )}
       </div>
 
+      {isEditing && (
+        <Tabs defaultValue="info" className="mb-6">
+          <TabsList>
+            <TabsTrigger value="info">Información</TabsTrigger>
+            <TabsTrigger value="students">Inscritos</TabsTrigger>
+            <TabsTrigger value="checkout">Página de pago</TabsTrigger>
+          </TabsList>
+          <TabsContent value="students" className="mt-6">
+            {id && <StudentManagement productId={id} productType="event" />}
+          </TabsContent>
+          <TabsContent value="checkout" className="mt-6 -mx-4 sm:-mx-6 lg:-mx-8">
+            {id && <CheckoutPagesPage productFilter={{ type: 'event', id }} />}
+          </TabsContent>
+          <TabsContent value="info" className="mt-6">
+            <EventInfoForm />
+          </TabsContent>
+        </Tabs>
+      )}
+      {!isEditing && <EventInfoForm />}
+    </div>
+  );
+
+  function EventInfoForm() {
+    return (
       <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-6">
         {/* Basic Info */}
         <Card>

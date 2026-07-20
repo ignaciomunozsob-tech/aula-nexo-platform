@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +10,9 @@ import { initPixel, trackEventFor } from '@/lib/metaPixel';
 import { Loader2 } from 'lucide-react';
 
 interface Props { embed?: boolean }
+
+const GUEST_PREFILL_KEY = 'novu:guest_checkout';
+const GUEST_PREFILL_TTL_MS = 30 * 60 * 1000;
 
 export default function CheckoutPage({ embed = false }: Props) {
   const { creatorSlug, pageSlug } = useParams();

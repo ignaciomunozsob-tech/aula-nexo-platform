@@ -2104,6 +2104,13 @@ export type Database = {
           status: string
         }[]
       }
+      get_product_checkout_page: {
+        Args: { _product_id: string; _product_type: string }
+        Returns: {
+          creator_slug: string
+          page_slug: string
+        }[]
+      }
       get_public_checkout_page: {
         Args: { _creator_slug: string; _page_slug: string }
         Returns: {

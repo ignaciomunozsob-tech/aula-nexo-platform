@@ -115,12 +115,59 @@ export function useMercadoPagoCheckout() {
     // Mostrar loading en el diálogo y el botón del producto mientras se contacta a MP
     setLoading(true);
     setGuestDialogOpen(false);
+
+    // If the product has a published custom checkout page and we're not already on it,
+    // stash guest details and redirect there so the customer can review the order bump
+    // before continuing to MercadoPago.
+    try {
+      const onCheckoutPage = /^\/p\/[^/]+\/[^/]+/.test(window.location.pathname);
+      if (!onCheckoutPage) {
+        const { data: rows } = await supabase.rpc('get_product_checkout_page', {
+          _product_type: pending.productType,
+          _product_id: pending.productId,
+        });
+        const row = Array.isArray(rows) && rows.length > 0 ? (rows[0] as any) : null;
+        if (row?.creator_slug && row?.page_slug) {
+          sessionStorage.setItem(
+            'novu:guest_checkout',
+            JSON.stringify({
+              productType: pending.productType,
+              productId: pending.productId,
+              name: data.name,
+              email: data.email,
+              phone: data.phone,
+              ts: Date.now(),
+            }),
+          );
+          setPending(null);
+          const target = `/p/${row.creator_slug}/${row.page_slug}`;
+          if (window.top && window.top !== window.self) {
+            window.top.location.href = target;
+          } else {
+            window.location.href = target;
+          }
+          return;
+        }
+      }
+    } catch { /* fall through to direct MP */ }
+
     await doCheckout(pending.productType, pending.productId, pending.meta, data);
     setPending(null);
   };
 
+  const checkoutAsGuest = async (
+    productType: ProductType,
+    productId: string,
+    meta: CheckoutMeta,
+    guest: { name: string; email: string; phone: string },
+  ) => {
+    setLoading(true);
+    await doCheckout(productType, productId, meta, guest);
+  };
+
   return {
     startCheckout,
+    checkoutAsGuest,
     loading,
     guestDialogOpen,
     setGuestDialogOpen,

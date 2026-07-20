@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
@@ -26,12 +26,16 @@ export default function CheckoutPageEditorPage() {
   const isNew = !id || id === 'new';
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const presetProductType = (searchParams.get('product_type') as ProductType | null);
+  const presetProductId = searchParams.get('product_id');
+  const productLocked = isNew && !!presetProductType && !!presetProductId;
   const [saving, setSaving] = useState(false);
 
   const [name, setName] = useState('Página de pago');
   const [slug, setSlug] = useState('');
-  const [productType, setProductType] = useState<ProductType>('course');
-  const [productId, setProductId] = useState<string>('');
+  const [productType, setProductType] = useState<ProductType>(presetProductType ?? 'course');
+  const [productId, setProductId] = useState<string>(presetProductId ?? '');
   const [isPublished, setIsPublished] = useState(false);
   const [blocks, setBlocks] = useState<CheckoutBlock[]>(DEFAULT_BLOCKS);
   const [theme, setTheme] = useState<CheckoutTheme>(DEFAULT_THEME);
@@ -264,7 +268,7 @@ export default function CheckoutPageEditorPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Tipo de producto</Label>
-                <Select value={productType} onValueChange={(v) => { setProductType(v as ProductType); setProductId(''); }}>
+                <Select value={productType} onValueChange={(v) => { setProductType(v as ProductType); setProductId(''); }} disabled={productLocked}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="course">Curso</SelectItem>
@@ -276,7 +280,7 @@ export default function CheckoutPageEditorPage() {
               </div>
               <div>
                 <Label>Producto</Label>
-                <Select value={productId} onValueChange={setProductId}>
+                <Select value={productId} onValueChange={setProductId} disabled={productLocked}>
                   <SelectTrigger><SelectValue placeholder="Selecciona..." /></SelectTrigger>
                   <SelectContent>
                     {(products?.[productType] ?? []).map((p: any) => (
@@ -284,6 +288,9 @@ export default function CheckoutPageEditorPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {productLocked && (
+                  <p className="text-xs text-muted-foreground mt-1">Bloqueado — vienes desde el editor del producto.</p>
+                )}
               </div>
             </div>
           </Card>

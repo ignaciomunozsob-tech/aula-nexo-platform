@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,10 +11,13 @@ import { Loader2 } from 'lucide-react';
 
 interface Props { embed?: boolean }
 
+const GUEST_PREFILL_KEY = 'novu:guest_checkout';
+const GUEST_PREFILL_TTL_MS = 30 * 60 * 1000;
+
 export default function CheckoutPage({ embed = false }: Props) {
   const { creatorSlug, pageSlug } = useParams();
   const [includeBump, setIncludeBump] = useState(false);
-  const { startCheckout, loading, guestDialogOpen, setGuestDialogOpen, submitGuestData } = useMercadoPagoCheckout();
+  const { startCheckout, checkoutAsGuest, loading, guestDialogOpen, setGuestDialogOpen, submitGuestData } = useMercadoPagoCheckout();
 
   // Get checkout page (RPC returns only safe columns) — includes creator_id
   const { data: page, isLoading } = useQuery({
@@ -113,14 +116,38 @@ export default function CheckoutPage({ embed = false }: Props) {
     ? Math.round(products.bump.price_clp * (100 - (page.bump_discount_pct ?? 0)) / 100)
     : 0;
 
+  const readGuestPrefill = () => {
+    try {
+      const raw = sessionStorage.getItem(GUEST_PREFILL_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as {
+        productType: string; productId: string;
+        name: string; email: string; phone: string; ts: number;
+      };
+      if (parsed.productType !== page.product_type || parsed.productId !== page.product_id) return null;
+      if (Date.now() - parsed.ts > GUEST_PREFILL_TTL_MS) return null;
+      return parsed;
+    } catch { return null; }
+  };
+
   const onCheckout = () => {
-    startCheckout(page.product_type, page.product_id, {
+    const meta = {
       value: products.main!.price_clp + (includeBump ? bumpFinal : 0),
       creatorPixelId: creator?.meta_pixel_id,
       contentName: products.main!.title,
       checkoutPageId: page.id,
       includeBump,
-    });
+    };
+    const prefill = readGuestPrefill();
+    if (prefill) {
+      // Guest already left their details on the product page — go straight to MP.
+      sessionStorage.removeItem(GUEST_PREFILL_KEY);
+      checkoutAsGuest(page.product_type, page.product_id, meta, {
+        name: prefill.name, email: prefill.email, phone: prefill.phone,
+      });
+      return;
+    }
+    startCheckout(page.product_type, page.product_id, meta);
   };
 
   return (

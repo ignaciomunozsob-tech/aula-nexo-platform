@@ -14,6 +14,8 @@ import { ArrowLeft, Loader2, Upload, Trash2, Calendar, Clock, Users, Video } fro
 import { generateSlug, formatPrice } from '@/lib/utils';
 import StudentManagement from '@/components/creator/StudentManagement';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import CheckoutPagesPage from './CheckoutPagesPage';
 
 type EventFormSnapshot = {
   title: string;
@@ -333,6 +335,36 @@ export default function EventEditorPage() {
         )}
       </div>
 
+      {isEditing && (
+        <Tabs defaultValue="info" className="mb-6">
+          <TabsList>
+            <TabsTrigger value="info">Información</TabsTrigger>
+            <TabsTrigger value="students">Inscritos</TabsTrigger>
+            <TabsTrigger value="checkout">Página de pago</TabsTrigger>
+          </TabsList>
+          <TabsContent value="students" className="mt-6">
+            {id && <StudentManagement productId={id} productType="event" />}
+          </TabsContent>
+          <TabsContent value="checkout" className="mt-6 -mx-4 sm:-mx-6 lg:-mx-8">
+            {id && <CheckoutPagesPage productFilter={{ type: 'event', id }} />}
+          </TabsContent>
+          <TabsContent value="info" className="mt-6">
+            <EventInfoForm />
+          </TabsContent>
+        </Tabs>
+      )}
+      {!isEditing && <EventInfoForm />}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur sm:hidden">
+        <Button type="button" onClick={handleSave} disabled={!canSaveEvent} className="w-full" size="lg">
+          {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+          {isEditing ? 'Guardar Cambios' : 'Crear Evento'}
+        </Button>
+      </div>
+    </div>
+  );
+
+  function EventInfoForm() {
+    return (
       <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-6">
         {/* Basic Info */}
         <Card>
@@ -595,19 +627,8 @@ export default function EventEditorPage() {
           </Button>
         </div>
       </form>
-
-      {isEditing && id && (
-        <div className="mt-8">
-          <StudentManagement productId={id} productType="event" />
-        </div>
-      )}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur sm:hidden">
-        <Button type="button" onClick={handleSave} disabled={!canSaveEvent} className="w-full" size="lg">
-          {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-          {isEditing ? 'Guardar Cambios' : 'Crear Evento'}
-        </Button>
-      </div>
-    </div>
-  );
+    );
+  }
 }
+
 

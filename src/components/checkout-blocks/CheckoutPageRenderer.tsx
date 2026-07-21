@@ -3,6 +3,8 @@ import { Check, Shield, Star, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Accordion,
   AccordionContent,
@@ -27,6 +29,12 @@ export interface BumpInfo {
   originalPrice?: number;
 }
 
+export interface ContactState {
+  name: string;
+  email: string;
+  phone: string;
+}
+
 interface Props {
   blocks: CheckoutBlock[];
   theme: CheckoutTheme;
@@ -37,6 +45,10 @@ interface Props {
   onCheckout: () => void;
   loading?: boolean;
   embed?: boolean;
+  contact?: ContactState;
+  onContactChange?: (patch: Partial<ContactState>) => void;
+  contactError?: string | null;
+  emailReadOnly?: boolean;
 }
 
 function formatCLP(n: number) {
@@ -72,8 +84,55 @@ function Countdown({ endsAt }: { endsAt: string }) {
 
 export function CheckoutPageRenderer({
   blocks, theme, product, bump, includeBump, onToggleBump, onCheckout, loading, embed,
+  contact, onContactChange, contactError, emailReadOnly,
 }: Props) {
   const total = product.price_clp + (bump.enabled && includeBump ? (bump.finalPrice ?? 0) : 0);
+
+  const renderContactForm = () => {
+    if (!contact || !onContactChange) return null;
+    return (
+      <section>
+        <Card className="p-5 space-y-3">
+          <h3 className="font-bold text-lg">Tus datos</h3>
+          <p className="text-xs text-muted-foreground">
+            Necesitamos esta información para procesar tu compra y darte acceso al producto.
+          </p>
+          <div className="space-y-2">
+            <Label htmlFor="cp-name">Nombre completo *</Label>
+            <Input
+              id="cp-name" autoComplete="name" required
+              value={contact.name}
+              onChange={(e) => onContactChange({ name: e.target.value })}
+              placeholder="Tu nombre"
+              disabled={loading}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="cp-email">Correo electrónico *</Label>
+            <Input
+              id="cp-email" type="email" inputMode="email" autoComplete="email" required
+              value={contact.email}
+              onChange={(e) => onContactChange({ email: e.target.value })}
+              placeholder="tu@correo.com"
+              disabled={loading || emailReadOnly}
+              readOnly={emailReadOnly}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="cp-phone">Teléfono *</Label>
+            <Input
+              id="cp-phone" type="tel" inputMode="tel" autoComplete="tel" required
+              value={contact.phone}
+              onChange={(e) => onContactChange({ phone: e.target.value })}
+              placeholder="+56 9 1234 5678"
+              disabled={loading}
+            />
+          </div>
+          {contactError && <p className="text-sm text-destructive">{contactError}</p>}
+        </Card>
+      </section>
+    );
+  };
 
   const renderBlock = (b: CheckoutBlock) => {
     if (!b.enabled) return null;
@@ -170,61 +229,63 @@ export function CheckoutPageRenderer({
         );
       case 'summary':
         return (
-          <section key={b.id}>
-            <Card className="p-5 space-y-3">
-              <h3 className="font-bold text-lg">Tu compra</h3>
-              <div className="flex justify-between text-sm">
-                <span>{product.title}</span>
-                <span className="font-semibold">{formatCLP(product.price_clp)}</span>
-              </div>
-
-              {bump.enabled && bump.product && (
-                <div className="rounded-lg border-2 border-dashed p-3" style={{ borderColor: theme.primary }}>
-                  <label className="flex gap-3 cursor-pointer">
-                    <Checkbox checked={includeBump} onCheckedChange={(v) => onToggleBump(!!v)} className="mt-1" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm">
-                        {bump.headline || `Suma ${bump.product.title}`}
-                      </p>
-                      <div className="flex gap-3 mt-2">
-                        {bump.product.cover_image_url && (
-                          <img
-                            src={bump.product.cover_image_url}
-                            alt={bump.product.title}
-                            className="w-20 h-20 object-cover rounded-md flex-shrink-0"
-                          />
-                        )}
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <p className="text-xs font-medium truncate">{bump.product.title}</p>
-                          {(bump.description || bump.product.description) && (
-                            <p className="text-xs text-muted-foreground line-clamp-3">
-                              {bump.description || bump.product.description}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-sm mt-2">
-                        <span className="font-bold" style={{ color: theme.primary }}>
-                          {formatCLP(bump.finalPrice ?? 0)}
-                        </span>
-                        {bump.originalPrice && bump.originalPrice > (bump.finalPrice ?? 0) && (
-                          <span className="ml-2 line-through text-muted-foreground text-xs">
-                            {formatCLP(bump.originalPrice)}
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  </label>
+          <div key={b.id} className="space-y-6">
+            {renderContactForm()}
+            <section>
+              <Card className="p-5 space-y-3">
+                <h3 className="font-bold text-lg">Tu compra</h3>
+                <div className="flex justify-between text-sm">
+                  <span>{product.title}</span>
+                  <span className="font-semibold">{formatCLP(product.price_clp)}</span>
                 </div>
-              )}
 
+                {bump.enabled && bump.product && (
+                  <div className="rounded-lg border-2 border-dashed p-3" style={{ borderColor: theme.primary }}>
+                    <label className="flex gap-3 cursor-pointer">
+                      <Checkbox checked={includeBump} onCheckedChange={(v) => onToggleBump(!!v)} className="mt-1" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm">
+                          {bump.headline || `Suma ${bump.product.title}`}
+                        </p>
+                        <div className="flex gap-3 mt-2">
+                          {bump.product.cover_image_url && (
+                            <img
+                              src={bump.product.cover_image_url}
+                              alt={bump.product.title}
+                              className="w-20 h-20 object-cover rounded-md flex-shrink-0"
+                            />
+                          )}
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <p className="text-xs font-medium truncate">{bump.product.title}</p>
+                            {(bump.description || bump.product.description) && (
+                              <p className="text-xs text-muted-foreground line-clamp-3">
+                                {bump.description || bump.product.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-sm mt-2">
+                          <span className="font-bold" style={{ color: theme.primary }}>
+                            {formatCLP(bump.finalPrice ?? 0)}
+                          </span>
+                          {bump.originalPrice && bump.originalPrice > (bump.finalPrice ?? 0) && (
+                            <span className="ml-2 line-through text-muted-foreground text-xs">
+                              {formatCLP(bump.originalPrice)}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                )}
 
-              <div className="flex justify-between pt-2 border-t font-bold">
-                <span>Total</span>
-                <span style={{ color: theme.primary }}>{formatCLP(total)}</span>
-              </div>
-            </Card>
-          </section>
+                <div className="flex justify-between pt-2 border-t font-bold">
+                  <span>Total</span>
+                  <span style={{ color: theme.primary }}>{formatCLP(total)}</span>
+                </div>
+              </Card>
+            </section>
+          </div>
         );
       case 'checkout_button':
         return (
@@ -247,13 +308,26 @@ export function CheckoutPageRenderer({
     }
   };
 
+  // If the summary block is disabled or missing, still render contact form before the checkout button.
+  const hasSummary = blocks.some((b) => b.type === 'summary' && b.enabled);
+
   return (
     <div
       className="min-h-screen py-8 px-4"
       style={{ backgroundColor: theme.background }}
     >
       <div className={embed ? 'max-w-2xl mx-auto space-y-6' : 'max-w-2xl mx-auto space-y-6'}>
-        {blocks.map(renderBlock)}
+        {blocks.map((b) => {
+          if (!hasSummary && b.type === 'checkout_button' && b.enabled) {
+            return (
+              <div key={b.id} className="space-y-6">
+                {renderContactForm()}
+                {renderBlock(b)}
+              </div>
+            );
+          }
+          return renderBlock(b);
+        })}
         {!embed && (
           <p className="text-center text-xs text-muted-foreground pt-4">
             Procesado por <strong>NOVU</strong>

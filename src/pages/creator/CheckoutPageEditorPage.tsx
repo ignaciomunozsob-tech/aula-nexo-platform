@@ -61,6 +61,7 @@ export default function CheckoutPageEditorPage() {
         setName(data.name); setSlug(data.slug);
         setProductType(data.product_type); setProductId(data.product_id);
         setIsPublished(data.is_published);
+        setIsDefault(!!data.is_default);
         setBlocks(Array.isArray(data.blocks) && data.blocks.length ? data.blocks : DEFAULT_BLOCKS);
         setTheme(data.theme ?? DEFAULT_THEME);
         setBumpEnabled(data.bump_enabled);

@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useMercadoPagoCheckout } from '@/hooks/useMercadoPagoCheckout';
+import { useAuth } from '@/lib/auth';
 import { GuestCheckoutDialog } from '@/components/checkout/GuestCheckoutDialog';
-import { CheckoutPageRenderer } from '@/components/checkout-blocks/CheckoutPageRenderer';
+import { CheckoutPageRenderer, type ContactState } from '@/components/checkout-blocks/CheckoutPageRenderer';
 import { DEFAULT_BLOCKS, DEFAULT_THEME } from '@/lib/checkoutBlocks';
 import { initPixel, trackEventFor } from '@/lib/metaPixel';
 import { Loader2 } from 'lucide-react';
@@ -14,10 +16,19 @@ interface Props { embed?: boolean }
 const GUEST_PREFILL_KEY = 'novu:guest_checkout';
 const GUEST_PREFILL_TTL_MS = 30 * 60 * 1000;
 
+const contactSchema = z.object({
+  name: z.string().trim().min(2, 'Ingresa tu nombre completo').max(100),
+  email: z.string().trim().toLowerCase().email('Correo electrónico inválido').max(254),
+  phone: z.string().trim().min(6, 'Ingresa un teléfono válido').max(30),
+});
+
 export default function CheckoutPage({ embed = false }: Props) {
   const { creatorSlug, pageSlug } = useParams();
+  const { user, profile } = useAuth();
   const [includeBump, setIncludeBump] = useState(false);
-  const { startCheckout, checkoutAsGuest, loading, guestDialogOpen, setGuestDialogOpen, submitGuestData } = useMercadoPagoCheckout();
+  const [contact, setContact] = useState<ContactState>({ name: '', email: '', phone: '' });
+  const [contactError, setContactError] = useState<string | null>(null);
+  const { checkoutAsGuest, loading, guestDialogOpen, setGuestDialogOpen, submitGuestData } = useMercadoPagoCheckout();
 
   // Get checkout page (RPC returns only safe columns) — includes creator_id
   const { data: page, isLoading } = useQuery({
@@ -69,6 +80,36 @@ export default function CheckoutPage({ embed = false }: Props) {
     },
   });
 
+  // Prefill contact from session storage (guest already left details on the product page)
+  // or from the current logged-in user profile.
+  const prefillReadRef = useRef(false);
+  useEffect(() => {
+    if (prefillReadRef.current || !page) return;
+    prefillReadRef.current = true;
+    try {
+      const raw = sessionStorage.getItem(GUEST_PREFILL_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as {
+          productType: string; productId: string;
+          name: string; email: string; phone: string; ts: number;
+        };
+        if (parsed.productType === page.product_type
+          && parsed.productId === page.product_id
+          && Date.now() - parsed.ts <= GUEST_PREFILL_TTL_MS) {
+          setContact({ name: parsed.name ?? '', email: parsed.email ?? '', phone: parsed.phone ?? '' });
+          return;
+        }
+      }
+    } catch { /* noop */ }
+    if (user) {
+      setContact((c) => ({
+        name: c.name || profile?.name || (user.user_metadata?.name as string) || '',
+        email: c.email || user.email || '',
+        phone: c.phone || (user.user_metadata?.phone as string) || '',
+      }));
+    }
+  }, [page, user, profile]);
+
   // Meta Pixel: ViewContent (fires once per product on this checkout)
   const viewContentFiredRef = useRef<string | null>(null);
   useEffect(() => {
@@ -116,21 +157,14 @@ export default function CheckoutPage({ embed = false }: Props) {
     ? Math.round(products.bump.price_clp * (100 - (page.bump_discount_pct ?? 0)) / 100)
     : 0;
 
-  const readGuestPrefill = () => {
-    try {
-      const raw = sessionStorage.getItem(GUEST_PREFILL_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as {
-        productType: string; productId: string;
-        name: string; email: string; phone: string; ts: number;
-      };
-      if (parsed.productType !== page.product_type || parsed.productId !== page.product_id) return null;
-      if (Date.now() - parsed.ts > GUEST_PREFILL_TTL_MS) return null;
-      return parsed;
-    } catch { return null; }
-  };
-
   const onCheckout = () => {
+    const parsed = contactSchema.safeParse(contact);
+    if (!parsed.success) {
+      setContactError(parsed.error.issues[0]?.message ?? 'Completa tus datos de contacto');
+      return;
+    }
+    setContactError(null);
+    sessionStorage.removeItem(GUEST_PREFILL_KEY);
     const meta = {
       value: products.main!.price_clp + (includeBump ? bumpFinal : 0),
       creatorPixelId: creator?.meta_pixel_id,
@@ -138,16 +172,9 @@ export default function CheckoutPage({ embed = false }: Props) {
       checkoutPageId: page.id,
       includeBump,
     };
-    const prefill = readGuestPrefill();
-    if (prefill) {
-      // Guest already left their details on the product page — go straight to MP.
-      sessionStorage.removeItem(GUEST_PREFILL_KEY);
-      checkoutAsGuest(page.product_type, page.product_id, meta, {
-        name: prefill.name, email: prefill.email, phone: prefill.phone,
-      });
-      return;
-    }
-    startCheckout(page.product_type, page.product_id, meta);
+    // Same path for guests and logged-in users: send name/email/phone so the creator's
+    // panel de inscritos siempre tiene los datos de contacto reales del comprador.
+    checkoutAsGuest(page.product_type, page.product_id, meta, parsed.data);
   };
 
   return (
@@ -178,6 +205,10 @@ export default function CheckoutPage({ embed = false }: Props) {
         onCheckout={onCheckout}
         loading={loading}
         embed={embed}
+        contact={contact}
+        onContactChange={(patch) => { setContact((c) => ({ ...c, ...patch })); if (contactError) setContactError(null); }}
+        contactError={contactError}
+        emailReadOnly={!!user}
       />
       <GuestCheckoutDialog
         open={guestDialogOpen}

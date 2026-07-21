@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Plus, Edit, ExternalLink, Code, Copy } from 'lucide-react';
+import { Plus, Edit, ExternalLink, Code, Copy, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -18,7 +18,9 @@ export interface CheckoutPagesPageProps {
 export default function CheckoutPagesPage({ productFilter }: CheckoutPagesPageProps = {}) {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [embedFor, setEmbedFor] = useState<any | null>(null);
+  const [defaulting, setDefaulting] = useState<string | null>(null);
 
   const { data: pages, isLoading } = useQuery({
     queryKey: ['checkout-pages', user?.id, productFilter?.type, productFilter?.id],
@@ -35,6 +37,29 @@ export default function CheckoutPagesPage({ productFilter }: CheckoutPagesPagePr
     },
     enabled: !!user,
   });
+
+  const makeDefault = async (page: any) => {
+    if (!user) return;
+    setDefaulting(page.id);
+    try {
+      // Clear default from other pages for this product
+      await (supabase as any).from('checkout_pages').update({ is_default: false })
+        .eq('creator_id', user.id)
+        .eq('product_type', page.product_type)
+        .eq('product_id', page.product_id)
+        .eq('is_default', true)
+        .neq('id', page.id);
+      const { error } = await (supabase as any).from('checkout_pages')
+        .update({ is_default: true, is_published: true }).eq('id', page.id);
+      if (error) throw error;
+      toast.success('Marcada como predeterminada');
+      await queryClient.invalidateQueries({ queryKey: ['checkout-pages'] });
+    } catch (e: any) {
+      toast.error(e.message ?? 'No se pudo marcar como predeterminada');
+    } finally {
+      setDefaulting(null);
+    }
+  };
 
   const creatorSlug = profile?.creator_slug;
 
@@ -99,11 +124,16 @@ export default function CheckoutPagesPage({ productFilter }: CheckoutPagesPagePr
           {pages.map((p) => (
             <Card key={p.id} className="p-4 flex items-center justify-between gap-4 flex-wrap">
               <div className="min-w-0">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <h3 className="font-semibold truncate">{p.name}</h3>
                   <Badge variant={p.is_published ? 'default' : 'secondary'}>
                     {p.is_published ? 'Publicada' : 'Borrador'}
                   </Badge>
+                  {p.is_default && (
+                    <Badge className="bg-primary/15 text-primary hover:bg-primary/20 border-primary/30">
+                      <Star className="h-3 w-3 mr-1 fill-current" /> Predeterminada
+                    </Badge>
+                  )}
                   {p.bump_enabled && <Badge variant="outline">Order bump</Badge>}
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -114,6 +144,11 @@ export default function CheckoutPagesPage({ productFilter }: CheckoutPagesPagePr
                 <Button variant="outline" size="sm" onClick={() => navigate(`/creator-app/checkout-pages/${p.id}/edit`)}>
                   <Edit className="h-4 w-4 mr-1" /> Editar
                 </Button>
+                {!p.is_default && (
+                  <Button variant="outline" size="sm" onClick={() => makeDefault(p)} disabled={defaulting === p.id}>
+                    <Star className="h-4 w-4 mr-1" /> {defaulting === p.id ? 'Guardando...' : 'Predeterminada'}
+                  </Button>
+                )}
                 {p.is_published && creatorSlug && (
                   <>
                     <Button variant="outline" size="sm" asChild>

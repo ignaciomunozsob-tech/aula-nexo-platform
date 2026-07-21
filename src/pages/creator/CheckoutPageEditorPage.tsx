@@ -37,6 +37,7 @@ export default function CheckoutPageEditorPage() {
   const [productType, setProductType] = useState<ProductType>(presetProductType ?? 'course');
   const [productId, setProductId] = useState<string>(presetProductId ?? '');
   const [isPublished, setIsPublished] = useState(false);
+  const [isDefault, setIsDefault] = useState(false);
   const [blocks, setBlocks] = useState<CheckoutBlock[]>(DEFAULT_BLOCKS);
   const [theme, setTheme] = useState<CheckoutTheme>(DEFAULT_THEME);
   const [selectedBlockId, setSelectedBlockId] = useState<string>('hero');
@@ -60,6 +61,7 @@ export default function CheckoutPageEditorPage() {
         setName(data.name); setSlug(data.slug);
         setProductType(data.product_type); setProductId(data.product_id);
         setIsPublished(data.is_published);
+        setIsDefault(!!data.is_default);
         setBlocks(Array.isArray(data.blocks) && data.blocks.length ? data.blocks : DEFAULT_BLOCKS);
         setTheme(data.theme ?? DEFAULT_THEME);
         setBumpEnabled(data.bump_enabled);
@@ -126,10 +128,13 @@ export default function CheckoutPageEditorPage() {
     if (!productId) { toast.error('Selecciona un producto'); return; }
     if (!/^[a-z0-9-]{3,40}$/.test(slug)) { toast.error('Slug inválido (a-z, 0-9, -, 3-40 chars)'); return; }
     setSaving(true);
+    const willPublish = publish ?? isPublished;
+    const willBeDefault = isDefault && willPublish;
     const payload: any = {
       creator_id: user.id,
       product_type: productType, product_id: productId,
-      name, slug, is_published: publish ?? isPublished,
+      name, slug, is_published: willPublish,
+      is_default: willBeDefault,
       blocks, theme,
       bump_enabled: bumpEnabled,
       bump_product_type: bumpEnabled ? bumpProductType : null,
@@ -139,6 +144,16 @@ export default function CheckoutPageEditorPage() {
       bump_description: bumpDescription,
     };
     try {
+      // If this page is being marked as default, clear the flag on any other page for the same product first.
+      if (willBeDefault) {
+        let q = (supabase as any).from('checkout_pages').update({ is_default: false })
+          .eq('creator_id', user.id)
+          .eq('product_type', productType)
+          .eq('product_id', productId)
+          .eq('is_default', true);
+        if (!isNew) q = q.neq('id', id);
+        await q;
+      }
       if (isNew) {
         const { data, error } = await (supabase as any).from('checkout_pages').insert(payload).select().single();
         if (error) throw error;
@@ -291,6 +306,15 @@ export default function CheckoutPageEditorPage() {
                 {productLocked && (
                   <p className="text-xs text-muted-foreground mt-1">Bloqueado — vienes desde el editor del producto.</p>
                 )}
+              </div>
+            </div>
+            <div className="rounded-lg border p-3 flex items-start gap-3">
+              <Switch checked={isDefault} onCheckedChange={setIsDefault} id="is-default" />
+              <div className="flex-1">
+                <Label htmlFor="is-default" className="cursor-pointer">Usar como página de pago predeterminada de este producto</Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Cuando esté publicada, los botones "Comprar / Inscribirse" de la página pública del producto redirigirán a esta página. Solo puede haber una predeterminada por producto.
+                </p>
               </div>
             </div>
           </Card>

@@ -101,6 +101,29 @@ export function useMercadoPagoCheckout() {
     productId: string,
     meta: CheckoutMeta = {},
   ) => {
+    // If the product has a default published custom checkout page and we're not already on it,
+    // redirect there — the page collects name/email/phone and shows the order bump.
+    try {
+      const onCheckoutPage = /^\/p\/[^/]+\/[^/]+/.test(window.location.pathname);
+      if (!onCheckoutPage) {
+        const { data: rows } = await supabase.rpc('get_product_checkout_page', {
+          _product_type: productType,
+          _product_id: productId,
+        });
+        const row = Array.isArray(rows) && rows.length > 0 ? (rows[0] as any) : null;
+        if (row?.creator_slug && row?.page_slug) {
+          setLoading(true);
+          const target = `/p/${row.creator_slug}/${row.page_slug}`;
+          if (window.top && window.top !== window.self) {
+            window.top.location.href = target;
+          } else {
+            window.location.href = target;
+          }
+          return;
+        }
+      }
+    } catch { /* fall through to normal flow */ }
+
     if (user) {
       await doCheckout(productType, productId, meta);
       return;

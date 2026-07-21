@@ -1968,6 +1968,7 @@ export type Database = {
         Returns: {
           email: string
           name: string
+          phone: string
           purchased_at: string
           status: string
           user_id: string
@@ -2021,6 +2022,7 @@ export type Database = {
         Returns: {
           email: string
           name: string
+          phone: string
           registered_at: string
           status: string
           user_id: string

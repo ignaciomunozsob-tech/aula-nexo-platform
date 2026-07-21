@@ -331,7 +331,11 @@ export default function CheckoutPageEditorPage() {
                 </div>
                 <div>
                   <Label>Descuento (%)</Label>
-                  <Input type="number" min={0} max={90} value={bumpDiscountPct} onChange={(e) => setBumpDiscountPct(Number(e.target.value))} />
+                  <Input type="number" min={0} max={90} step={1} value={bumpDiscountPct} onChange={(e) => {
+                    const n = Math.round(Number(e.target.value));
+                    setBumpDiscountPct(Number.isFinite(n) ? Math.max(0, Math.min(90, n)) : 0);
+                  }} />
+
                 </div>
                 <div>
                   <Label>Titular del bump</Label>

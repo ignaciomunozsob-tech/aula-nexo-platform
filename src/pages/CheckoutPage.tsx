@@ -174,7 +174,7 @@ export default function CheckoutPage({ embed = false }: Props) {
     };
     // Same path for guests and logged-in users: send name/email/phone so the creator's
     // panel de inscritos siempre tiene los datos de contacto reales del comprador.
-    checkoutAsGuest(page.product_type, page.product_id, meta, parsed.data);
+    checkoutAsGuest(page.product_type, page.product_id, meta, parsed.data as ContactState);
   };
 
   return (

@@ -308,6 +308,15 @@ export default function CheckoutPageEditorPage() {
                 )}
               </div>
             </div>
+            <div className="rounded-lg border p-3 flex items-start gap-3">
+              <Switch checked={isDefault} onCheckedChange={setIsDefault} id="is-default" />
+              <div className="flex-1">
+                <Label htmlFor="is-default" className="cursor-pointer">Usar como página de pago predeterminada de este producto</Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Cuando esté publicada, los botones "Comprar / Inscribirse" de la página pública del producto redirigirán a esta página. Solo puede haber una predeterminada por producto.
+                </p>
+              </div>
+            </div>
           </Card>
         </TabsContent>
 

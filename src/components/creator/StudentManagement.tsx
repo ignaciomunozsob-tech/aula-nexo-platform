@@ -349,6 +349,7 @@ export default function StudentManagement({ productId, productType }: StudentMan
                 <TableRow>
                   <TableHead>Alumno</TableHead>
                   <TableHead>Correo</TableHead>
+                  <TableHead>Teléfono</TableHead>
                   <TableHead>Fecha de inscripción</TableHead>
                   <TableHead>Estado</TableHead>
                 </TableRow>
@@ -361,6 +362,9 @@ export default function StudentManagement({ productId, productType }: StudentMan
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {item.email || "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {item.phone || "—"}
                     </TableCell>
                     <TableCell>
                       {formatDate(item.purchased_at || item.registered_at)}

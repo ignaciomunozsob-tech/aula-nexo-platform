@@ -18,7 +18,9 @@ export interface CheckoutPagesPageProps {
 export default function CheckoutPagesPage({ productFilter }: CheckoutPagesPageProps = {}) {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [embedFor, setEmbedFor] = useState<any | null>(null);
+  const [defaulting, setDefaulting] = useState<string | null>(null);
 
   const { data: pages, isLoading } = useQuery({
     queryKey: ['checkout-pages', user?.id, productFilter?.type, productFilter?.id],
@@ -35,6 +37,29 @@ export default function CheckoutPagesPage({ productFilter }: CheckoutPagesPagePr
     },
     enabled: !!user,
   });
+
+  const makeDefault = async (page: any) => {
+    if (!user) return;
+    setDefaulting(page.id);
+    try {
+      // Clear default from other pages for this product
+      await (supabase as any).from('checkout_pages').update({ is_default: false })
+        .eq('creator_id', user.id)
+        .eq('product_type', page.product_type)
+        .eq('product_id', page.product_id)
+        .eq('is_default', true)
+        .neq('id', page.id);
+      const { error } = await (supabase as any).from('checkout_pages')
+        .update({ is_default: true, is_published: true }).eq('id', page.id);
+      if (error) throw error;
+      toast.success('Marcada como predeterminada');
+      await queryClient.invalidateQueries({ queryKey: ['checkout-pages'] });
+    } catch (e: any) {
+      toast.error(e.message ?? 'No se pudo marcar como predeterminada');
+    } finally {
+      setDefaulting(null);
+    }
+  };
 
   const creatorSlug = profile?.creator_slug;
 

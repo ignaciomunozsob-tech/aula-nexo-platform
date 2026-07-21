@@ -37,6 +37,7 @@ export default function CheckoutPageEditorPage() {
   const [productType, setProductType] = useState<ProductType>(presetProductType ?? 'course');
   const [productId, setProductId] = useState<string>(presetProductId ?? '');
   const [isPublished, setIsPublished] = useState(false);
+  const [isDefault, setIsDefault] = useState(false);
   const [blocks, setBlocks] = useState<CheckoutBlock[]>(DEFAULT_BLOCKS);
   const [theme, setTheme] = useState<CheckoutTheme>(DEFAULT_THEME);
   const [selectedBlockId, setSelectedBlockId] = useState<string>('hero');

@@ -124,11 +124,16 @@ export default function CheckoutPagesPage({ productFilter }: CheckoutPagesPagePr
           {pages.map((p) => (
             <Card key={p.id} className="p-4 flex items-center justify-between gap-4 flex-wrap">
               <div className="min-w-0">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <h3 className="font-semibold truncate">{p.name}</h3>
                   <Badge variant={p.is_published ? 'default' : 'secondary'}>
                     {p.is_published ? 'Publicada' : 'Borrador'}
                   </Badge>
+                  {p.is_default && (
+                    <Badge className="bg-primary/15 text-primary hover:bg-primary/20 border-primary/30">
+                      <Star className="h-3 w-3 mr-1 fill-current" /> Predeterminada
+                    </Badge>
+                  )}
                   {p.bump_enabled && <Badge variant="outline">Order bump</Badge>}
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -139,6 +144,11 @@ export default function CheckoutPagesPage({ productFilter }: CheckoutPagesPagePr
                 <Button variant="outline" size="sm" onClick={() => navigate(`/creator-app/checkout-pages/${p.id}/edit`)}>
                   <Edit className="h-4 w-4 mr-1" /> Editar
                 </Button>
+                {!p.is_default && (
+                  <Button variant="outline" size="sm" onClick={() => makeDefault(p)} disabled={defaulting === p.id}>
+                    <Star className="h-4 w-4 mr-1" /> {defaulting === p.id ? 'Guardando...' : 'Predeterminada'}
+                  </Button>
+                )}
                 {p.is_published && creatorSlug && (
                   <>
                     <Button variant="outline" size="sm" asChild>

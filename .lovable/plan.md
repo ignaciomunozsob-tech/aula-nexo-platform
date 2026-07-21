@@ -1,28 +1,34 @@
-## Objetivo
+# Verificación de Meta Pixel en páginas de pago personalizadas
 
-Que cada creador pueda tener **una página de pago personalizada marcada como "predeterminada" para un producto** (curso / evento / ebook / comunidad / sesión). Cuando cualquier visitante haga clic en "Inscribirse" o "Comprar" en la página pública del producto, si existe una página predeterminada publicada será redirigido a ella (para capturar nombre, correo, teléfono y ver el order bump). Si no hay ninguna marcada como predeterminada, sigue el flujo normal directo a MercadoPago.
+## Diagnóstico (verificado en vivo)
 
-## Cambios
+Probé la página de pago personalizada publicada `https://www.soynovu.cl/p/ignacio-munoz/meta-ads-taller` con Playwright, instrumentando `window.fbq` para capturar cada llamada al pixel.
 
-### 1. Base de datos
-- Agregar columna `is_default boolean NOT NULL DEFAULT false` a `checkout_pages`.
-- Índice único parcial: solo una página predeterminada por `(creator_id, product_type, product_id)` cuando `is_default = true` y `is_published = true`.
-- Actualizar la RPC `get_product_checkout_page` para devolver primero la marcada como `is_default = true` y publicada; si no hay, no devolver ninguna (así el flujo normal aplica).
+Evidencia capturada durante la carga de la página:
 
-### 2. Editor del creador (`CheckoutPagesPage` + `CheckoutPageEditorPage`)
-- En el editor: switch "Usar como página de pago predeterminada de este producto". Al activarlo y guardar, se desmarca cualquier otra página del mismo producto y se fuerza `is_published = true`.
-- En la lista: badge "Predeterminada" junto a las páginas marcadas y acción rápida "Marcar como predeterminada".
+```
+fbq('init', '740501283914731')
+fbq('trackSingle', '740501283914731', 'ViewContent', {
+  value: 7000, currency: 'CLP',
+  content_type: 'product', content_category: 'event',
+  content_ids: ['be227c43-…'], content_name: '3 pasos para lanzar…'
+})
+```
 
-### 3. Flujo de compra público (`useMercadoPagoCheckout.startCheckout`)
-- Antes de abrir el diálogo de invitado o llamar a MercadoPago, consultar `get_product_checkout_page`. Si devuelve una página predeterminada y no estamos ya en ella, redirigir a `/p/:creator_slug/:page_slug` (sin stash de datos, la página de pago recolecta todo).
-- Aplica a usuarios logueados y a invitados, en `CourseDetailPage`, `EventDetailPage`, `EbookDetailPage`, `SessionBookingPage`, `CommunityPage` y `MarketplaceView` (todos usan el mismo hook, por lo que el cambio es central).
-- Mantener el comportamiento actual del diálogo de invitado como fallback cuando no hay página predeterminada.
+Y Meta respondió con la petición `signals/config/740501283914731` desde `connect.facebook.net`, confirmando que el pixel del creador quedó inicializado en el dominio `soynovu.cl`.
 
-### 4. UX
-- En `CheckoutPage.tsx` (la página pública de pago personalizada) mantener el soporte actual de `sessionStorage` para invitados que llegan desde otras vías, sin cambios adicionales.
+## Cobertura actual del flujo personalizado
 
-## Detalles técnicos
+- **Entrada a `/p/:creator/:pageSlug`** → `ViewContent` con pixel del creador (`CheckoutPage.tsx`, useEffect línea 116-133), con guardián `useRef` para no duplicar.
+- **Clic en "Comprar ahora"** → `InitiateCheckout` en pixel del creador y en pixel global NOVU (`useMercadoPagoCheckout.ts` líneas 46-47).
+- **Redirección a `/compra-confirmada/{ref}`** → `Purchase` con `event_id = order.reference` (`PurchaseConfirmedPage.tsx`), deduplicado y marcado con `mark_order_pixel_fired`.
+- **Webhook de MercadoPago (server-side)** → `Purchase` a Meta CAPI con el mismo `event_id`, PII hasheada (email/IP/UA) y `capi_fired=true`.
 
-- La migración solo agrega columna, índice y actualiza la función SQL — sin cambios en policies.
-- La RPC `get_product_checkout_page` seguirá siendo `SECURITY DEFINER` y devolverá 0 o 1 fila; el frontend ya está preparado para ese contrato.
-- El cambio en `useMercadoPagoCheckout` se hará al inicio de `startCheckout` para cubrir tanto usuarios logueados como invitados con una sola ruta de código.
+## Conclusión
+
+No se requieren cambios: las páginas de pago personalizadas ya están totalmente instrumentadas con el pixel del creador y con CAPI. Cualquier compra por este flujo se registra igual que por el flujo estándar, e incluso si el comprador cierra el navegador antes de la página de confirmación, la venta llega a Meta por CAPI.
+
+## Plan
+
+- No hay archivos que modificar.
+- Al aprobar este plan, no se ejecutará ningún cambio.

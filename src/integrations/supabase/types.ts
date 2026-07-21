@@ -65,6 +65,7 @@ export type Database = {
           created_at: string
           creator_id: string
           id: string
+          is_default: boolean
           is_published: boolean
           name: string
           product_id: string
@@ -84,6 +85,7 @@ export type Database = {
           created_at?: string
           creator_id: string
           id?: string
+          is_default?: boolean
           is_published?: boolean
           name?: string
           product_id: string
@@ -103,6 +105,7 @@ export type Database = {
           created_at?: string
           creator_id?: string
           id?: string
+          is_default?: boolean
           is_published?: boolean
           name?: string
           product_id?: string

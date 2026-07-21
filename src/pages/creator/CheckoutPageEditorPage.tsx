@@ -134,7 +134,7 @@ export default function CheckoutPageEditorPage() {
       bump_enabled: bumpEnabled,
       bump_product_type: bumpEnabled ? bumpProductType : null,
       bump_product_id: bumpEnabled ? bumpProductId || null : null,
-      bump_discount_pct: bumpDiscountPct,
+      bump_discount_pct: Math.round(Number(bumpDiscountPct) || 0),
       bump_headline: bumpHeadline,
       bump_description: bumpDescription,
     };

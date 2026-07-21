@@ -73,6 +73,7 @@ export default function StudentManagement({ productId, productType }: StudentMan
           registered_at: r.registered_at,
           profiles: { name: r.name },
           email: r.email,
+          phone: r.phone,
         }));
       } else {
         const { data, error } = await (supabase as any).rpc("get_course_students", { _course_id: productId });
@@ -84,6 +85,7 @@ export default function StudentManagement({ productId, productType }: StudentMan
           purchased_at: r.purchased_at,
           profiles: { name: r.name },
           email: r.email,
+          phone: r.phone,
         }));
       }
     },

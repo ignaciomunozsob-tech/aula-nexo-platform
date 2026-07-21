@@ -128,10 +128,13 @@ export default function CheckoutPageEditorPage() {
     if (!productId) { toast.error('Selecciona un producto'); return; }
     if (!/^[a-z0-9-]{3,40}$/.test(slug)) { toast.error('Slug inválido (a-z, 0-9, -, 3-40 chars)'); return; }
     setSaving(true);
+    const willPublish = publish ?? isPublished;
+    const willBeDefault = isDefault && willPublish;
     const payload: any = {
       creator_id: user.id,
       product_type: productType, product_id: productId,
-      name, slug, is_published: publish ?? isPublished,
+      name, slug, is_published: willPublish,
+      is_default: willBeDefault,
       blocks, theme,
       bump_enabled: bumpEnabled,
       bump_product_type: bumpEnabled ? bumpProductType : null,
@@ -141,6 +144,16 @@ export default function CheckoutPageEditorPage() {
       bump_description: bumpDescription,
     };
     try {
+      // If this page is being marked as default, clear the flag on any other page for the same product first.
+      if (willBeDefault) {
+        let q = (supabase as any).from('checkout_pages').update({ is_default: false })
+          .eq('creator_id', user.id)
+          .eq('product_type', productType)
+          .eq('product_id', productId)
+          .eq('is_default', true);
+        if (!isNew) q = q.neq('id', id);
+        await q;
+      }
       if (isNew) {
         const { data, error } = await (supabase as any).from('checkout_pages').insert(payload).select().single();
         if (error) throw error;

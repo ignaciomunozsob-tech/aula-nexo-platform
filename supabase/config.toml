@@ -22,5 +22,3 @@ project_id = "oahdxazzbqsdgfwwqbaj"
     verify_jwt = false
   [functions.resend-purchase-emails]
     verify_jwt = false
-  [functions.backfill-purchase-emails]
-    verify_jwt = false

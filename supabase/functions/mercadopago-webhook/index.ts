@@ -180,39 +180,8 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Resolve product title + creator name once, reused for admin + creator emails
-      let productTitle = '—';
-      if (order.product_type === 'course') {
-        const { data } = await admin.from('courses').select('title').eq('id', order.product_id).maybeSingle();
-        productTitle = data?.title ?? productTitle;
-      } else if (order.product_type === 'ebook') {
-        const { data } = await admin.from('ebooks').select('title').eq('id', order.product_id).maybeSingle();
-        productTitle = data?.title ?? productTitle;
-      } else if (order.product_type === 'event') {
-        const { data } = await admin.from('events').select('title').eq('id', order.product_id).maybeSingle();
-        productTitle = data?.title ?? productTitle;
-      } else if (order.product_type === 'community') {
-        const { data } = await admin.from('communities').select('name').eq('id', order.product_id).maybeSingle();
-        productTitle = data?.name ?? productTitle;
-      }
-      let creatorName = '—';
-      let creatorAuthEmail: string | null = null;
-      if (order.creator_id) {
-        const { data } = await admin.from('profiles').select('name').eq('id', order.creator_id).maybeSingle();
-        creatorName = data?.name ?? creatorName;
-        try {
-          const { data: uRes } = await admin.auth.admin.getUserById(order.creator_id);
-          creatorAuthEmail = uRes?.user?.email ?? null;
-        } catch { /* ignore */ }
-      }
       const amountClp: number = order.amount_clp ?? 0;
-      const communityFeeClp: number = order.community_fee_clp ?? 0;
-      const commissionClp: number = order.platform_amount_clp ?? Math.round(amountClp * 0.10);
-      const netClp: number = order.creator_amount_clp ?? (amountClp - commissionClp - communityFeeClp);
-      const buyer: string = order.guest_email ?? buyerEmail ?? '—';
-      const saleDate = new Date().toLocaleString('es-CL', {
-        day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Santiago',
-      });
+
 
       // Meta Conversions API (server-side Purchase event).
       // Only fires if the creator has meta_pixel_id configured and we have the CAPI token.

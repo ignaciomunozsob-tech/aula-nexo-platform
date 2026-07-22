@@ -1,29 +1,22 @@
-## Estado actual — sí, los 4 flujos están activados
+## Verificación: correo de order bump solo se envía si hubo bump
 
-Revisé el webhook de MercadoPago (`mercadopago-webhook`) y en cada compra pagada se disparan hasta **4 correos**, cada uno con su propio flag idempotente para no duplicar:
+### Estado actual (verificado)
 
-| Destinatario | Cuándo | Template | Flag |
-|---|---|---|---|
-| **Comprador (producto principal)** | Siempre que hay `buyerEmail` | `buyer-course-purchase` / `buyer-ebook-purchase` / `buyer-community-purchase` / `event-registration-confirmation` | `buyer_email_sent` |
-| **Comprador (order bump)** | Solo si la compra incluye bump | mismo set según el tipo del bump | `bump_email_sent` |
-| **Creador** | Siempre que el creador tenga email | `creator-new-sale` | `creator_email_sent` |
-| **Admin NOVU** | Siempre | `admin-new-sale` | `admin_email_sent` |
+En `supabase/functions/_shared/purchase-emails.ts` (línea 181-182), el envío del correo de order bump está protegido por esta condición:
 
-Cada envío pasa por el helper `sendEmail` que **lanza excepción si falla**, así el flag solo se marca `true` cuando el correo quedó realmente encolado en `email_send_log`. Si algo falla, se reintenta en el próximo webhook de MercadoPago para esa misma orden.
+```ts
+!order.bump_email_sent && buyerEmail &&
+order.bump_product_type && order.bump_product_id && (order.bump_amount_clp ?? 0) > 0
+```
 
-## Qué recibe cada uno
+Es decir, se envía **solo si** la orden tiene los tres campos de bump poblados y el monto es mayor a 0. Si la persona no compró con order bump, esos campos quedan `null` y el bloque se salta por completo — no se manda ningún correo de bump.
 
-- **Comprador**: confirmación con nombre del producto, creador, link de acceso (curso/ebook/comunidad/evento), y si es cuenta nueva, el email con el que quedó registrada.
-- **Comprador con bump**: segundo correo separado con el acceso al producto del bump (curso, ebook, evento o comunidad).
-- **Creador**: aviso de nueva venta con producto, monto y datos del comprador.
-- **Admin**: aviso interno de nueva venta.
+El correo principal (curso/evento/ebook/comunidad) se envía siempre, independiente del bump.
 
-## Verificación propuesta
+### Plan
 
-Para confirmar en vivo que todo llega:
+1. **Auditar en base de datos** las órdenes recientes pagadas sin bump y confirmar que `bump_email_sent = false` y que **no** aparecen filas de correo con `idempotencyKey` que termine en `-bump` para esas órdenes en `email_send_log`.
+2. **Auditar** las órdenes recientes con bump y confirmar que sí tienen fila `-bump` en `email_send_log`.
+3. Si algún caso muestra un correo de bump enviado sin bump real, revisar el registro puntual y agregar guarda adicional; si todo está limpio, dejar constancia y cerrar.
 
-1. Consultar `email_send_log` filtrando por una `reference` reciente (ej. la última orden `paid`) y mostrar las 4 filas con status `sent`.
-2. Si en alguna orden reciente falta alguno de los 4, revisar el `error_message` de esa fila y corregir la causa puntual (dominio, template, dato faltante).
-3. Opcional: agregar un pequeño panel en el Creator App ("Notificaciones enviadas por venta") que muestre esos 4 flags para cada orden, para que el creador tenga visibilidad sin pedirlo.
-
-¿Quieres que ejecute la verificación (paso 1) sobre las últimas ventas y, si detecto algo faltante, lo arregle? ¿O prefieres además que agregue el panel del paso 3?
+No se anticipan cambios de código — la guarda ya existe y es correcta. El plan es puramente de verificación.

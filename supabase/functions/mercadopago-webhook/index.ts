@@ -181,6 +181,22 @@ Deno.serve(async (req) => {
       }
 
       const amountClp: number = order.amount_clp ?? 0;
+      // Product title lookup — needed by Meta CAPI custom_data below.
+      let productTitle = '—';
+      if (order.product_type === 'course') {
+        const { data } = await admin.from('courses').select('title').eq('id', order.product_id).maybeSingle();
+        productTitle = data?.title ?? productTitle;
+      } else if (order.product_type === 'ebook') {
+        const { data } = await admin.from('ebooks').select('title').eq('id', order.product_id).maybeSingle();
+        productTitle = data?.title ?? productTitle;
+      } else if (order.product_type === 'event') {
+        const { data } = await admin.from('events').select('title').eq('id', order.product_id).maybeSingle();
+        productTitle = data?.title ?? productTitle;
+      } else if (order.product_type === 'community') {
+        const { data } = await admin.from('communities').select('name').eq('id', order.product_id).maybeSingle();
+        productTitle = data?.name ?? productTitle;
+      }
+
 
 
       // Meta Conversions API (server-side Purchase event).

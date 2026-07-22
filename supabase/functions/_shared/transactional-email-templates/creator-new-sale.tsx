@@ -1,5 +1,5 @@
 import * as React from 'npm:react@18.3.1'
-import { Body, Button, Container, Head, Heading, Html, Preview, Section, Text, Hr } from 'npm:@react-email/components@0.0.22'
+import { Body, Button, Container, Head, Heading, Html, Img, Preview, Section, Text, Hr } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 import { LOGO_URL } from './brand.ts'
 

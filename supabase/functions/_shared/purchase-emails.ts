@@ -49,18 +49,31 @@ export async function sendPurchaseEmails(admin: any, order: any) {
     day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'America/Santiago',
   });
 
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+  const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const sendEmail = async (payload: Record<string, unknown>) => {
-    const { data, error } = await admin.functions.invoke('send-transactional-email', { body: payload });
-    if (error) {
-      console.error('send-transactional-email invoke error', {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/send-transactional-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+        'apikey': SERVICE_ROLE_KEY,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      console.error('send-transactional-email failed', {
+        status: res.status,
+        body: text,
         templateName: (payload as any).templateName,
         recipientEmail: (payload as any).recipientEmail,
-        error,
       });
-      throw error;
+      throw new Error(`send-transactional-email ${res.status}: ${text}`);
     }
-    return data;
+    return await res.json().catch(() => ({}));
   };
+
 
   const buildBuyerEmailForProduct = async (
     productType: string,

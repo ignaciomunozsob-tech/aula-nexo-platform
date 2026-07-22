@@ -15,18 +15,22 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    // Auth: allow either an admin JWT or the platform service-role key.
+    // Auth: allow admin JWT, service-role bearer, or a matching shared internal secret.
     const authHeader = req.headers.get('Authorization') ?? '';
-    if (!authHeader.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const jwt = authHeader.slice(7);
+    const internalSecret = req.headers.get('x-internal-secret') ?? '';
+    const MP_WEBHOOK_SECRET = Deno.env.get('MERCADOPAGO_WEBHOOK_SECRET') ?? '';
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const isServiceRole = jwt === SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!isServiceRole) {
+    const isInternal = MP_WEBHOOK_SECRET.length > 0 && internalSecret === MP_WEBHOOK_SECRET;
+    const jwt = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    const isServiceRole = jwt.length > 0 && jwt === SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!isInternal && !isServiceRole) {
+      if (!jwt) {
+        return new Response(JSON.stringify({ error: 'unauthorized' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
         global: { headers: { Authorization: `Bearer ${jwt}` } },
       });
@@ -45,6 +49,7 @@ Deno.serve(async (req) => {
         });
       }
     }
+
 
 
     const body = await req.json().catch(() => ({}));

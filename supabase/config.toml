@@ -16,7 +16,8 @@ project_id = "oahdxazzbqsdgfwwqbaj"
   [functions.send-2fa-code]
     verify_jwt = false
   [functions.send-transactional-email]
-    verify_jwt = true
+    verify_jwt = false
+
   [functions.send-welcome-email]
     verify_jwt = false
   [functions.resend-purchase-emails]

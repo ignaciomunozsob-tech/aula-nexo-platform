@@ -1,34 +1,65 @@
-# Verificación de Meta Pixel en páginas de pago personalizadas
+## Problema
 
-## Diagnóstico (verificado en vivo)
+Revisé los últimos pagos y `email_send_log` en la base de datos y confirmé lo que reportas:
 
-Probé la página de pago personalizada publicada `https://www.soynovu.cl/p/ignacio-munoz/meta-ads-taller` con Playwright, instrumentando `window.fbq` para capturar cada llamada al pixel.
+- **Al comprador**: en compras de curso/ebook/comunidad nunca se le manda correo (0 envíos históricos de `buyer-course-purchase`, `buyer-ebook-purchase`, `buyer-community-purchase`). En eventos sólo se han enviado 3 confirmaciones frente a decenas de compras.
+- **Al creador**: aunque la orden queda marcada como "creador notificado" (`creator_email_sent = true`), en el log de correos sólo aparecen 2 envíos reales de `creator-new-sale`. El resto quedó marcado como enviado sin que el correo se llegara a encolar.
+- **Order bump**: cuando alguien compra un evento + ebook de bump, sólo se le da acceso al ebook, pero nunca recibe un correo con el link/acceso al producto del bump.
 
-Evidencia capturada durante la carga de la página:
+## Causa
 
+En `supabase/functions/mercadopago-webhook/index.ts` el webhook llama a `admin.functions.invoke('send-transactional-email', ...)` y **no verifica el `error` que devuelve**. Cuando la invocación falla (por ejemplo un 4xx/5xx de la función de correo), la promesa igual resuelve sin lanzar excepción, el `catch` no se ejecuta y el flag `creator_email_sent` / `admin_email_sent` / `buyer_email_sent` se marca en `true`. Consecuencia: el sistema "cree" que ya avisó y nunca reintenta.
+
+Además:
+- El bloque de "buyer email" excluye `product_type = 'event'` y el bloque de evento no respeta ni marca `buyer_email_sent`, así que un webhook duplicado dispara varios correos.
+- No hay ninguna rama que envíe el correo del producto del order bump al comprador.
+
+## Cambios
+
+Todo en `supabase/functions/mercadopago-webhook/index.ts` (una sola función, un solo redeploy):
+
+1. **Helper `sendEmail(payload)`** que llama a `admin.functions.invoke('send-transactional-email', ...)`, revisa `error` y lo lanza. Así, si el envío falla, el `catch` correspondiente evita marcar el flag y el webhook puede reintentar en el próximo callback de MercadoPago.
+
+2. **Correo al comprador (producto principal)**: reemplazar el bloque actual por una función `buildBuyerEmailForProduct(type, id)` que arme el template correcto para `course`, `ebook`, `community`. Guardar el flag `buyer_email_sent = true` sólo después de que `sendEmail` haya resuelto sin errores.
+
+3. **Correo al comprador (evento)**: mover el bloque de `event-registration-confirmation` al mismo flujo con guardia `!order.buyer_email_sent` e idempotency key `evt-reg-<orderId>`, y marcar el flag al terminar. Elimina los envíos duplicados por reintentos del webhook.
+
+4. **Correo al comprador (order bump)**: si `bump_product_type` + `bump_product_id` existen y el bump se cobró (`bump_amount_clp > 0`), enviar un segundo correo al comprador con el template del tipo de bump (`buyer-ebook-purchase`, `buyer-course-purchase`, `buyer-community-purchase`, o `event-registration-confirmation` si el bump es un evento). Usar idempotency key `<orderId>-buyer-bump-<type>` y una nueva columna `orders.bump_email_sent` (default false) para no repetir.
+
+5. **Correos al admin y al creador**: dejar la lógica existente pero pasarla por el nuevo `sendEmail(...)` para que los flags sólo se marquen tras un envío real. Esto por sí solo destapa el envío que hoy no está llegando.
+
+### Migración de base de datos
+
+Nueva columna en `orders`:
+
+```sql
+ALTER TABLE public.orders
+  ADD COLUMN IF NOT EXISTS bump_email_sent boolean NOT NULL DEFAULT false;
 ```
-fbq('init', '740501283914731')
-fbq('trackSingle', '740501283914731', 'ViewContent', {
-  value: 7000, currency: 'CLP',
-  content_type: 'product', content_category: 'event',
-  content_ids: ['be227c43-…'], content_name: '3 pasos para lanzar…'
-})
+
+No hay cambios de RLS ni de grants (la tabla ya está configurada); sólo se agrega la columna.
+
+### Deploy
+
+Re-desplegar `mercadopago-webhook` después de aplicar la migración. No se tocan templates ni la función `send-transactional-email`.
+
+## Qué NO cambia
+
+- No se modifica ningún template de correo, ni el asunto, ni el remitente.
+- No se toca `send-transactional-email`, el sistema de colas, ni la infraestructura de emails.
+- No se cambia la lógica de fulfillment (acceso al producto y al bump siguen otorgándose igual).
+- No se reenvían correos históricos: la migración sólo aplica desde la próxima compra.
+
+## Verificación
+
+Después del deploy, en la próxima venta real (o una de prueba) revisar en la base:
+
+```sql
+SELECT reference, buyer_email_sent, creator_email_sent, admin_email_sent, bump_email_sent
+FROM orders WHERE reference = 'NOV-...';
+SELECT template_name, recipient_email, status, error_message
+FROM email_send_log WHERE created_at > now() - interval '1 hour'
+ORDER BY created_at DESC;
 ```
 
-Y Meta respondió con la petición `signals/config/740501283914731` desde `connect.facebook.net`, confirmando que el pixel del creador quedó inicializado en el dominio `soynovu.cl`.
-
-## Cobertura actual del flujo personalizado
-
-- **Entrada a `/p/:creator/:pageSlug`** → `ViewContent` con pixel del creador (`CheckoutPage.tsx`, useEffect línea 116-133), con guardián `useRef` para no duplicar.
-- **Clic en "Comprar ahora"** → `InitiateCheckout` en pixel del creador y en pixel global NOVU (`useMercadoPagoCheckout.ts` líneas 46-47).
-- **Redirección a `/compra-confirmada/{ref}`** → `Purchase` con `event_id = order.reference` (`PurchaseConfirmedPage.tsx`), deduplicado y marcado con `mark_order_pixel_fired`.
-- **Webhook de MercadoPago (server-side)** → `Purchase` a Meta CAPI con el mismo `event_id`, PII hasheada (email/IP/UA) y `capi_fired=true`.
-
-## Conclusión
-
-No se requieren cambios: las páginas de pago personalizadas ya están totalmente instrumentadas con el pixel del creador y con CAPI. Cualquier compra por este flujo se registra igual que por el flujo estándar, e incluso si el comprador cierra el navegador antes de la página de confirmación, la venta llega a Meta por CAPI.
-
-## Plan
-
-- No hay archivos que modificar.
-- Al aprobar este plan, no se ejecutará ningún cambio.
+Esperado: los 4 flags `true` para una compra con bump, y una fila `sent` por cada correo (comprador principal, comprador bump, creador, admin).

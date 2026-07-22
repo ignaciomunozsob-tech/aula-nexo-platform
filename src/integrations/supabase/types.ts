@@ -1479,6 +1479,7 @@ export type Database = {
           admin_email_sent: boolean
           amount_clp: number
           bump_amount_clp: number
+          bump_email_sent: boolean
           bump_product_id: string | null
           bump_product_type: string | null
           buyer_email_sent: boolean
@@ -1512,6 +1513,7 @@ export type Database = {
           admin_email_sent?: boolean
           amount_clp: number
           bump_amount_clp?: number
+          bump_email_sent?: boolean
           bump_product_id?: string | null
           bump_product_type?: string | null
           buyer_email_sent?: boolean
@@ -1545,6 +1547,7 @@ export type Database = {
           admin_email_sent?: boolean
           amount_clp?: number
           bump_amount_clp?: number
+          bump_email_sent?: boolean
           bump_product_id?: string | null
           bump_product_type?: string | null
           buyer_email_sent?: boolean

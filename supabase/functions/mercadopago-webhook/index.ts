@@ -271,92 +271,168 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Buyer confirmation email (course / ebook / community).
-      // Event has its own event-registration-confirmation template below.
-      if (!order.buyer_email_sent && buyerEmail && order.product_type !== 'event') {
+      // Helper: invoke send-transactional-email and THROW on error so we don't
+      // falsely mark *_email_sent flags when the send actually failed.
+      const sendEmail = async (payload: Record<string, unknown>) => {
+        const { data, error } = await admin.functions.invoke('send-transactional-email', { body: payload });
+        if (error) {
+          console.error('send-transactional-email invoke error', {
+            templateName: (payload as any).templateName,
+            recipientEmail: (payload as any).recipientEmail,
+            error,
+          });
+          throw error;
+        }
+        return data;
+      };
+
+      // Helper: build buyer email spec for a non-event product (main or bump).
+      const buildBuyerEmailForProduct = async (
+        productType: string,
+        productId: string,
+      ): Promise<{ templateName: string; templateData: Record<string, unknown> } | null> => {
+        let title = '—';
+        let redirect: string | null = null;
+        if (productType === 'course') {
+          const { data } = await admin.from('courses').select('title, redirect_url').eq('id', productId).maybeSingle();
+          title = data?.title ?? title; redirect = data?.redirect_url ?? null;
+        } else if (productType === 'ebook') {
+          const { data } = await admin.from('ebooks').select('title, redirect_url').eq('id', productId).maybeSingle();
+          title = data?.title ?? title; redirect = data?.redirect_url ?? null;
+        } else if (productType === 'community') {
+          const { data } = await admin.from('communities').select('name').eq('id', productId).maybeSingle();
+          title = data?.name ?? title;
+        } else {
+          return null;
+        }
+        const defaultAccessUrl = productType === 'course'
+          ? `${PUBLIC_SITE_URL}/app/course/${productId}`
+          : `${PUBLIC_SITE_URL}/app/my-courses`;
+        const accessUrl = redirect || defaultAccessUrl;
+        if (productType === 'course') {
+          return { templateName: 'buyer-course-purchase', templateData: { buyerName: '', productTitle: title, creatorName, accessUrl, isNewUser: isNew, accountEmail: buyerEmail } };
+        }
+        if (productType === 'ebook') {
+          return { templateName: 'buyer-ebook-purchase', templateData: { buyerName: '', productTitle: title, creatorName, accessUrl, isNewUser: isNew, accountEmail: buyerEmail } };
+        }
+        // community
+        return { templateName: 'buyer-community-purchase', templateData: { buyerName: '', communityName: title, creatorName, accessUrl, isNewUser: isNew, accountEmail: buyerEmail } };
+      };
+
+      // Helper: build event confirmation email data.
+      const buildEventEmail = async (eventId: string, recipient: string, attendeeNameOverride?: string) => {
+        const { data: ev } = await admin.from('events')
+          .select('title, event_date, duration_minutes, event_type, location, meeting_url, redirect_url, creator_id')
+          .eq('id', eventId).maybeSingle();
+        if (!ev) return null;
+        let evCreatorName = creatorName;
+        if ((!evCreatorName || evCreatorName === '—') && ev.creator_id) {
+          const { data: cp } = await admin.from('profiles').select('name').eq('id', ev.creator_id).maybeSingle();
+          evCreatorName = cp?.name ?? '';
+        }
+        const d = ev.event_date ? new Date(ev.event_date) : null;
+        const dateFmt = d ? d.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Santiago' }) : '';
+        const timeFmt = d ? d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Santiago' }) + ' hrs' : '';
+        return {
+          attendeeName: attendeeNameOverride ?? (order.guest_name ?? ''),
+          eventTitle: ev.title,
+          eventDateFormatted: dateFmt,
+          eventTimeFormatted: timeFmt,
+          durationMin: ev.duration_minutes ?? 60,
+          eventType: ev.event_type === 'in_person' ? 'in_person' : 'online',
+          meetingUrl: ev.meeting_url ?? '',
+          location: ev.location ?? '',
+          creatorName: evCreatorName,
+          redirectUrl: ev.redirect_url ?? '',
+          isNewUser: isNew,
+          accountEmail: recipient,
+        };
+      };
+
+      // Buyer confirmation email — MAIN product.
+      if (!order.buyer_email_sent && buyerEmail) {
         try {
-          let templateName: string | null = null;
-          let templateData: Record<string, unknown> | null = null;
-          let productPublicUrl: string | null = order.metadata?.product_url ?? null;
-          let redirectUrl: string | null = order.metadata?.redirect_url ?? null;
-
-          // Try to enrich with product-specific redirect_url when not set on order metadata
-          if (!redirectUrl) {
-            if (order.product_type === 'course') {
-              const { data } = await admin.from('courses').select('redirect_url').eq('id', order.product_id).maybeSingle();
-              redirectUrl = data?.redirect_url ?? null;
-            } else if (order.product_type === 'ebook') {
-              const { data } = await admin.from('ebooks').select('redirect_url').eq('id', order.product_id).maybeSingle();
-              redirectUrl = data?.redirect_url ?? null;
+          if (order.product_type === 'event') {
+            let attendeeName = order.guest_name ?? '';
+            if (order.user_id && !attendeeName) {
+              const { data: prof } = await admin.from('profiles').select('name').eq('id', order.user_id).maybeSingle();
+              attendeeName = prof?.name ?? '';
             }
-          }
-
-          const defaultAccessUrl = order.product_type === 'course'
-            ? `${PUBLIC_SITE_URL}/app/course/${order.product_id}`
-            : `${PUBLIC_SITE_URL}/app/my-courses`;
-          const accessUrl = redirectUrl || productPublicUrl || defaultAccessUrl;
-
-          if (order.product_type === 'course') {
-            templateName = 'buyer-course-purchase';
-            templateData = {
-              buyerName: '',
-              productTitle,
-              creatorName,
-              accessUrl,
-              isNewUser: isNew,
-              accountEmail: buyerEmail,
-            };
-          } else if (order.product_type === 'ebook') {
-            templateName = 'buyer-ebook-purchase';
-            templateData = {
-              buyerName: '',
-              productTitle,
-              creatorName,
-              accessUrl,
-              isNewUser: isNew,
-              accountEmail: buyerEmail,
-            };
-          } else if (order.product_type === 'community') {
-            templateName = 'buyer-community-purchase';
-            templateData = {
-              buyerName: '',
-              communityName: productTitle,
-              creatorName,
-              accessUrl,
-              isNewUser: isNew,
-              accountEmail: buyerEmail,
-            };
-          }
-
-          if (templateName && templateData) {
-            await admin.functions.invoke('send-transactional-email', {
-              body: {
-                templateName,
+            const data = await buildEventEmail(order.product_id, buyerEmail, attendeeName);
+            if (data) {
+              await sendEmail({
+                templateName: 'event-registration-confirmation',
+                recipientEmail: buyerEmail,
+                idempotencyKey: `evt-reg-${order.id}`,
+                templateData: data,
+              });
+              await admin.from('orders').update({ buyer_email_sent: true }).eq('id', order.id);
+            }
+          } else {
+            const spec = await buildBuyerEmailForProduct(order.product_type, order.product_id);
+            if (spec) {
+              await sendEmail({
+                templateName: spec.templateName,
                 recipientEmail: buyerEmail,
                 idempotencyKey: `${order.id}-buyer-${order.product_type}`,
-                templateData,
-              },
-            });
-            await admin.from('orders').update({ buyer_email_sent: true }).eq('id', order.id);
+                templateData: spec.templateData,
+              });
+              await admin.from('orders').update({ buyer_email_sent: true }).eq('id', order.id);
+            }
           }
         } catch (e) {
           console.warn('buyer purchase email error', e);
         }
       }
 
+      // Order bump: send buyer a separate confirmation for the bump product.
+      if (
+        !order.bump_email_sent &&
+        buyerEmail &&
+        order.bump_product_type &&
+        order.bump_product_id &&
+        (order.bump_amount_clp ?? 0) > 0
+      ) {
+        try {
+          if (order.bump_product_type === 'event') {
+            const data = await buildEventEmail(order.bump_product_id, buyerEmail);
+            if (data) {
+              await sendEmail({
+                templateName: 'event-registration-confirmation',
+                recipientEmail: buyerEmail,
+                idempotencyKey: `evt-reg-${order.id}-bump`,
+                templateData: data,
+              });
+              await admin.from('orders').update({ bump_email_sent: true }).eq('id', order.id);
+            }
+          } else {
+            const spec = await buildBuyerEmailForProduct(order.bump_product_type, order.bump_product_id);
+            if (spec) {
+              await sendEmail({
+                templateName: spec.templateName,
+                recipientEmail: buyerEmail,
+                idempotencyKey: `${order.id}-buyer-bump-${order.bump_product_type}`,
+                templateData: spec.templateData,
+              });
+              await admin.from('orders').update({ bump_email_sent: true }).eq('id', order.id);
+            }
+          }
+        } catch (e) {
+          console.warn('bump buyer email error', e);
+        }
+      }
+
       // Notify admin (idempotent via admin_email_sent guard)
       if (!order.admin_email_sent) {
         try {
-          await admin.functions.invoke('send-transactional-email', {
-            body: {
-              templateName: 'admin-new-sale',
-              idempotencyKey: `${order.id}-admin-sale`,
-              templateData: {
-                productTitle, productType: order.product_type,
-                creatorName, buyerEmail: buyer,
-                amountClp, commissionClp, communityFeeClp, netClp,
-                orderId: order.reference ?? order.id,
-              },
+          await sendEmail({
+            templateName: 'admin-new-sale',
+            idempotencyKey: `${order.id}-admin-sale`,
+            templateData: {
+              productTitle, productType: order.product_type,
+              creatorName, buyerEmail: buyer,
+              amountClp, commissionClp, communityFeeClp, netClp,
+              orderId: order.reference ?? order.id,
             },
           });
           await admin.from('orders').update({ admin_email_sent: true }).eq('id', order.id);
@@ -368,82 +444,26 @@ Deno.serve(async (req) => {
       // Notify creator (idempotent via creator_email_sent guard)
       if (!order.creator_email_sent && creatorAuthEmail) {
         try {
-          await admin.functions.invoke('send-transactional-email', {
-            body: {
-              templateName: 'creator-new-sale',
-              recipientEmail: creatorAuthEmail,
-              idempotencyKey: `${order.id}-creator-sale`,
-              templateData: {
-                creatorName,
-                productTitle,
-                buyerLabel: buyer,
-                amountClp,
-                commissionClp,
-                communityFeeClp,
-                netClp,
-                reference: order.reference ?? '',
-                saleDate,
-                financesUrl: `${PUBLIC_SITE_URL}/creator-app/finances`,
-              },
+          await sendEmail({
+            templateName: 'creator-new-sale',
+            recipientEmail: creatorAuthEmail,
+            idempotencyKey: `${order.id}-creator-sale`,
+            templateData: {
+              creatorName,
+              productTitle,
+              buyerLabel: buyer,
+              amountClp,
+              commissionClp,
+              communityFeeClp,
+              netClp,
+              reference: order.reference ?? '',
+              saleDate,
+              financesUrl: `${PUBLIC_SITE_URL}/creator-app/finances`,
             },
           });
           await admin.from('orders').update({ creator_email_sent: true }).eq('id', order.id);
         } catch (e) {
           console.warn('creator-new-sale email error', e);
-        }
-      }
-
-      // Event confirmation email (paid events)
-      if (order.product_type === 'event') {
-        try {
-          const { data: ev } = await admin.from('events')
-            .select('title, event_date, duration_minutes, event_type, location, meeting_url, redirect_url, creator_id')
-            .eq('id', order.product_id).maybeSingle();
-          if (ev) {
-            let creatorName = '';
-            if (ev.creator_id) {
-              const { data: cp } = await admin.from('profiles').select('name').eq('id', ev.creator_id).maybeSingle();
-              creatorName = cp?.name ?? '';
-            }
-            let attendeeEmail: string | null = order.guest_email ?? null;
-            let attendeeName = '';
-            if (order.user_id) {
-              const { data: prof } = await admin.from('profiles').select('name').eq('id', order.user_id).maybeSingle();
-              attendeeName = prof?.name ?? '';
-              if (!attendeeEmail) {
-                const { data: uRes } = await admin.auth.admin.getUserById(order.user_id);
-                attendeeEmail = uRes?.user?.email ?? null;
-              }
-            }
-            if (attendeeEmail) {
-              const d = ev.event_date ? new Date(ev.event_date) : null;
-              const dateFmt = d ? d.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Santiago' }) : '';
-              const timeFmt = d ? d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Santiago' }) + ' hrs' : '';
-              await admin.functions.invoke('send-transactional-email', {
-                body: {
-                  templateName: 'event-registration-confirmation',
-                  recipientEmail: attendeeEmail,
-                  idempotencyKey: `evt-reg-${order.id}`,
-                  templateData: {
-                    attendeeName,
-                    eventTitle: ev.title,
-                    eventDateFormatted: dateFmt,
-                    eventTimeFormatted: timeFmt,
-                    durationMin: ev.duration_minutes ?? 60,
-                    eventType: ev.event_type === 'in_person' ? 'in_person' : 'online',
-                    meetingUrl: ev.meeting_url ?? '',
-                    location: ev.location ?? '',
-                    creatorName,
-                    redirectUrl: ev.redirect_url ?? '',
-                    isNewUser: !!((order.metadata as any)?.is_new_user),
-                    accountEmail: attendeeEmail,
-                  },
-                },
-              });
-            }
-          }
-        } catch (e) {
-          console.warn('event-registration-confirmation email error', e);
         }
       }
     }

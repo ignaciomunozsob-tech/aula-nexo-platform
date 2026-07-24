@@ -128,21 +128,28 @@ Deno.serve(async (req: Request): Promise<Response> => {
       }
     }
 
-    // Send through Lovable Emails (queued, branded)
-    const { error: invokeError } = await supabaseAdmin.functions.invoke(
-      "send-transactional-email",
-      {
-        body: {
-          templateName: "2fa-code",
-          recipientEmail: email,
-          idempotencyKey: `2fa-${userId}-${expiresAt.getTime()}`,
-          templateData: { name: profile?.name ?? undefined, code },
-        },
-      }
-    );
+    // Send through Lovable Emails (queued, branded).
+    // Use direct fetch with service-role headers — supabase-js `.functions.invoke()`
+    // does not forward the service role key reliably with new sb_secret_* keys,
+    // causing send-transactional-email to return 403.
+    const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-transactional-email`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        "apikey": SUPABASE_SERVICE_ROLE_KEY,
+      },
+      body: JSON.stringify({
+        templateName: "2fa-code",
+        recipientEmail: email,
+        idempotencyKey: `2fa-${userId}-${expiresAt.getTime()}`,
+        templateData: { name: profile?.name ?? undefined, code },
+      }),
+    });
 
-    if (invokeError) {
-      console.error("[send-2fa-code] Failed to enqueue email:", invokeError);
+    if (!emailRes.ok) {
+      const errText = await emailRes.text().catch(() => "");
+      console.error("[send-2fa-code] Failed to enqueue email:", emailRes.status, errText);
       return new Response(JSON.stringify({ error: "Error al enviar el código" }), {
         status: 500, headers: { "Content-Type": "application/json", ...corsHeaders },
       });

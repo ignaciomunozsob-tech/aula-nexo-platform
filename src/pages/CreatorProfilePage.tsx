@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { initPixel, trackEventFor } from '@/lib/metaPixel';
 import { SEO } from '@/components/SEO';
+import { CreatorProfileSkeleton } from '@/components/ui/page-skeletons';
 
 function getEmbedUrl(url: string): string | null {
   if (!url) return null;
@@ -164,9 +165,7 @@ export default function CreatorProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <CreatorProfileSkeleton />
     );
   }
 

@@ -12,6 +12,7 @@ import { sanitizeHtml } from "@/lib/sanitize";
 import { useMercadoPagoCheckout } from "@/hooks/useMercadoPagoCheckout";
 import { GuestCheckoutDialog } from "@/components/checkout/GuestCheckoutDialog";
 import { initPixel, trackEventFor } from "@/lib/metaPixel";
+import { ProductDetailSkeleton } from '@/components/ui/page-skeletons';
 
 interface Props {
   ebookId?: string;
@@ -61,7 +62,7 @@ export default function EbookDetailPage({ ebookId: ebookIdProp }: Props) {
   }, [ebook?.id]);
 
   if (isLoading) {
-    return <div className="flex items-center justify-center py-24"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return <ProductDetailSkeleton />;
   }
 
   if (!ebook) {

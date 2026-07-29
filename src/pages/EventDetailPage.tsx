@@ -13,6 +13,7 @@ import { GuestCheckoutDialog } from "@/components/checkout/GuestCheckoutDialog";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { initPixel, trackEventFor } from "@/lib/metaPixel";
+import { ProductDetailSkeleton } from '@/components/ui/page-skeletons';
 
 interface Props {
   eventId?: string;
@@ -77,7 +78,7 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
   }, [event?.id, event?.creator_id]);
 
   if (isLoading) {
-    return <div className="flex items-center justify-center py-24"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return <ProductDetailSkeleton />;
   }
 
   if (!event) {

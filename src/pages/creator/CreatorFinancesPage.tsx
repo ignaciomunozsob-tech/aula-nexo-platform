@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { DashboardSkeleton } from '@/components/ui/page-skeletons';
 
 function formatCLP(value: number) {
   return new Intl.NumberFormat("es-CL", {
@@ -139,9 +140,7 @@ export default function CreatorFinancesPage() {
 
   if (isLoading) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 flex justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
+      <DashboardSkeleton />
     );
   }
 

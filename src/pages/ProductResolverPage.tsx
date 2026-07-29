@@ -7,6 +7,7 @@ import EventDetailPage from "@/pages/EventDetailPage";
 import EbookDetailPage from "@/pages/EbookDetailPage";
 import SessionBookingPage from "@/pages/SessionBookingPage";
 import NotFound from "@/pages/NotFound";
+import { ProductDetailSkeleton } from '@/components/ui/page-skeletons';
 
 /**
  * Universal resolver for pretty product URLs: /:creatorSlug/:slug
@@ -32,9 +33,7 @@ export default function ProductResolverPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
+      <ProductDetailSkeleton />
     );
   }
 

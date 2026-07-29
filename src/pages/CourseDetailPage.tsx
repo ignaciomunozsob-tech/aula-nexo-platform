@@ -40,6 +40,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMercadoPagoCheckout } from "@/hooks/useMercadoPagoCheckout";
 import { GuestCheckoutDialog } from "@/components/checkout/GuestCheckoutDialog";
 import { initPixel, trackEventFor } from "@/lib/metaPixel";
+import { ProductDetailSkeleton } from '@/components/ui/page-skeletons';
 
 
 function formatCLP(value: number | null | undefined) {
@@ -299,9 +300,7 @@ export default function CourseDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-6xl mx-auto px-4 py-16 flex justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
+      <ProductDetailSkeleton />
     );
   }
 

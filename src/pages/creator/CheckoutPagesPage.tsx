@@ -94,7 +94,7 @@ export default function CheckoutPagesPage({ productFilter }: CheckoutPagesPagePr
           <h1 className="text-2xl font-bold">Páginas de pago</h1>
           <p className="text-muted-foreground text-sm">
             {productFilter
-              ? 'Personaliza la página de checkout de este producto y activa una oferta adicional.'
+              ? 'Personaliza la página de checkout de este producto.'
               : 'Personaliza la página de checkout antes de pasar a MercadoPago.'}
           </p>
         </div>
@@ -134,7 +134,6 @@ export default function CheckoutPagesPage({ productFilter }: CheckoutPagesPagePr
                       <Star className="h-3 w-3 mr-1 fill-current" /> Predeterminada
                     </Badge>
                   )}
-                  {p.bump_enabled && <Badge variant="outline">Oferta adicional</Badge>}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   /p/{creatorSlug}/{p.slug} · {p.product_type}

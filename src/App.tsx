@@ -44,6 +44,8 @@ const Verify2FAPage = lazy(() => import("@/pages/auth/Verify2FAPage"));
 const StudentLayout = lazy(() => import("@/components/layout/StudentLayout").then(m => ({ default: m.StudentLayout })));
 const StudentDashboard = lazy(() => import("@/pages/app/StudentDashboard"));
 const MyCoursesPage = lazy(() => import("@/pages/app/MyCoursesPage"));
+const StudentEventPage = lazy(() => import("@/pages/app/StudentEventPage"));
+
 const StudentMarketplacePage = lazy(() => import("@/pages/app/StudentMarketplacePage"));
 const CoursePlayerPage = lazy(() => import("@/pages/app/CoursePlayerPage"));
 const StudentSettings = lazy(() => import("@/pages/app/StudentSettings"));
@@ -143,6 +145,8 @@ const App = () => (
                     <Route path="my-courses" element={<MyCoursesPage />} />
                     <Route path="marketplace" element={<StudentMarketplacePage />} />
                     <Route path="course/:id" element={<CoursePlayerPage />} />
+                    <Route path="event/:id" element={<StudentEventPage />} />
+
                     <Route path="settings" element={<StudentSettings />} />
                   </Route>
 

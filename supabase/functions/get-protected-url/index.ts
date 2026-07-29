@@ -88,11 +88,14 @@ Deno.serve(async (req) => {
       path = e.file_url
       let allowed = isAdmin || e.creator_id === userId
       if (!allowed) {
+        // Direct purchase OR purchased as an order bump on another product.
         const { data: ord } = await admin.from('orders').select('id')
-          .eq('user_id', userId).eq('product_type', 'ebook')
-          .eq('product_id', id).eq('status', 'paid').maybeSingle()
-        allowed = !!ord
+          .eq('user_id', userId).eq('status', 'paid')
+          .or(`and(product_type.eq.ebook,product_id.eq.${id}),and(bump_product_type.eq.ebook,bump_product_id.eq.${id})`)
+          .limit(1)
+        allowed = !!(ord && ord.length > 0)
       }
+
       if (!allowed) return json({ error: 'Forbidden' }, 403)
     } else {
       return json({ error: 'Invalid kind' }, 400)

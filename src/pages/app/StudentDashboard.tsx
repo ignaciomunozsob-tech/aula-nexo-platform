@@ -134,7 +134,8 @@ export default function StudentDashboard() {
       kind: 'event',
       title: ev.title,
       cover: ev.cover_image_url,
-      to: '/app/my-courses',
+      to: `/app/event/${ev.id}`,
+
       progress: past ? 100 : 0,
       progressLabel: past
         ? 'Finalizado'

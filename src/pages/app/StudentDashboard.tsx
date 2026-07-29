@@ -2,16 +2,18 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
-import { BookOpen, Play, Trophy, ArrowRight } from 'lucide-react';
+import { BookOpen, Play, ArrowRight, Calendar, FileText, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SEO } from '@/components/SEO';
+import { useMyEbooks, useMySessionBookings } from '@/hooks/useStudentLibrary';
 
 export default function StudentDashboard() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
 
   const { data: enrollments } = useQuery({
-    queryKey: ['my-enrollments'],
+    queryKey: ['my-enrollments', user?.id],
     queryFn: async () => {
+      if (!user) return [];
       const { data, error } = await supabase
         .from('enrollments')
         .select(`
@@ -23,6 +25,7 @@ export default function StudentDashboard() {
             cover_image_url
           )
         `)
+        .eq('user_id', user.id)
         .eq('status', 'active')
         .order('purchased_at', { ascending: false })
         .limit(4);
@@ -30,7 +33,27 @@ export default function StudentDashboard() {
       if (error) throw error;
       return data;
     },
+    enabled: !!user,
   });
+
+  const { data: eventRegistrations } = useQuery({
+    queryKey: ['my-events-count', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('event_registrations')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'registered');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const { data: ebooks } = useMyEbooks();
+  const { data: bookings } = useMySessionBookings();
+
 
   return (
     <div className="p-8">

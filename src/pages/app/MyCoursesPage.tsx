@@ -268,7 +268,8 @@ export default function MyCoursesPage() {
                           })}
                         </p>
                       </div>
-                    </div>
+                    </Link>
+
                   );
                 })}
               </div>

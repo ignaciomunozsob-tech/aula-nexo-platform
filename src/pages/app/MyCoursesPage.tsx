@@ -272,7 +272,26 @@ export default function MyCoursesPage() {
               </div>
             </TabsContent>
           )}
+
+          {hasEbooks && (
+            <TabsContent value="ebooks">
+              <MyEbooksGrid ebooks={ebooks!} />
+            </TabsContent>
+          )}
+
+          {hasSessions && (
+            <TabsContent value="sessions">
+              <MySessionsList bookings={bookings!} />
+            </TabsContent>
+          )}
+
+          {hasOrders && (
+            <TabsContent value="orders">
+              <MyPurchasesTable orders={paidOrders!} titles={purchaseTitles} />
+            </TabsContent>
+          )}
         </Tabs>
+
       )}
     </div>
   );

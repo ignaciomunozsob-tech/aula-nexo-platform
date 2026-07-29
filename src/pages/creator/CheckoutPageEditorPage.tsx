@@ -42,7 +42,7 @@ export default function CheckoutPageEditorPage() {
   const [theme, setTheme] = useState<CheckoutTheme>(DEFAULT_THEME);
   const [selectedBlockId, setSelectedBlockId] = useState<string>('hero');
 
-  // Order bump
+  // Extras
   const [bumpEnabled, setBumpEnabled] = useState(false);
   const [bumpProductType, setBumpProductType] = useState<ProductType>('ebook');
   const [bumpProductId, setBumpProductId] = useState<string>('');
@@ -190,7 +190,7 @@ export default function CheckoutPageEditorPage() {
         <TabsList>
           <TabsTrigger value="design">Diseño</TabsTrigger>
           <TabsTrigger value="config">Configuración</TabsTrigger>
-          <TabsTrigger value="bump">Oferta adicional</TabsTrigger>
+          <TabsTrigger value="bump">Extras</TabsTrigger>
         </TabsList>
 
         <TabsContent value="design">
@@ -324,13 +324,13 @@ export default function CheckoutPageEditorPage() {
           <Card className="p-4 space-y-4 max-w-2xl">
             <div className="flex items-center gap-2">
               <Switch checked={bumpEnabled} onCheckedChange={setBumpEnabled} />
-              <Label>Activar oferta adicional</Label>
+              <Label>Activar extra en el checkout</Label>
             </div>
             {bumpEnabled && (
               <>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label>Tipo de producto bump</Label>
+                    <Label>Tipo de producto</Label>
                     <Select value={bumpProductType} onValueChange={(v) => { setBumpProductType(v as ProductType); setBumpProductId(''); }}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -362,7 +362,7 @@ export default function CheckoutPageEditorPage() {
 
                 </div>
                 <div>
-                  <Label>Titular del bump</Label>
+                  <Label>Titular</Label>
                   <Input value={bumpHeadline} onChange={(e) => setBumpHeadline(e.target.value)} />
                 </div>
                 <div>

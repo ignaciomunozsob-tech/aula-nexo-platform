@@ -233,10 +233,12 @@ export default function MyCoursesPage() {
                   const event = registration.events as any;
                   const eventDate = new Date(event.event_date);
                   return (
-                    <div
+                    <Link
                       key={registration.id}
-                      className="bg-card border border-border rounded-lg overflow-hidden"
+                      to={`/app/event/${event.id}`}
+                      className="bg-card border border-border rounded-lg overflow-hidden hover:border-primary/50 transition-colors block"
                     >
+
                       <div className="aspect-video bg-muted relative overflow-hidden">
                         {event.cover_image_url ? (
                           <img

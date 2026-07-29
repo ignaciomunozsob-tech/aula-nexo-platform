@@ -290,6 +290,12 @@ export default function StudentManagement({ productId, productType }: StudentMan
           </span>
         </div>
 
+        <div className="flex items-center gap-2">
+        <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={isLoading || activeItems.length === 0}>
+          <Download className="h-4 w-4 mr-2" />
+          Exportar CSV
+        </Button>
+
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button variant="outline" size="sm">

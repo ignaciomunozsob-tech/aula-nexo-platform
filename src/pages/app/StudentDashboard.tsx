@@ -152,6 +152,61 @@ export default function StudentDashboard() {
           </div>
         )}
       </div>
+
+      {/* Other products */}
+      {(!!ebooks?.length || !!bookings?.length) && (
+        <div className="bg-card border border-border rounded-lg p-6 mt-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold">Otros productos adquiridos</h2>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/app/my-courses">
+                Ver todos
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Link>
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {ebooks?.slice(0, 3).map((e) => (
+              <Link
+                key={e.ebook_id}
+                to="/app/my-courses"
+                className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted transition-colors"
+              >
+                <div className="w-10 h-10 rounded bg-warning/10 flex items-center justify-center flex-shrink-0">
+                  <FileText className="h-5 w-5 text-warning" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{e.title}</p>
+                  <p className="text-xs text-muted-foreground">E-book</p>
+                </div>
+              </Link>
+            ))}
+            {bookings?.slice(0, 3).map((b) => (
+              <Link
+                key={b.id}
+                to="/app/my-courses"
+                className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted transition-colors"
+              >
+                <div className="w-10 h-10 rounded bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <CalendarDays className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{b.session_title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Sesión 1:1 ·{' '}
+                    {new Date(b.start_at).toLocaleDateString('es-CL', {
+                      day: 'numeric',
+                      month: 'short',
+                      timeZone: 'America/Santiago',
+                    })}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

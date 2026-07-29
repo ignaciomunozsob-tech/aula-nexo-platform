@@ -16,7 +16,7 @@ export function StudentSidebar() {
   const isCreator = profile?.role === 'creator' || profile?.role === 'admin';
 
   const navItems = [
-    { to: '/app/my-courses', icon: BookOpen, label: 'Mis Cursos', end: false },
+    { to: '/app/my-courses', icon: BookOpen, label: 'Mis Productos', end: false },
     { to: '/app/marketplace', icon: Store, label: 'Marketplace', end: false },
     { to: '/app/settings', icon: Settings, label: 'Configuración', end: false },
   ];

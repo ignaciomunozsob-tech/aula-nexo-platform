@@ -2,10 +2,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
-import { BookOpen, Play, ShoppingBag, Calendar, LogOut } from 'lucide-react';
+import { BookOpen, Play, ShoppingBag, Calendar, LogOut, FileText, CalendarDays, Receipt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SEO } from '@/components/SEO';
+import { useMyEbooks, useMySessionBookings, useMyPaidOrders } from '@/hooks/useStudentLibrary';
+import { MyEbooksGrid } from '@/components/student/MyEbooksGrid';
+import { MySessionsList } from '@/components/student/MySessionsList';
+import { MyPurchasesTable } from '@/components/student/MyPurchasesTable';
+
 
 export default function MyCoursesPage() {
   const { user, signOut } = useAuth();
@@ -71,10 +76,31 @@ export default function MyCoursesPage() {
     enabled: !!user,
   });
 
-  const isLoading = loadingCourses || loadingEvents;
-  const hasCourses = enrollments && enrollments.length > 0;
-  const hasEvents = eventRegistrations && eventRegistrations.length > 0;
-  const hasNoProducts = !hasCourses && !hasEvents;
+  const { data: ebooks, isLoading: loadingEbooks } = useMyEbooks();
+  const { data: bookings, isLoading: loadingSessions } = useMySessionBookings();
+  const { data: paidOrders, isLoading: loadingOrders } = useMyPaidOrders();
+
+  const isLoading = loadingCourses || loadingEvents || loadingEbooks || loadingSessions || loadingOrders;
+  const hasCourses = !!enrollments && enrollments.length > 0;
+  const hasEvents = !!eventRegistrations && eventRegistrations.length > 0;
+  const hasEbooks = !!ebooks && ebooks.length > 0;
+  const hasSessions = !!bookings && bookings.length > 0;
+  const hasOrders = !!paidOrders && paidOrders.length > 0;
+  const hasNoProducts = !hasCourses && !hasEvents && !hasEbooks && !hasSessions && !hasOrders;
+
+  // Titles for the purchase history table
+  const purchaseTitles: Record<string, string> = {};
+  enrollments?.forEach((e) => {
+    const c = e.courses as any;
+    if (c) purchaseTitles[c.id] = c.title;
+  });
+  eventRegistrations?.forEach((r) => {
+    const ev = r.events as any;
+    if (ev) purchaseTitles[ev.id] = ev.title;
+  });
+  ebooks?.forEach((e) => {
+    purchaseTitles[e.ebook_id] = e.title;
+  });
 
   // Determine available tabs
   const availableTabs: { id: string; label: string; icon: React.ReactNode }[] = [];
@@ -84,8 +110,18 @@ export default function MyCoursesPage() {
   if (hasEvents) {
     availableTabs.push({ id: 'events', label: 'Eventos', icon: <Calendar className="h-4 w-4" /> });
   }
+  if (hasEbooks) {
+    availableTabs.push({ id: 'ebooks', label: 'E-books', icon: <FileText className="h-4 w-4" /> });
+  }
+  if (hasSessions) {
+    availableTabs.push({ id: 'sessions', label: 'Agendamientos', icon: <CalendarDays className="h-4 w-4" /> });
+  }
+  if (hasOrders) {
+    availableTabs.push({ id: 'orders', label: 'Compras', icon: <Receipt className="h-4 w-4" /> });
+  }
 
   const defaultTab = availableTabs[0]?.id || 'courses';
+
 
   return (
     <div className="p-8">
@@ -236,7 +272,26 @@ export default function MyCoursesPage() {
               </div>
             </TabsContent>
           )}
+
+          {hasEbooks && (
+            <TabsContent value="ebooks">
+              <MyEbooksGrid ebooks={ebooks!} />
+            </TabsContent>
+          )}
+
+          {hasSessions && (
+            <TabsContent value="sessions">
+              <MySessionsList bookings={bookings!} />
+            </TabsContent>
+          )}
+
+          {hasOrders && (
+            <TabsContent value="orders">
+              <MyPurchasesTable orders={paidOrders!} titles={purchaseTitles} />
+            </TabsContent>
+          )}
         </Tabs>
+
       )}
     </div>
   );

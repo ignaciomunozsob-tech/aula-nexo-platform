@@ -2,16 +2,18 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
-import { BookOpen, Play, Trophy, ArrowRight } from 'lucide-react';
+import { BookOpen, Play, ArrowRight, Calendar, FileText, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SEO } from '@/components/SEO';
+import { useMyEbooks, useMySessionBookings } from '@/hooks/useStudentLibrary';
 
 export default function StudentDashboard() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
 
   const { data: enrollments } = useQuery({
-    queryKey: ['my-enrollments'],
+    queryKey: ['my-enrollments', user?.id],
     queryFn: async () => {
+      if (!user) return [];
       const { data, error } = await supabase
         .from('enrollments')
         .select(`
@@ -23,6 +25,7 @@ export default function StudentDashboard() {
             cover_image_url
           )
         `)
+        .eq('user_id', user.id)
         .eq('status', 'active')
         .order('purchased_at', { ascending: false })
         .limit(4);
@@ -30,7 +33,27 @@ export default function StudentDashboard() {
       if (error) throw error;
       return data;
     },
+    enabled: !!user,
   });
+
+  const { data: eventRegistrations } = useQuery({
+    queryKey: ['my-events-count', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('event_registrations')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'registered');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const { data: ebooks } = useMyEbooks();
+  const { data: bookings } = useMySessionBookings();
+
 
   return (
     <div className="p-8">
@@ -50,41 +73,27 @@ export default function StudentDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid sm:grid-cols-3 gap-4 mb-8">
-        <div className="bg-card border border-border rounded-lg p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-              <BookOpen className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{enrollments?.length || 0}</p>
-              <p className="text-sm text-muted-foreground">Cursos inscritos</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-card border border-border rounded-lg p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
-              <Trophy className="h-6 w-6 text-success" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">0</p>
-              <p className="text-sm text-muted-foreground">Completados</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {[
+          { icon: <BookOpen className="h-6 w-6 text-primary" />, bg: 'bg-primary/10', value: enrollments?.length || 0, label: 'Cursos' },
+          { icon: <Calendar className="h-6 w-6 text-success" />, bg: 'bg-success/10', value: eventRegistrations?.length || 0, label: 'Eventos' },
+          { icon: <FileText className="h-6 w-6 text-warning" />, bg: 'bg-warning/10', value: ebooks?.length || 0, label: 'E-books' },
+          { icon: <CalendarDays className="h-6 w-6 text-primary" />, bg: 'bg-primary/10', value: bookings?.length || 0, label: 'Sesiones 1:1' },
+        ].map((stat) => (
+          <div key={stat.label} className="bg-card border border-border rounded-lg p-6">
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-lg ${stat.bg} flex items-center justify-center`}>
+                {stat.icon}
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{stat.value}</p>
+                <p className="text-sm text-muted-foreground">{stat.label}</p>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="bg-card border border-border rounded-lg p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-warning/10 flex items-center justify-center">
-              <Play className="h-6 w-6 text-warning" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{enrollments?.length || 0}</p>
-              <p className="text-sm text-muted-foreground">En progreso</p>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
+
 
       {/* Recent Courses */}
       <div className="bg-card border border-border rounded-lg p-6">
@@ -143,6 +152,61 @@ export default function StudentDashboard() {
           </div>
         )}
       </div>
+
+      {/* Other products */}
+      {(!!ebooks?.length || !!bookings?.length) && (
+        <div className="bg-card border border-border rounded-lg p-6 mt-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold">Otros productos adquiridos</h2>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/app/my-courses">
+                Ver todos
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Link>
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {ebooks?.slice(0, 3).map((e) => (
+              <Link
+                key={e.ebook_id}
+                to="/app/my-courses"
+                className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted transition-colors"
+              >
+                <div className="w-10 h-10 rounded bg-warning/10 flex items-center justify-center flex-shrink-0">
+                  <FileText className="h-5 w-5 text-warning" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{e.title}</p>
+                  <p className="text-xs text-muted-foreground">E-book</p>
+                </div>
+              </Link>
+            ))}
+            {bookings?.slice(0, 3).map((b) => (
+              <Link
+                key={b.id}
+                to="/app/my-courses"
+                className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted transition-colors"
+              >
+                <div className="w-10 h-10 rounded bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <CalendarDays className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{b.session_title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Sesión 1:1 ·{' '}
+                    {new Date(b.start_at).toLocaleDateString('es-CL', {
+                      day: 'numeric',
+                      month: 'short',
+                      timeZone: 'America/Santiago',
+                    })}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

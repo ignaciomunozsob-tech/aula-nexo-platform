@@ -145,6 +145,8 @@ const App = () => (
                     <Route path="my-courses" element={<MyCoursesPage />} />
                     <Route path="marketplace" element={<StudentMarketplacePage />} />
                     <Route path="course/:id" element={<CoursePlayerPage />} />
+                    <Route path="event/:id" element={<StudentEventPage />} />
+
                     <Route path="settings" element={<StudentSettings />} />
                   </Route>
 

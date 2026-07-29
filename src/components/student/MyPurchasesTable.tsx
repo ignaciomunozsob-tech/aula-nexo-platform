@@ -46,12 +46,8 @@ export function MyPurchasesTable({
                 <span className="flex items-center gap-2 flex-wrap">
                   {typeIcon[o.product_type]}
                   {titles?.[o.product_id] || 'Producto'}
-                  {o.is_bump && (
-                    <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                      Order bump
-                    </span>
-                  )}
                 </span>
+
               </td>
               <td className="p-4 text-muted-foreground">{typeLabel[o.product_type] || o.product_type}</td>
 

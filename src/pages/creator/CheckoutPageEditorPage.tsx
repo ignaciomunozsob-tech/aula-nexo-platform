@@ -190,7 +190,7 @@ export default function CheckoutPageEditorPage() {
         <TabsList>
           <TabsTrigger value="design">Diseño</TabsTrigger>
           <TabsTrigger value="config">Configuración</TabsTrigger>
-          <TabsTrigger value="bump">Order bump</TabsTrigger>
+          <TabsTrigger value="bump">Oferta adicional</TabsTrigger>
         </TabsList>
 
         <TabsContent value="design">
@@ -324,7 +324,7 @@ export default function CheckoutPageEditorPage() {
           <Card className="p-4 space-y-4 max-w-2xl">
             <div className="flex items-center gap-2">
               <Switch checked={bumpEnabled} onCheckedChange={setBumpEnabled} />
-              <Label>Activar order bump</Label>
+              <Label>Activar oferta adicional</Label>
             </div>
             {bumpEnabled && (
               <>

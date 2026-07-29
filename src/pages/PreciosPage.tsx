@@ -52,7 +52,7 @@ const features: Array<{ icon: any; label: string; badge?: string }> = [
   { icon: Award, label: 'Certificados automáticos' },
   { icon: LineChart, label: 'Estadísticas' },
   { icon: Target, label: 'Píxel de Meta' },
-  { icon: ShoppingCart, label: 'Order bump' },
+  { icon: ShoppingCart, label: 'Oferta adicional' },
   { icon: ShoppingBag, label: 'Carritos abandonados' },
   { icon: Handshake, label: 'Programa de afiliados' },
   { icon: Ticket, label: 'Cupones de descuento' },

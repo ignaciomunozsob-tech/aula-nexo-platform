@@ -377,6 +377,7 @@ export default function StudentManagement({ productId, productType }: StudentMan
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Tabs defaultValue="enrolled" className="w-full">

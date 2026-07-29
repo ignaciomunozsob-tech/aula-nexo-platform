@@ -204,7 +204,7 @@ export default function StudentDashboard() {
         <h2 className="text-lg font-semibold">Mis productos</h2>
         <Button variant="ghost" size="sm" asChild>
           <Link to="/app/my-courses">
-            Ver detalle
+            Ver todos mis productos
             <ArrowRight className="h-4 w-4 ml-1" />
           </Link>
         </Button>

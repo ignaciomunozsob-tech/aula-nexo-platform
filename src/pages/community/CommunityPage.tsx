@@ -15,6 +15,7 @@ import { useMercadoPagoCheckout } from '@/hooks/useMercadoPagoCheckout';
 import { GuestCheckoutDialog } from '@/components/checkout/GuestCheckoutDialog';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { ListSkeleton } from '@/components/ui/page-skeletons';
 
 export default function CommunityPage() {
   const { slug } = useParams<{ slug: string }>();

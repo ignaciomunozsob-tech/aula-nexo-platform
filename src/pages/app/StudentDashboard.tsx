@@ -73,41 +73,27 @@ export default function StudentDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid sm:grid-cols-3 gap-4 mb-8">
-        <div className="bg-card border border-border rounded-lg p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-              <BookOpen className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{enrollments?.length || 0}</p>
-              <p className="text-sm text-muted-foreground">Cursos inscritos</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-card border border-border rounded-lg p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
-              <Trophy className="h-6 w-6 text-success" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">0</p>
-              <p className="text-sm text-muted-foreground">Completados</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {[
+          { icon: <BookOpen className="h-6 w-6 text-primary" />, bg: 'bg-primary/10', value: enrollments?.length || 0, label: 'Cursos' },
+          { icon: <Calendar className="h-6 w-6 text-success" />, bg: 'bg-success/10', value: eventRegistrations?.length || 0, label: 'Eventos' },
+          { icon: <FileText className="h-6 w-6 text-warning" />, bg: 'bg-warning/10', value: ebooks?.length || 0, label: 'E-books' },
+          { icon: <CalendarDays className="h-6 w-6 text-primary" />, bg: 'bg-primary/10', value: bookings?.length || 0, label: 'Sesiones 1:1' },
+        ].map((stat) => (
+          <div key={stat.label} className="bg-card border border-border rounded-lg p-6">
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-lg ${stat.bg} flex items-center justify-center`}>
+                {stat.icon}
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{stat.value}</p>
+                <p className="text-sm text-muted-foreground">{stat.label}</p>
+              </div>
             </div>
           </div>
-        </div>
-        <div className="bg-card border border-border rounded-lg p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-warning/10 flex items-center justify-center">
-              <Play className="h-6 w-6 text-warning" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{enrollments?.length || 0}</p>
-              <p className="text-sm text-muted-foreground">En progreso</p>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
+
 
       {/* Recent Courses */}
       <div className="bg-card border border-border rounded-lg p-6">

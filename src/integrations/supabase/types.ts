@@ -2039,6 +2039,24 @@ export type Database = {
         Args: { _lesson_id: string }
         Returns: string
       }
+      get_my_event_details: {
+        Args: { _event_id: string }
+        Returns: {
+          cover_image_url: string
+          creator_id: string
+          creator_name: string
+          creator_slug: string
+          description: string
+          duration_minutes: number
+          event_date: string
+          event_type: string
+          id: string
+          location: string
+          meeting_url: string
+          redirect_url: string
+          title: string
+        }[]
+      }
       get_my_google_connection: {
         Args: never
         Returns: {

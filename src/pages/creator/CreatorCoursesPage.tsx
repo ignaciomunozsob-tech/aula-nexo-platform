@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+import { ListSkeleton } from '@/components/ui/page-skeletons';
   Table,
   TableBody,
   TableCell,
@@ -153,7 +154,7 @@ export default function CreatorCoursesPage() {
             <DialogTitle>Alumnos inscritos - {selectedCourse?.title}</DialogTitle>
           </DialogHeader>
           {loadingStudents ? (
-            <div className="py-8 text-center text-muted-foreground">Cargando...</div>
+            <ListSkeleton rows={3} />
           ) : students && students.length > 0 ? (
             <Table>
               <TableHeader>

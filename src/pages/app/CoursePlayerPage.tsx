@@ -25,6 +25,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import CourseCommunityFeed from '@/components/community/CourseCommunityFeed';
+import { PlayerSkeleton } from '@/components/ui/page-skeletons';
 
 export default function CoursePlayerPage() {
   const { id } = useParams<{ id: string }>();
@@ -269,9 +270,7 @@ export default function CoursePlayerPage() {
 
   if ((enrollmentLoading && !isPreviewMode) || (creatorCheckLoading && isPreviewMode)) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <PlayerSkeleton />
     );
   }
 

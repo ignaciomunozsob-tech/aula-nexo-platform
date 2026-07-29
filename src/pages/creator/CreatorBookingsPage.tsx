@@ -15,6 +15,7 @@ import { es } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "@/styles/calendar.css";
 import CreatorAvailabilityPage from "./CreatorAvailabilityPage";
+import { ListSkeleton } from '@/components/ui/page-skeletons';
 
 const locales = { es };
 const localizer = dateFnsLocalizer({
@@ -217,7 +218,7 @@ export default function CreatorBookingsPage() {
         <TabsContent value="calendar" className="mt-4">
           <Card>
             <CardContent className="p-2 sm:p-4">
-              {loadingCal && <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto" /></div>}
+              {loadingCal && <div className="p-6"><ListSkeleton rows={3} /></div>}
               <div className="h-[500px] sm:h-[650px]">
                 <Calendar
                   localizer={localizer}
@@ -258,7 +259,7 @@ export default function CreatorBookingsPage() {
         </TabsContent>
 
         <TabsContent value="list" className="mt-4 space-y-4">
-          {loadingList ? <Loader2 className="animate-spin" /> : (
+          {loadingList ? <ListSkeleton rows={4} /> : (
             <>
               <Card>
                 <CardHeader><CardTitle>Próximas ({upcoming.length})</CardTitle></CardHeader>

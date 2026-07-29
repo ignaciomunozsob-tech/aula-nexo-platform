@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Star, User, MessageSquare } from 'lucide-react';
+import { DashboardSkeleton } from '@/components/ui/page-skeletons';
 
 function StarRating({ value }: { value: number }) {
   return (
@@ -49,9 +50,7 @@ export default function CreatorReviewsPage() {
 
   if (isLoading) {
     return (
-      <div className="p-4 sm:p-6 lg:p-8 flex justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
+      <DashboardSkeleton />
     );
   }
 

@@ -10,6 +10,7 @@ import { CheckoutPageRenderer, type ContactState } from '@/components/checkout-b
 import { DEFAULT_BLOCKS, DEFAULT_THEME } from '@/lib/checkoutBlocks';
 import { initPixel, trackEventFor } from '@/lib/metaPixel';
 import { Loader2 } from 'lucide-react';
+import { CheckoutSkeleton } from '@/components/ui/page-skeletons';
 
 interface Props { embed?: boolean }
 
@@ -147,9 +148,7 @@ export default function CheckoutPage({ embed = false }: Props) {
 
   if (isLoading || !page || !products?.main) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <CheckoutSkeleton />
     );
   }
 

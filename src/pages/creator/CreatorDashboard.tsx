@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/table";
 
 import { Loader2, Plus, BookOpen, Users, TrendingUp, CalendarDays } from "lucide-react";
+import { ListSkeleton } from '@/components/ui/page-skeletons';
 
 type RangeKey = "7d" | "30d" | "90d" | "all";
 
@@ -316,10 +317,7 @@ export default function CreatorDashboard() {
 
         <CardContent className="space-y-6">
           {loading ? (
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Cargando finanzas…
-            </div>
+            <ListSkeleton rows={3} />
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

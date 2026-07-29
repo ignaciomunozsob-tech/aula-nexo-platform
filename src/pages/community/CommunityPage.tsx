@@ -15,6 +15,7 @@ import { useMercadoPagoCheckout } from '@/hooks/useMercadoPagoCheckout';
 import { GuestCheckoutDialog } from '@/components/checkout/GuestCheckoutDialog';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { ListSkeleton } from '@/components/ui/page-skeletons';
 
 export default function CommunityPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -136,7 +137,7 @@ export default function CommunityPage() {
   };
 
   if (loadingCommunity) {
-    return <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+    return <div className="max-w-3xl mx-auto p-6"><ListSkeleton rows={4} /></div>;
   }
   if (!community) {
     return <div className="p-8 text-center">Comunidad no encontrada.</div>;

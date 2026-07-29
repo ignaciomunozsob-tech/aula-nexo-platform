@@ -24,6 +24,7 @@ import PurchaseConfirmedPage from "@/pages/PurchaseConfirmedPage";
 import LoginPage from "@/pages/auth/LoginPage";
 import SignupPage from "@/pages/auth/SignupPage";
 import NotFound from "@/pages/NotFound";
+import { RouteSkeleton } from '@/components/ui/page-skeletons';
 
 // Lazy: todo lo demás
 const CoursesPage = lazy(() => import("@/pages/CoursesPage"));
@@ -90,9 +91,7 @@ const queryClient = new QueryClient({
 });
 
 const RouteFallback = () => (
-  <div className="flex items-center justify-center py-24">
-    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-  </div>
+  <RouteSkeleton />
 );
 
 const App = () => (

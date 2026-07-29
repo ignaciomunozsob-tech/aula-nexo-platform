@@ -11,6 +11,7 @@ import { Loader2, Clock, Calendar as CalIcon, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import DOMPurify from "dompurify";
 import { initPixel, trackEventFor } from "@/lib/metaPixel";
+import { ProductDetailSkeleton } from '@/components/ui/page-skeletons';
 
 interface Props {
   sessionIdOverride?: string;
@@ -144,7 +145,7 @@ export default function SessionBookingPage({ sessionIdOverride }: Props = {}) {
     }
   };
 
-  if (loadingSession) return <div className="p-12 text-center"><Loader2 className="animate-spin mx-auto" /></div>;
+  if (loadingSession) return <ProductDetailSkeleton />;
   if (!session) return <div className="p-12 text-center">Sesión no encontrada.</div>;
 
   return (

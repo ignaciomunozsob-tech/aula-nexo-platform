@@ -27,7 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Users, UserPlus, Trash2 } from "lucide-react";
+import { Loader2, Users, UserPlus, Trash2, Download } from "lucide-react";
 import { z } from "zod";
 
 function formatDate(date: string) {
@@ -235,6 +235,50 @@ export default function StudentManagement({ productId, productType }: StudentMan
 
   const productLabel = productType === "course" ? "curso" : productType === "ebook" ? "e-book" : "evento";
 
+  const escapeCsv = (value: unknown) => {
+    const str = value === null || value === undefined ? "" : String(value);
+    // Prevent CSV formula injection in spreadsheet apps
+    const safe = /^[=+\-@]/.test(str) ? `'${str}` : str;
+    return `"${safe.replace(/"/g, '""')}"`;
+  };
+
+  const handleExportCsv = () => {
+    if (activeItems.length === 0) {
+      toast({
+        title: "Sin datos para exportar",
+        description: `Aún no hay alumnos inscritos en este ${productLabel}.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const header = ["Nombre", "Correo", "Teléfono", "Fecha de inscripción", "Estado"];
+    const rows = activeItems.map((item: any) => [
+      item.profiles?.name || "Usuario",
+      item.email || "",
+      item.phone || "",
+      formatDate(item.purchased_at || item.registered_at),
+      item.status === "active" || item.status === "registered" ? "Activo" : item.status,
+    ]);
+
+    const csv = [header, ...rows].map((r) => r.map(escapeCsv).join(";")).join("\r\n");
+    // BOM so Excel detecta UTF-8 y muestra bien los acentos
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `alumnos-${productType}-${productId}-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Exportación lista",
+      description: `Se exportaron ${activeItems.length} alumno(s) en formato CSV.`,
+    });
+  };
+
   return (
     <div className="bg-card border rounded-lg p-6">
       <div className="flex items-center justify-between mb-4">
@@ -245,6 +289,12 @@ export default function StudentManagement({ productId, productType }: StudentMan
             ({activeItems.length} inscrito{activeItems.length !== 1 ? "s" : ""})
           </span>
         </div>
+
+        <div className="flex items-center gap-2">
+        <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={isLoading || activeItems.length === 0}>
+          <Download className="h-4 w-4 mr-2" />
+          Exportar CSV
+        </Button>
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -327,6 +377,7 @@ export default function StudentManagement({ productId, productType }: StudentMan
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Tabs defaultValue="enrolled" className="w-full">

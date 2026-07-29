@@ -43,12 +43,18 @@ export function MyPurchasesTable({
           {orders.map((o) => (
             <tr key={o.id} className="border-b border-border last:border-0">
               <td className="p-4 font-medium">
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2 flex-wrap">
                   {typeIcon[o.product_type]}
                   {titles?.[o.product_id] || 'Producto'}
+                  {o.is_bump && (
+                    <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                      Order bump
+                    </span>
+                  )}
                 </span>
               </td>
               <td className="p-4 text-muted-foreground">{typeLabel[o.product_type] || o.product_type}</td>
+
               <td className="p-4 font-mono text-xs text-muted-foreground">{o.reference || '—'}</td>
               <td className="p-4">{clp(o.amount_clp)}</td>
               <td className="p-4 text-muted-foreground">

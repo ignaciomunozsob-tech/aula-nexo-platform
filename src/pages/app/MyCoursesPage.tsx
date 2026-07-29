@@ -2,10 +2,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
-import { BookOpen, Play, ShoppingBag, Calendar, LogOut } from 'lucide-react';
+import { BookOpen, Play, ShoppingBag, Calendar, LogOut, FileText, CalendarDays, Receipt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SEO } from '@/components/SEO';
+import { useMyEbooks, useMySessionBookings, useMyPaidOrders } from '@/hooks/useStudentLibrary';
+import { MyEbooksGrid } from '@/components/student/MyEbooksGrid';
+import { MySessionsList } from '@/components/student/MySessionsList';
+import { MyPurchasesTable } from '@/components/student/MyPurchasesTable';
+
 
 export default function MyCoursesPage() {
   const { user, signOut } = useAuth();

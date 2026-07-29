@@ -33,10 +33,12 @@ function productLink(row: OrderRow): string {
   switch (row.product_type) {
     case 'course':
       return `/app/course/${row.product_id}`;
-    case 'ebook':
     case 'event':
+      return `/app/event/${row.product_id}`;
+    case 'ebook':
     case 'community':
       return '/app/my-courses';
+
     default:
       return '/app';
   }

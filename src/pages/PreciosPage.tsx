@@ -10,7 +10,6 @@ import {
   Award,
   LineChart,
   Target,
-  ShoppingCart,
   ShoppingBag,
   Handshake,
   Ticket,

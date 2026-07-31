@@ -227,15 +227,18 @@ export default function CoursePlayerPage() {
     });
   }, [nextVideoLesson?.id, enrollment, isPreviewMode, qcPrefetch]);
 
-  // Select first lesson by default
+  // Select first available lesson by default (skips empty modules)
   useEffect(() => {
     if (modules && modules.length > 0 && !selectedLessonId) {
-      const firstLesson = (modules[0].lessons as any[])?.[0];
+      const firstLesson = modules
+        .flatMap((m: any) => ((m.lessons as any[]) || []))
+        .find(Boolean);
       if (firstLesson) {
         setSelectedLessonId(firstLesson.id);
       }
     }
   }, [modules, selectedLessonId]);
+
 
   // Mark lesson complete mutation
   const markCompleteMutation = useMutation({

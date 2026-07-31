@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { SEO } from '@/components/SEO';
 import { ProductDetailSkeleton } from '@/components/ui/page-skeletons';
 import { detectLink, googleCalendarUrl } from '@/lib/links';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { ArrowLeft, CalendarDays, Clock, MapPin, Video, CalendarPlus, Loader2, PlayCircle } from 'lucide-react';
 
 type EventDetails = {

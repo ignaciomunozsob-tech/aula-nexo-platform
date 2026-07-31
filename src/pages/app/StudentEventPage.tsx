@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SEO } from '@/components/SEO';
 import { ProductDetailSkeleton } from '@/components/ui/page-skeletons';
 import { detectLink, googleCalendarUrl } from '@/lib/links';
-import { ArrowLeft, CalendarDays, Clock, MapPin, Video, CalendarPlus } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Clock, MapPin, Video, CalendarPlus, Loader2, PlayCircle } from 'lucide-react';
 
 type EventDetails = {
   id: string;
@@ -22,6 +23,8 @@ type EventDetails = {
   creator_id: string;
   creator_name: string | null;
   creator_slug: string | null;
+  recording_video_id: string | null;
+  recording_status: string | null;
 };
 
 export default function StudentEventPage() {

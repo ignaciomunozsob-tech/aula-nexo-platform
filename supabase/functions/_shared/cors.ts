@@ -19,6 +19,8 @@ function isAllowedOrigin(origin: string | null): boolean {
     const u = new URL(origin);
     if (u.hostname.endsWith(".lovable.app")) return true;
     if (u.hostname.endsWith(".lovable.dev")) return true;
+    if (u.hostname.endsWith(".lovableproject.com")) return true;
+    if (u.hostname === "localhost" || u.hostname === "127.0.0.1") return true;
   } catch {
     return false;
   }

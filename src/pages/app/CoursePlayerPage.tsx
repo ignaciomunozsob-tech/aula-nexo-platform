@@ -160,7 +160,7 @@ export default function CoursePlayerPage() {
   });
   // autoplay=false → el alumno debe presionar play manualmente.
   const bunnyEmbedUrl = bunnySignedEmbed?.url
-    ? `${bunnySignedEmbed.url}&autoplay=false&preload=true`
+    ? `${bunnySignedEmbed.url}&autoplay=false&preload=true&responsive=true`
     : undefined;
 
   // Poll Bunny status every 15s while the video is still processing.
@@ -464,10 +464,9 @@ export default function CoursePlayerPage() {
                     <iframe
                       src={bunnyEmbedUrl}
                       referrerPolicy="no-referrer"
-                      loading="lazy"
                       className="w-full h-full"
                       style={{ border: 'none' }}
-                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
                       allowFullScreen
                     />
                   ) : (

@@ -580,8 +580,6 @@ export default function EventEditorPage() {
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Este link será visible solo para los inscritos
-                <p className="text-xs text-muted-foreground mt-1">
-                  Este link será visible solo para los inscritos
                 </p>
 
                 <div className="mt-6 border-t border-border pt-4">

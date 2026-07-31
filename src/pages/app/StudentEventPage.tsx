@@ -51,9 +51,27 @@ export default function StudentEventPage() {
   }, [id]);
 
   const recordingId = event?.recording_video_id ?? null;
-  const recordingReady = !!recordingId && (event?.recording_status ?? 'ready') === 'ready';
-  const recordingProcessing =
-    !!recordingId && ['uploading', 'processing'].includes(event?.recording_status ?? '');
+  const rawStatus = event?.recording_status ?? 'ready';
+  const needsStatusPoll = !!recordingId && ['uploading', 'processing'].includes(rawStatus);
+
+  // Bunny finishes encoding asynchronously; refresh the status so the player
+  // appears without the student having to reload the page.
+  const { data: liveStatus } = useQuery({
+    queryKey: ['event-recording-status', id, recordingId],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('event-recording-video', {
+        body: { action: 'status', eventId: id },
+      });
+      if (error) throw error;
+      return (data ?? {}) as { status?: string };
+    },
+    enabled: needsStatusPoll,
+    refetchInterval: 15000,
+  });
+
+  const status = liveStatus?.status ?? rawStatus;
+  const recordingReady = !!recordingId && status === 'ready';
+  const recordingProcessing = !!recordingId && ['uploading', 'processing'].includes(status);
 
   const { data: recordingEmbed } = useQuery({
     queryKey: ['event-recording-embed', recordingId],

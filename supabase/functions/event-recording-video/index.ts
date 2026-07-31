@@ -72,7 +72,30 @@ Deno.serve(async (req) => {
         .eq('user_id', userId)
         .eq('role', 'admin')
         .maybeSingle()
-      if (!adminRow) return json({ error: 'Forbidden' }, 403)
+      if (!adminRow) {
+        // Students with access may only read the encoding status.
+        let allowed = false
+        if (action === 'status') {
+          const { data: reg } = await admin
+            .from('event_registrations')
+            .select('id')
+            .eq('event_id', eventId)
+            .eq('user_id', userId)
+            .maybeSingle()
+          if (reg) allowed = true
+          if (!allowed) {
+            const { data: ord } = await admin
+              .from('orders')
+              .select('id')
+              .eq('user_id', userId)
+              .eq('status', 'paid')
+              .or(`and(product_type.eq.event,product_id.eq.${eventId}),and(bump_product_type.eq.event,bump_product_id.eq.${eventId})`)
+              .maybeSingle()
+            if (ord) allowed = true
+          }
+        }
+        if (!allowed) return json({ error: 'Forbidden' }, 403)
+      }
     }
 
     if (action === 'remove') {

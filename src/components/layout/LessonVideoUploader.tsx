@@ -116,7 +116,9 @@ export default function LessonVideoUploader({
     staleTime: 50 * 60 * 1000,
     refetchInterval: 55 * 60 * 1000,
   });
-  const bunnyEmbedUrl = bunnySignedEmbed?.url;
+  const bunnyEmbedUrl = bunnySignedEmbed?.url
+    ? `${bunnySignedEmbed.url}&autoplay=false&preload=true`
+    : undefined;
 
   // Signed URL for legacy videos stored in our own bucket.
   const { data: legacySignedUrl } = useQuery({

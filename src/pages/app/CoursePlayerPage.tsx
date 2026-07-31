@@ -160,7 +160,7 @@ export default function CoursePlayerPage() {
   });
   // autoplay=false → el alumno debe presionar play manualmente.
   const bunnyEmbedUrl = bunnySignedEmbed?.url
-    ? `${bunnySignedEmbed.url}&autoplay=false&preload=true`
+    ? `${bunnySignedEmbed.url}&autoplay=false&preload=true&responsive=true`
     : undefined;
 
   // Poll Bunny status every 15s while the video is still processing.
@@ -227,15 +227,18 @@ export default function CoursePlayerPage() {
     });
   }, [nextVideoLesson?.id, enrollment, isPreviewMode, qcPrefetch]);
 
-  // Select first lesson by default
+  // Select first available lesson by default (skips empty modules)
   useEffect(() => {
     if (modules && modules.length > 0 && !selectedLessonId) {
-      const firstLesson = (modules[0].lessons as any[])?.[0];
+      const firstLesson = modules
+        .flatMap((m: any) => ((m.lessons as any[]) || []))
+        .find(Boolean);
       if (firstLesson) {
         setSelectedLessonId(firstLesson.id);
       }
     }
   }, [modules, selectedLessonId]);
+
 
   // Mark lesson complete mutation
   const markCompleteMutation = useMutation({
@@ -464,10 +467,9 @@ export default function CoursePlayerPage() {
                     <iframe
                       src={bunnyEmbedUrl}
                       referrerPolicy="no-referrer"
-                      loading="lazy"
                       className="w-full h-full"
                       style={{ border: 'none' }}
-                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
                       allowFullScreen
                     />
                   ) : (

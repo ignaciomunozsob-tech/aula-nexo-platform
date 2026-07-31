@@ -234,12 +234,11 @@ export default function StudentEventPage() {
                   </div>
                 ) : recordingEmbed?.url ? (
                   <iframe
-                    src={`${recordingEmbed.url}&autoplay=false&preload=true`}
+                    src={`${recordingEmbed.url}&autoplay=false&preload=true&responsive=true`}
                     referrerPolicy="no-referrer"
-                    loading="lazy"
                     className="w-full h-full"
                     style={{ border: 'none' }}
-                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
                     allowFullScreen
                     title={`Grabación de ${event.title}`}
                   />

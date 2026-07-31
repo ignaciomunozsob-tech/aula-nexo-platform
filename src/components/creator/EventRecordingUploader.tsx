@@ -180,12 +180,11 @@ export default function EventRecordingUploader({ eventId }: Props) {
           <div className="bg-black overflow-hidden rounded-lg" style={{ aspectRatio: "16 / 9" }}>
             {signed?.url ? (
               <iframe
-                src={`${signed.url}&autoplay=false&preload=true`}
+                src={`${signed.url}&autoplay=false&preload=true&responsive=true`}
                 referrerPolicy="no-referrer"
-                loading="lazy"
                 className="w-full h-full"
                 style={{ border: "none" }}
-                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
                 allowFullScreen
               />
             ) : (

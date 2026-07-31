@@ -117,7 +117,7 @@ export default function LessonVideoUploader({
     refetchInterval: 55 * 60 * 1000,
   });
   const bunnyEmbedUrl = bunnySignedEmbed?.url
-    ? `${bunnySignedEmbed.url}&autoplay=false&preload=true`
+    ? `${bunnySignedEmbed.url}&autoplay=false&preload=true&responsive=true`
     : undefined;
 
   // Signed URL for legacy videos stored in our own bucket.
@@ -420,10 +420,9 @@ export default function LessonVideoUploader({
                   <iframe
                     src={bunnyEmbedUrl}
                     referrerPolicy="no-referrer"
-                    loading="lazy"
                     className="w-full h-full"
                     style={{ border: "none" }}
-                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
                     allowFullScreen
                   />
                 ) : (

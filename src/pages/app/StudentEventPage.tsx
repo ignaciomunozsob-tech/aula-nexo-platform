@@ -265,7 +265,10 @@ export default function StudentEventPage() {
           {event.description && (
             <div>
               <h2 className="font-semibold mb-2">Sobre el evento</h2>
-              <p className="text-muted-foreground whitespace-pre-line">{event.description}</p>
+              <div
+                className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground"
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(event.description) }}
+              />
             </div>
           )}
 

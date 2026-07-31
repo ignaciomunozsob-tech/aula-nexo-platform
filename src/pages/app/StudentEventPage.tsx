@@ -235,7 +235,7 @@ export default function StudentEventPage() {
                 ) : recordingEmbed?.url ? (
                   <iframe
                     src={`${recordingEmbed.url}&autoplay=false&preload=true&responsive=true`}
-                    referrerPolicy="no-referrer"
+                     referrerPolicy="strict-origin-when-cross-origin"
                     className="w-full h-full"
                     style={{ border: 'none' }}
                     allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"

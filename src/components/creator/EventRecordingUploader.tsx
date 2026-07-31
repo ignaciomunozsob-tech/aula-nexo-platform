@@ -181,7 +181,7 @@ export default function EventRecordingUploader({ eventId }: Props) {
             {signed?.url ? (
               <iframe
                 src={`${signed.url}&autoplay=false&preload=true&responsive=true`}
-                referrerPolicy="no-referrer"
+                 referrerPolicy="strict-origin-when-cross-origin"
                 className="w-full h-full"
                 style={{ border: "none" }}
                 allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"

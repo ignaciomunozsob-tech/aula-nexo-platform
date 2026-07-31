@@ -83,7 +83,7 @@ export default function MyCoursesPage() {
         .from('event_registrations')
         .select('id, registered_at, events ( id, title, slug, cover_image_url, event_date, event_type )')
         .eq('user_id', user.id)
-        .eq('status', 'registered')
+        .neq('status', 'cancelled')
         .order('registered_at', { ascending: false });
       if (error) throw error;
       return data || [];

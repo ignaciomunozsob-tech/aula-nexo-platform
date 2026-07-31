@@ -201,6 +201,40 @@ export default function StudentEventPage() {
             </div>
           )}
 
+          {isOnline && (recordingReady || recordingProcessing) && (
+            <div className="space-y-3">
+              <h2 className="font-semibold flex items-center gap-2">
+                <PlayCircle className="h-5 w-5 text-primary" />
+                Grabación del evento
+              </h2>
+              <div className="bg-black overflow-hidden rounded-lg" style={{ aspectRatio: '16 / 9' }}>
+                {recordingProcessing ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-white/80 text-sm">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    La grabación se está procesando…
+                  </div>
+                ) : recordingEmbed?.url ? (
+                  <iframe
+                    src={recordingEmbed.url}
+                    loading="lazy"
+                    className="w-full h-full"
+                    style={{ border: 'none' }}
+                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                    allowFullScreen
+                    title={`Grabación de ${event.title}`}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white/70 text-sm animate-pulse">
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    Cargando grabación…
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+
+
           {redirect && RedirectIcon && event.redirect_url && (
             <Button asChild className="w-full sm:w-auto gap-2">
               <a href={event.redirect_url} target="_blank" rel="noopener noreferrer">

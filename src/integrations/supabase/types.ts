@@ -1175,6 +1175,8 @@ export type Database = {
           max_attendees: number | null
           meeting_url: string | null
           price_clp: number
+          recording_status: string
+          recording_video_id: string | null
           redirect_url: string | null
           slug: string
           status: string
@@ -1196,6 +1198,8 @@ export type Database = {
           max_attendees?: number | null
           meeting_url?: string | null
           price_clp?: number
+          recording_status?: string
+          recording_video_id?: string | null
           redirect_url?: string | null
           slug: string
           status?: string
@@ -1217,6 +1221,8 @@ export type Database = {
           max_attendees?: number | null
           meeting_url?: string | null
           price_clp?: number
+          recording_status?: string
+          recording_video_id?: string | null
           redirect_url?: string | null
           slug?: string
           status?: string
@@ -2053,6 +2059,8 @@ export type Database = {
           id: string
           location: string
           meeting_url: string
+          recording_status: string
+          recording_video_id: string
           redirect_url: string
           title: string
         }[]

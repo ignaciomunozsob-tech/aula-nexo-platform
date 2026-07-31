@@ -50,6 +50,26 @@ export default function StudentEventPage() {
     };
   }, [id]);
 
+  const recordingId = event?.recording_video_id ?? null;
+  const recordingReady = !!recordingId && (event?.recording_status ?? 'ready') === 'ready';
+  const recordingProcessing =
+    !!recordingId && ['uploading', 'processing'].includes(event?.recording_status ?? '');
+
+  const { data: recordingEmbed } = useQuery({
+    queryKey: ['event-recording-embed', recordingId],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('bunny-sign-embed', {
+        body: { videoId: recordingId },
+      });
+      if (error) throw error;
+      return (data ?? {}) as { url?: string };
+    },
+    enabled: recordingReady,
+    staleTime: 50 * 60 * 1000,
+    refetchInterval: 55 * 60 * 1000,
+  });
+
+
   if (loading) {
     return (
       <div className="p-8">

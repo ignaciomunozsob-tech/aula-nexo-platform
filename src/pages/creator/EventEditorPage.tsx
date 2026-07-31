@@ -16,6 +16,7 @@ import StudentManagement from '@/components/creator/StudentManagement';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import CheckoutPagesPage from './CheckoutPagesPage';
+import EventRecordingUploader from '@/components/creator/EventRecordingUploader';
 
 type EventFormSnapshot = {
   title: string;
@@ -581,6 +582,21 @@ export default function EventEditorPage() {
                 <p className="text-xs text-muted-foreground mt-1">
                   Este link será visible solo para los inscritos
                 </p>
+
+                <div className="mt-6 border-t border-border pt-4">
+                  <Label>Grabación del evento (opcional)</Label>
+                  <p className="text-xs text-muted-foreground mt-1 mb-3">
+                    Sube el video de la grabación para que los inscritos puedan verlo después.
+                  </p>
+                  {isEditing && id ? (
+                    <EventRecordingUploader eventId={id} />
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">
+                      Guarda el evento primero para poder subir la grabación.
+                    </p>
+                  )}
+                </div>
+
               </div>
             ) : (
               <div>

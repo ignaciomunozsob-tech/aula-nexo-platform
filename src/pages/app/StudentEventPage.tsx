@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SEO } from '@/components/SEO';
 import { ProductDetailSkeleton } from '@/components/ui/page-skeletons';
 import { detectLink, googleCalendarUrl } from '@/lib/links';
-import { ArrowLeft, CalendarDays, Clock, MapPin, Video, CalendarPlus } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Clock, MapPin, Video, CalendarPlus, Loader2, PlayCircle } from 'lucide-react';
 
 type EventDetails = {
   id: string;
@@ -22,6 +23,8 @@ type EventDetails = {
   creator_id: string;
   creator_name: string | null;
   creator_slug: string | null;
+  recording_video_id: string | null;
+  recording_status: string | null;
 };
 
 export default function StudentEventPage() {
@@ -46,6 +49,26 @@ export default function StudentEventPage() {
       active = false;
     };
   }, [id]);
+
+  const recordingId = event?.recording_video_id ?? null;
+  const recordingReady = !!recordingId && (event?.recording_status ?? 'ready') === 'ready';
+  const recordingProcessing =
+    !!recordingId && ['uploading', 'processing'].includes(event?.recording_status ?? '');
+
+  const { data: recordingEmbed } = useQuery({
+    queryKey: ['event-recording-embed', recordingId],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('bunny-sign-embed', {
+        body: { videoId: recordingId },
+      });
+      if (error) throw error;
+      return (data ?? {}) as { url?: string };
+    },
+    enabled: recordingReady,
+    staleTime: 50 * 60 * 1000,
+    refetchInterval: 55 * 60 * 1000,
+  });
+
 
   if (loading) {
     return (
@@ -177,6 +200,40 @@ export default function StudentEventPage() {
               </div>
             </div>
           )}
+
+          {isOnline && (recordingReady || recordingProcessing) && (
+            <div className="space-y-3">
+              <h2 className="font-semibold flex items-center gap-2">
+                <PlayCircle className="h-5 w-5 text-primary" />
+                Grabación del evento
+              </h2>
+              <div className="bg-black overflow-hidden rounded-lg" style={{ aspectRatio: '16 / 9' }}>
+                {recordingProcessing ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-white/80 text-sm">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    La grabación se está procesando…
+                  </div>
+                ) : recordingEmbed?.url ? (
+                  <iframe
+                    src={recordingEmbed.url}
+                    loading="lazy"
+                    className="w-full h-full"
+                    style={{ border: 'none' }}
+                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                    allowFullScreen
+                    title={`Grabación de ${event.title}`}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white/70 text-sm animate-pulse">
+                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    Cargando grabación…
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+
 
           {redirect && RedirectIcon && event.redirect_url && (
             <Button asChild className="w-full sm:w-auto gap-2">

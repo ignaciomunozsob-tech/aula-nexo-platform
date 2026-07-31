@@ -101,7 +101,7 @@ export default function StudentDashboard() {
         .from('event_registrations')
         .select('id, registered_at, events ( id, title, cover_image_url, event_date, slug )')
         .eq('user_id', user.id)
-        .eq('status', 'registered');
+        .neq('status', 'cancelled');
       if (error) throw error;
       return (data || []).filter((r) => !!r.events);
     },

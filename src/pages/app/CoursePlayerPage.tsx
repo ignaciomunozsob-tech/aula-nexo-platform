@@ -460,6 +460,7 @@ export default function CoursePlayerPage() {
                   (currentLessonForUrl as any)?.bunny_status === 'ready' && bunnyEmbedUrl ? (
                     <iframe
                       src={bunnyEmbedUrl}
+                      referrerPolicy="no-referrer"
                       loading="lazy"
                       className="w-full h-full"
                       style={{ border: 'none' }}
@@ -486,6 +487,7 @@ export default function CoursePlayerPage() {
                   isYouTubeUrl ? (
                     <iframe
                       src={signedVideoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                      referrerPolicy="no-referrer"
                       className="w-full h-full"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen

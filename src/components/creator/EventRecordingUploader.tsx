@@ -181,6 +181,7 @@ export default function EventRecordingUploader({ eventId }: Props) {
             {signed?.url ? (
               <iframe
                 src={signed.url}
+                referrerPolicy="no-referrer"
                 loading="lazy"
                 className="w-full h-full"
                 style={{ border: "none" }}

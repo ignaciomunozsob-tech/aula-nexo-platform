@@ -235,6 +235,7 @@ export default function StudentEventPage() {
                 ) : recordingEmbed?.url ? (
                   <iframe
                     src={recordingEmbed.url}
+                    referrerPolicy="no-referrer"
                     loading="lazy"
                     className="w-full h-full"
                     style={{ border: 'none' }}

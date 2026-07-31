@@ -417,6 +417,7 @@ export default function LessonVideoUploader({
                 {bunnyEmbedUrl ? (
                   <iframe
                     src={bunnyEmbedUrl}
+                    referrerPolicy="no-referrer"
                     loading="lazy"
                     className="w-full h-full"
                     style={{ border: "none" }}

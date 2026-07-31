@@ -16,6 +16,7 @@ import StudentManagement from '@/components/creator/StudentManagement';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import CheckoutPagesPage from './CheckoutPagesPage';
+import EventRecordingUploader from '@/components/creator/EventRecordingUploader';
 
 type EventFormSnapshot = {
   title: string;

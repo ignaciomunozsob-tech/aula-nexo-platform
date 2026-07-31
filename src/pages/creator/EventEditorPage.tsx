@@ -580,7 +580,24 @@ export default function EventEditorPage() {
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Este link será visible solo para los inscritos
+                <p className="text-xs text-muted-foreground mt-1">
+                  Este link será visible solo para los inscritos
                 </p>
+
+                <div className="mt-6 border-t border-border pt-4">
+                  <Label>Grabación del evento (opcional)</Label>
+                  <p className="text-xs text-muted-foreground mt-1 mb-3">
+                    Sube el video de la grabación para que los inscritos puedan verlo después.
+                  </p>
+                  {isEditing && id ? (
+                    <EventRecordingUploader eventId={id} />
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">
+                      Guarda el evento primero para poder subir la grabación.
+                    </p>
+                  )}
+                </div>
+
               </div>
             ) : (
               <div>

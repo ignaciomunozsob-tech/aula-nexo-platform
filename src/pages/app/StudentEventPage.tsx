@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { SEO } from '@/components/SEO';
 import { ProductDetailSkeleton } from '@/components/ui/page-skeletons';
 import { detectLink, googleCalendarUrl } from '@/lib/links';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { ArrowLeft, CalendarDays, Clock, MapPin, Video, CalendarPlus, Loader2, PlayCircle } from 'lucide-react';
 
 type EventDetails = {
@@ -234,6 +235,7 @@ export default function StudentEventPage() {
                 ) : recordingEmbed?.url ? (
                   <iframe
                     src={recordingEmbed.url}
+                    referrerPolicy="no-referrer"
                     loading="lazy"
                     className="w-full h-full"
                     style={{ border: 'none' }}
@@ -265,7 +267,10 @@ export default function StudentEventPage() {
           {event.description && (
             <div>
               <h2 className="font-semibold mb-2">Sobre el evento</h2>
-              <p className="text-muted-foreground whitespace-pre-line">{event.description}</p>
+              <div
+                className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground"
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(event.description) }}
+              />
             </div>
           )}
 

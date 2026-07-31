@@ -460,6 +460,7 @@ export default function CoursePlayerPage() {
                   (currentLessonForUrl as any)?.bunny_status === 'ready' && bunnyEmbedUrl ? (
                     <iframe
                       src={bunnyEmbedUrl}
+                      referrerPolicy="no-referrer"
                       loading="lazy"
                       className="w-full h-full"
                       style={{ border: 'none' }}

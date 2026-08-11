@@ -401,21 +401,10 @@ export default function LessonVideoUploader({
                 className="bg-black overflow-hidden rounded-lg relative"
                 style={{ aspectRatio: "16 / 9" }}
               >
-                {bunnyEmbedUrl ? (
-                  <iframe
-                    src={bunnyEmbedUrl}
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full"
-                    style={{ border: "none" }}
-                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
-                    allowFullScreen
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/80 text-sm bg-gradient-to-br from-neutral-900 to-neutral-800 animate-pulse">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                    Cargando previsualización…
-                  </div>
+                {hostedVideoId && (
+                  <BunnyPlayer videoId={hostedVideoId} title={lessonTitle ?? "Video de la lección"} />
                 )}
+
               </div>
 
               <div className="flex gap-2">

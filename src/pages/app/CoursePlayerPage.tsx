@@ -26,6 +26,8 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import CourseCommunityFeed from '@/components/community/CourseCommunityFeed';
 import { PlayerSkeleton } from '@/components/ui/page-skeletons';
+import BunnyPlayer from '@/components/video/BunnyPlayer';
+
 
 export default function CoursePlayerPage() {
   const { id } = useParams<{ id: string }>();

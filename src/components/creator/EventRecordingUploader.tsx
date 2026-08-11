@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Loader2, Upload, RefreshCw, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import BunnyPlayer from "@/components/video/BunnyPlayer";
+
 
 interface Props {
   eventId: string;

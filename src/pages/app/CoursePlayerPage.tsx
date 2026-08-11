@@ -448,15 +448,12 @@ export default function CoursePlayerPage() {
                 style={{ aspectRatio: '16 / 9', borderRadius: 12 }}
               >
                 {isBunnyVideo ? (
-                  (currentLessonForUrl as any)?.bunny_status === 'ready' && bunnyEmbedUrl ? (
-                    <iframe
-                      src={bunnyEmbedUrl}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full"
-                      style={{ border: 'none' }}
-                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
-                      allowFullScreen
+                  (currentLessonForUrl as any)?.bunny_status === 'ready' && bunnyVideoIdForUrl ? (
+                    <BunnyPlayer
+                      videoId={bunnyVideoIdForUrl}
+                      title={currentLesson.title}
                     />
+
                   ) : (
                     <div
                       className="w-full h-full flex flex-col items-center justify-center gap-4 text-center px-6"

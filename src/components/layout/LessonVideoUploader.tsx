@@ -102,23 +102,8 @@ export default function LessonVideoUploader({
     if (isUuid(lessonId)) setResolvedLessonId(lessonId);
   }, [lessonId]);
 
-  // Signed embed URL for the hosted video (token generated server-side).
-  const { data: bunnySignedEmbed } = useQuery({
-    queryKey: ["bunny-signed-embed", hostedVideoId],
-    queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("bunny-sign-embed", {
-        body: { videoId: hostedVideoId },
-      });
-      if (error) throw error;
-      return (data ?? {}) as { url?: string; expires?: number };
-    },
-    enabled: !!hostedVideoId && hostedStatus === "ready",
-    staleTime: 50 * 60 * 1000,
-    refetchInterval: 55 * 60 * 1000,
-  });
-  const bunnyEmbedUrl = bunnySignedEmbed?.url
-    ? `${bunnySignedEmbed.url}&autoplay=false&preload=true&responsive=true`
-    : undefined;
+  // La URL firmada del embed la gestiona BunnyPlayer (refresco + reintento).
+
 
   // Signed URL for legacy videos stored in our own bucket.
   const { data: legacySignedUrl } = useQuery({

@@ -167,21 +167,8 @@ export default function EventRecordingUploader({ eventId }: Props) {
       {hasVideo && (
         <div className="space-y-2">
           <div className="bg-black overflow-hidden rounded-lg" style={{ aspectRatio: "16 / 9" }}>
-            {signed?.url ? (
-              <iframe
-                src={`${signed.url}&autoplay=false&preload=true&responsive=true`}
-                 referrerPolicy="strict-origin-when-cross-origin"
-                className="w-full h-full"
-                style={{ border: "none" }}
-                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
-                allowFullScreen
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-white/70 text-sm animate-pulse">
-                <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                Cargando previsualización…
-              </div>
-            )}
+            {videoId && <BunnyPlayer videoId={videoId} title="Grabación del evento" />}
+
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>

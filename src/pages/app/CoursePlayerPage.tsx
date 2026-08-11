@@ -26,6 +26,8 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import CourseCommunityFeed from '@/components/community/CourseCommunityFeed';
 import { PlayerSkeleton } from '@/components/ui/page-skeletons';
+import BunnyPlayer from '@/components/video/BunnyPlayer';
+
 
 export default function CoursePlayerPage() {
   const { id } = useParams<{ id: string }>();
@@ -144,24 +146,9 @@ export default function CoursePlayerPage() {
     (currentLessonForUrl as any)?.video_source === 'bunny' &&
     !!(currentLessonForUrl as any)?.bunny_video_id;
 
+  // La firma del embed la resuelve BunnyPlayer (con refresco y reintento).
   const bunnyVideoIdForUrl = (currentLessonForUrl as any)?.bunny_video_id as string | undefined;
-  const { data: bunnySignedEmbed } = useQuery({
-    queryKey: ['bunny-signed-embed', bunnyVideoIdForUrl],
-    queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('bunny-sign-embed', {
-        body: { videoId: bunnyVideoIdForUrl },
-      });
-      if (error) throw error;
-      return (data ?? {}) as { url?: string; expires?: number };
-    },
-    enabled: !!isBunnyVideo && !!bunnyVideoIdForUrl && (currentLessonForUrl as any)?.bunny_status === 'ready',
-    staleTime: 50 * 60 * 1000,
-    refetchInterval: 55 * 60 * 1000,
-  });
-  // autoplay=false → el alumno debe presionar play manualmente.
-  const bunnyEmbedUrl = bunnySignedEmbed?.url
-    ? `${bunnySignedEmbed.url}&autoplay=false&preload=true&responsive=true`
-    : undefined;
+
 
   // Poll Bunny status every 15s while the video is still processing.
   // When it becomes ready we invalidate the modules query so the iframe
@@ -463,15 +450,12 @@ export default function CoursePlayerPage() {
                 style={{ aspectRatio: '16 / 9', borderRadius: 12 }}
               >
                 {isBunnyVideo ? (
-                  (currentLessonForUrl as any)?.bunny_status === 'ready' && bunnyEmbedUrl ? (
-                    <iframe
-                      src={bunnyEmbedUrl}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full"
-                      style={{ border: 'none' }}
-                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
-                      allowFullScreen
+                  (currentLessonForUrl as any)?.bunny_status === 'ready' && bunnyVideoIdForUrl ? (
+                    <BunnyPlayer
+                      videoId={bunnyVideoIdForUrl}
+                      title={currentLesson.title}
                     />
+
                   ) : (
                     <div
                       className="w-full h-full flex flex-col items-center justify-center gap-4 text-center px-6"

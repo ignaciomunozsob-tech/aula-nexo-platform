@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SEO } from '@/components/SEO';
 import { ProductDetailSkeleton } from '@/components/ui/page-skeletons';
+import BunnyPlayer from '@/components/video/BunnyPlayer';
+
 import { detectLink, googleCalendarUrl } from '@/lib/links';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { ArrowLeft, CalendarDays, Clock, MapPin, Video, CalendarPlus, Loader2, PlayCircle } from 'lucide-react';
@@ -74,19 +76,8 @@ export default function StudentEventPage() {
   const recordingReady = !!recordingId && status === 'ready';
   const recordingProcessing = !!recordingId && ['uploading', 'processing'].includes(status);
 
-  const { data: recordingEmbed } = useQuery({
-    queryKey: ['event-recording-embed', recordingId],
-    queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('bunny-sign-embed', {
-        body: { videoId: recordingId },
-      });
-      if (error) throw error;
-      return (data ?? {}) as { url?: string };
-    },
-    enabled: recordingReady,
-    staleTime: 50 * 60 * 1000,
-    refetchInterval: 55 * 60 * 1000,
-  });
+  // La URL firmada del embed la gestiona BunnyPlayer.
+
 
 
   if (loading) {
@@ -232,16 +223,9 @@ export default function StudentEventPage() {
                     <Loader2 className="h-6 w-6 animate-spin" />
                     La grabación se está procesando…
                   </div>
-                ) : recordingEmbed?.url ? (
-                  <iframe
-                    src={`${recordingEmbed.url}&autoplay=false&preload=true&responsive=true`}
-                     referrerPolicy="strict-origin-when-cross-origin"
-                    className="w-full h-full"
-                    style={{ border: 'none' }}
-                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
-                    allowFullScreen
-                    title={`Grabación de ${event.title}`}
-                  />
+                ) : recordingId ? (
+                  <BunnyPlayer videoId={recordingId} title={`Grabación de ${event.title}`} />
+
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-white/70 text-sm animate-pulse">
                     <Loader2 className="h-5 w-5 animate-spin mr-2" />

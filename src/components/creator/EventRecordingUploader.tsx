@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import * as tus from "tus-js-client";
-import { useQuery } from "@tanstack/react-query";
+
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Loader2, Upload, RefreshCw, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import BunnyPlayer from "@/components/video/BunnyPlayer";
+
 
 interface Props {
   eventId: string;
@@ -74,25 +76,22 @@ export default function EventRecordingUploader({ eventId }: Props) {
     };
   }, [status, videoId, eventId, toast]);
 
-  const { data: signed } = useQuery({
-    queryKey: ["event-recording-embed", videoId],
-    queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("bunny-sign-embed", {
-        body: { videoId },
-      });
-      if (error) throw error;
-      return (data ?? {}) as { url?: string };
-    },
-    enabled: !!videoId && status === "ready",
-    staleTime: 50 * 60 * 1000,
-    refetchInterval: 55 * 60 * 1000,
-  });
+  // La firma del embed la gestiona BunnyPlayer.
+
 
   const startUpload = async (file: File) => {
     if (!file.type.startsWith("video/")) {
       toast({ title: "Archivo no válido", description: "Solo se permiten videos.", variant: "destructive" });
       return;
     }
+    if (/\.(mov|m4v)$/i.test(file.name) || /hevc|quicktime/i.test(file.type)) {
+      toast({
+        title: "Formato poco compatible",
+        description:
+          "Recomendamos MP4 (H.264 + AAC) para que la grabación se vea bien en Safari y en todos los dispositivos.",
+      });
+    }
+
     setUploading(true);
     setProgress(0);
     setStatus("uploading");
@@ -178,21 +177,8 @@ export default function EventRecordingUploader({ eventId }: Props) {
       {hasVideo && (
         <div className="space-y-2">
           <div className="bg-black overflow-hidden rounded-lg" style={{ aspectRatio: "16 / 9" }}>
-            {signed?.url ? (
-              <iframe
-                src={`${signed.url}&autoplay=false&preload=true&responsive=true`}
-                 referrerPolicy="strict-origin-when-cross-origin"
-                className="w-full h-full"
-                style={{ border: "none" }}
-                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
-                allowFullScreen
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-white/70 text-sm animate-pulse">
-                <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                Cargando previsualización…
-              </div>
-            )}
+            {videoId && <BunnyPlayer videoId={videoId} title="Grabación del evento" />}
+
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>

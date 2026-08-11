@@ -10,6 +10,8 @@ import { useMyPlan } from "@/hooks/useMyPlan";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { resolveProtectedUrl } from "@/lib/protectedMedia";
+import BunnyPlayer from "@/components/video/BunnyPlayer";
+
 
 interface LessonVideoUploaderProps {
   lessonId: string;
@@ -102,23 +104,8 @@ export default function LessonVideoUploader({
     if (isUuid(lessonId)) setResolvedLessonId(lessonId);
   }, [lessonId]);
 
-  // Signed embed URL for the hosted video (token generated server-side).
-  const { data: bunnySignedEmbed } = useQuery({
-    queryKey: ["bunny-signed-embed", hostedVideoId],
-    queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("bunny-sign-embed", {
-        body: { videoId: hostedVideoId },
-      });
-      if (error) throw error;
-      return (data ?? {}) as { url?: string; expires?: number };
-    },
-    enabled: !!hostedVideoId && hostedStatus === "ready",
-    staleTime: 50 * 60 * 1000,
-    refetchInterval: 55 * 60 * 1000,
-  });
-  const bunnyEmbedUrl = bunnySignedEmbed?.url
-    ? `${bunnySignedEmbed.url}&autoplay=false&preload=true&responsive=true`
-    : undefined;
+  // La URL firmada del embed la gestiona BunnyPlayer (refresco + reintento).
+
 
   // Signed URL for legacy videos stored in our own bucket.
   const { data: legacySignedUrl } = useQuery({
@@ -205,6 +192,16 @@ export default function LessonVideoUploader({
       });
       return;
     }
+    // Los .mov/HEVC (típicos de iPhone y Mac) son los que más fallan si algo
+    // sale mal en la transcodificación: avisamos antes de subir.
+    if (/\.(mov|m4v)$/i.test(file.name) || /hevc|quicktime/i.test(file.type)) {
+      toast({
+        title: "Formato poco compatible",
+        description:
+          "Este archivo puede tardar más en procesarse. Recomendamos MP4 (H.264 + AAC) para que se vea bien en Safari y en todos los dispositivos.",
+      });
+    }
+
     setUploading(true);
     setProgress(0);
     setHostedStatus("uploading");
@@ -416,21 +413,10 @@ export default function LessonVideoUploader({
                 className="bg-black overflow-hidden rounded-lg relative"
                 style={{ aspectRatio: "16 / 9" }}
               >
-                {bunnyEmbedUrl ? (
-                  <iframe
-                    src={bunnyEmbedUrl}
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full"
-                    style={{ border: "none" }}
-                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
-                    allowFullScreen
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/80 text-sm bg-gradient-to-br from-neutral-900 to-neutral-800 animate-pulse">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                    Cargando previsualización…
-                  </div>
+                {hostedVideoId && (
+                  <BunnyPlayer videoId={hostedVideoId} title={lessonTitle ?? "Video de la lección"} />
                 )}
+
               </div>
 
               <div className="flex gap-2">
@@ -552,7 +538,7 @@ export default function LessonVideoUploader({
                     Seleccionar video
                   </Button>
                   <p className="text-xs text-muted-foreground">
-                    MP4, MOV, WEBM (máx. {maxFileMB}MB)
+                    MP4 recomendado (H.264 + AAC) · máx. {maxFileMB}MB
                   </p>
                 </>
               )}

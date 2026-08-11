@@ -10,6 +10,8 @@ import { useMyPlan } from "@/hooks/useMyPlan";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { resolveProtectedUrl } from "@/lib/protectedMedia";
+import BunnyPlayer from "@/components/video/BunnyPlayer";
+
 
 interface LessonVideoUploaderProps {
   lessonId: string;

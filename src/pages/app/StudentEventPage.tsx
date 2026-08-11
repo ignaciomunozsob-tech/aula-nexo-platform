@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SEO } from '@/components/SEO';
 import { ProductDetailSkeleton } from '@/components/ui/page-skeletons';
+import BunnyPlayer from '@/components/video/BunnyPlayer';
+
 import { detectLink, googleCalendarUrl } from '@/lib/links';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { ArrowLeft, CalendarDays, Clock, MapPin, Video, CalendarPlus, Loader2, PlayCircle } from 'lucide-react';

@@ -84,6 +84,14 @@ export default function EventRecordingUploader({ eventId }: Props) {
       toast({ title: "Archivo no válido", description: "Solo se permiten videos.", variant: "destructive" });
       return;
     }
+    if (/\.(mov|m4v)$/i.test(file.name) || /hevc|quicktime/i.test(file.type)) {
+      toast({
+        title: "Formato poco compatible",
+        description:
+          "Recomendamos MP4 (H.264 + AAC) para que la grabación se vea bien en Safari y en todos los dispositivos.",
+      });
+    }
+
     setUploading(true);
     setProgress(0);
     setStatus("uploading");

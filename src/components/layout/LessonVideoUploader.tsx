@@ -192,6 +192,16 @@ export default function LessonVideoUploader({
       });
       return;
     }
+    // Los .mov/HEVC (típicos de iPhone y Mac) son los que más fallan si algo
+    // sale mal en la transcodificación: avisamos antes de subir.
+    if (/\.(mov|m4v)$/i.test(file.name) || /hevc|quicktime/i.test(file.type)) {
+      toast({
+        title: "Formato poco compatible",
+        description:
+          "Este archivo puede tardar más en procesarse. Recomendamos MP4 (H.264 + AAC) para que se vea bien en Safari y en todos los dispositivos.",
+      });
+    }
+
     setUploading(true);
     setProgress(0);
     setHostedStatus("uploading");

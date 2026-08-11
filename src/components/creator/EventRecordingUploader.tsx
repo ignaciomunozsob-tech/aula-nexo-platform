@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as tus from "tus-js-client";
-import { useQuery } from "@tanstack/react-query";
+
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";

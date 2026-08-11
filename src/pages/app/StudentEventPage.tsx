@@ -221,16 +221,9 @@ export default function StudentEventPage() {
                     <Loader2 className="h-6 w-6 animate-spin" />
                     La grabación se está procesando…
                   </div>
-                ) : recordingEmbed?.url ? (
-                  <iframe
-                    src={`${recordingEmbed.url}&autoplay=false&preload=true&responsive=true`}
-                     referrerPolicy="strict-origin-when-cross-origin"
-                    className="w-full h-full"
-                    style={{ border: 'none' }}
-                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
-                    allowFullScreen
-                    title={`Grabación de ${event.title}`}
-                  />
+                ) : recordingId ? (
+                  <BunnyPlayer videoId={recordingId} title={`Grabación de ${event.title}`} />
+
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-white/70 text-sm animate-pulse">
                     <Loader2 className="h-5 w-5 animate-spin mr-2" />

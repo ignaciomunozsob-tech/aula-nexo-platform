@@ -74,19 +74,8 @@ export default function EventRecordingUploader({ eventId }: Props) {
     };
   }, [status, videoId, eventId, toast]);
 
-  const { data: signed } = useQuery({
-    queryKey: ["event-recording-embed", videoId],
-    queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("bunny-sign-embed", {
-        body: { videoId },
-      });
-      if (error) throw error;
-      return (data ?? {}) as { url?: string };
-    },
-    enabled: !!videoId && status === "ready",
-    staleTime: 50 * 60 * 1000,
-    refetchInterval: 55 * 60 * 1000,
-  });
+  // La firma del embed la gestiona BunnyPlayer.
+
 
   const startUpload = async (file: File) => {
     if (!file.type.startsWith("video/")) {

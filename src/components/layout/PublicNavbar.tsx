@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
-import { Menu, X, ChevronDown, LogIn, GraduationCap, Sun, Moon } from 'lucide-react';
+import { Menu, X, ChevronDown, LogIn, GraduationCap } from 'lucide-react';
 import { useState } from 'react';
 import {
   DropdownMenu,
@@ -10,20 +10,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useTheme } from '@/lib/theme';
-
-function ThemeToggle({ className = '' }: { className?: string }) {
-  const { theme, toggle } = useTheme();
-  return (
-    <button
-      onClick={toggle}
-      aria-label={theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'}
-      className={`inline-flex items-center justify-center w-10 h-10 rounded-full border border-border hover:bg-muted transition-colors ${className}`}
-    >
-      {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-    </button>
-  );
-}
 
 export function PublicNavbar() {
   const { user, profile } = useAuth();
@@ -110,11 +96,9 @@ export function PublicNavbar() {
               </div>
             )}
 
-            <ThemeToggle />
           </div>
 
           <div className="flex md:hidden items-center gap-2">
-            <ThemeToggle />
             <button
               className="p-2"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

@@ -64,47 +64,6 @@
     --warning-foreground: var(--novu-text-on-accent);
   }
 
-  .dark {
-    --bg-primary: 24 11% 7%;         /* #141210 */
-    --bg-card-raw: 30 13% 10%;       /* #1e1b17 */
-    --bg-card-alt-raw: 33 21% 12%;   /* #252018 */
-    --novu-accent: 47 97% 52%;       /* #fcc70e (sin cambios) */
-    --novu-text: 35 41% 93%;         /* #f5f0e8 */
-    --novu-text-secondary: 30 11% 62%; /* #a89f94 */
-    --novu-text-support: 33 5% 39%;    /* #6b6560 */
-    --novu-text-on-accent: 50 100% 5%; /* #1a1600 */
-    --novu-border: 30 13% 16%;       /* #2e2a24 */
-    --novu-border-alt: 33 12% 19%;   /* #35302a */
-
-    --background: var(--bg-primary);
-    --foreground: var(--novu-text);
-    --card: var(--bg-card-raw);
-    --card-foreground: var(--novu-text);
-    --popover: var(--bg-card-raw);
-    --popover-foreground: var(--novu-text);
-    --primary: var(--novu-accent);
-    --primary-foreground: var(--novu-text-on-accent);
-    --secondary: var(--bg-card-alt-raw);
-    --secondary-foreground: var(--novu-text);
-    --muted: var(--bg-card-alt-raw);
-    --muted-foreground: var(--novu-text-secondary);
-    --accent: var(--novu-accent);
-    --accent-foreground: var(--novu-text-on-accent);
-    --destructive: 0 63% 45%;
-    --destructive-foreground: 0 0% 100%;
-    --border: var(--novu-border);
-    --input: var(--novu-border);
-    --ring: var(--novu-accent);
-
-    --sidebar-background: var(--bg-card-raw);
-    --sidebar-foreground: var(--novu-text);
-    --sidebar-primary: var(--novu-accent);
-    --sidebar-primary-foreground: var(--novu-text-on-accent);
-    --sidebar-accent: var(--bg-card-alt-raw);
-    --sidebar-accent-foreground: var(--novu-text);
-    --sidebar-border: var(--novu-border);
-    --sidebar-ring: var(--novu-accent);
-  }
 }
 
 @layer base {
@@ -113,7 +72,7 @@
   }
 
   html {
-    color-scheme: light dark;
+    color-scheme: light;
   }
 
   body {

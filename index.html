@@ -15,16 +15,6 @@
     <link rel="preconnect" href="https://www.mercadopago.cl" crossorigin>
     <link rel="preconnect" href="https://api.mercadopago.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.mercadopago.com">
-    <script>
-      // Theme init (avoid FOUC)
-      (function () {
-        try {
-          var t = localStorage.getItem('novu-theme');
-          var dark = t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (dark) document.documentElement.classList.add('dark');
-        } catch (e) {}
-      })();
-    </script>
 
     <meta property="og:title" content="NOVU — Vende tus cursos sin complicaciones" />
     <meta property="og:description" content="La plataforma chilena para creadores que quieren vender cursos, talleres, ebooks y productos digitales. Empieza gratis hoy." />

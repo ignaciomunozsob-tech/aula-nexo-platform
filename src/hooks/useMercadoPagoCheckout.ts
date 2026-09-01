@@ -155,15 +155,15 @@ export function useMercadoPagoCheckout() {
         if (row?.creator_slug && row?.page_slug) {
           sessionStorage.setItem(
             'novu:guest_checkout',
-            JSON.stringify({
-              productType: pending.productType,
-              productId: pending.productId,
-              groupId: pending.meta.groupId ?? null,
-              name: data.name,
-              email: data.email,
-              phone: data.phone,
-              ts: Date.now(),
-            }),
+             JSON.stringify({
+               productType: pending.productType,
+               productId: pending.productId,
+               groupId: pending.meta.groupId ?? null,
+               name: data.name,
+               email: data.email,
+               phone: data.phone,
+               ts: Date.now(),
+             }),
           );
           setPending(null);
           const target = `/p/${row.creator_slug}/${row.page_slug}${window.location.search}`;

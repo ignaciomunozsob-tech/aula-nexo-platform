@@ -98,9 +98,10 @@ export default function CourseGroupsManager({ courseId, courseSlug, creatorSlug,
       // Nuevo grupo parte con todos los módulos habilitados
       const moduleIds = (modules || []).map((m: any) => m.id);
       if (moduleIds.length > 0) {
-        await supabase
+        const { error: moduleError } = await supabase
           .from("course_group_modules")
           .insert(moduleIds.map((mid: string) => ({ group_id: data.id, module_id: mid })));
+        if (moduleError) throw moduleError;
       }
     },
     onSuccess: () => {

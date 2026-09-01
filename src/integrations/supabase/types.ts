@@ -1976,8 +1976,11 @@ export type Database = {
         Args: { _course_id: string }
         Returns: {
           email: string
+          lessons_completed: number
+          lessons_total: number
           name: string
           phone: string
+          progress_pct: number
           purchased_at: string
           status: string
           user_id: string

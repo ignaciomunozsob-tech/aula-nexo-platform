@@ -99,10 +99,10 @@ export default function CheckoutPage({ embed = false }: Props) {
     try {
       const raw = sessionStorage.getItem(GUEST_PREFILL_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as {
-          productType: string; productId: string;
-          name: string; email: string; phone: string; ts: number;
-        };
+         const parsed = JSON.parse(raw) as {
+           productType: string; productId: string; groupId?: string | null;
+           name: string; email: string; phone: string; ts: number;
+         };
         if (parsed.productType === page.product_type
           && parsed.productId === page.product_id
           && Date.now() - parsed.ts <= GUEST_PREFILL_TTL_MS) {

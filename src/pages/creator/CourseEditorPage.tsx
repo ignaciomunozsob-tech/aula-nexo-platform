@@ -47,6 +47,7 @@ import {
   Star,
   CreditCard,
   MessagesSquare,
+  Layers,
 } from "lucide-react";
 import {
   Table,
@@ -66,6 +67,7 @@ import CertificateTemplateUploader from "@/components/creator/CertificateTemplat
 import CourseCommunityManager from "@/components/creator/CourseCommunityManager";
 import CreatorReviewsPage from "@/pages/creator/CreatorReviewsPage";
 import CheckoutPagesPage from "@/pages/creator/CheckoutPagesPage";
+import CourseGroupsManager from "@/components/creator/CourseGroupsManager";
 
 
 type LessonResourceForm = {

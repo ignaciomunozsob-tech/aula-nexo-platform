@@ -515,6 +515,77 @@ export type Database = {
           },
         ]
       }
+      course_group_modules: {
+        Row: {
+          created_at: string
+          group_id: string
+          module_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          module_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          module_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_group_modules_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "course_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_group_modules_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "course_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_groups: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          price_clp: number | null
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          price_clp?: number | null
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          price_clp?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_groups_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_modules: {
         Row: {
           course_id: string
@@ -1084,6 +1155,7 @@ export type Database = {
       }
       enrollments: {
         Row: {
+          course_group_id: string | null
           course_id: string
           id: string
           purchased_at: string
@@ -1092,6 +1164,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          course_group_id?: string | null
           course_id: string
           id?: string
           purchased_at?: string
@@ -1100,6 +1173,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          course_group_id?: string | null
           course_id?: string
           id?: string
           purchased_at?: string
@@ -1108,6 +1182,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "enrollments_course_group_id_fkey"
+            columns: ["course_group_id"]
+            isOneToOne: false
+            referencedRelation: "course_groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "enrollments_course_id_fkey"
             columns: ["course_id"]
@@ -1492,6 +1573,7 @@ export type Database = {
           capi_fired: boolean
           checkout_page_id: string | null
           community_fee_clp: number
+          course_group_id: string | null
           created_at: string
           creator_amount_clp: number
           creator_email_sent: boolean
@@ -1526,6 +1608,7 @@ export type Database = {
           capi_fired?: boolean
           checkout_page_id?: string | null
           community_fee_clp?: number
+          course_group_id?: string | null
           created_at?: string
           creator_amount_clp?: number
           creator_email_sent?: boolean
@@ -1560,6 +1643,7 @@ export type Database = {
           capi_fired?: boolean
           checkout_page_id?: string | null
           community_fee_clp?: number
+          course_group_id?: string | null
           created_at?: string
           creator_amount_clp?: number
           creator_email_sent?: boolean
@@ -1589,6 +1673,13 @@ export type Database = {
             columns: ["checkout_page_id"]
             isOneToOne: false
             referencedRelation: "checkout_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_course_group_id_fkey"
+            columns: ["course_group_id"]
+            isOneToOne: false
+            referencedRelation: "course_groups"
             referencedColumns: ["id"]
           },
         ]

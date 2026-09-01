@@ -10,7 +10,8 @@ interface CheckoutMeta {
   value?: number;
   creatorPixelId?: string | null;
   contentName?: string;
-  checkoutPageId?: string; groupId?: string | null;
+  checkoutPageId?: string;
+  groupId?: string | null;
   includeBump?: boolean;
 }
 
@@ -157,6 +158,7 @@ export function useMercadoPagoCheckout() {
             JSON.stringify({
               productType: pending.productType,
               productId: pending.productId,
+              groupId: pending.meta.groupId ?? null,
               name: data.name,
               email: data.email,
               phone: data.phone,

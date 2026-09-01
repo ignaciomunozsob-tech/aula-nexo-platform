@@ -78,18 +78,19 @@ export default function StudentManagement({ productId, productType }: StudentMan
       } else {
         const { data, error } = await (supabase as any).rpc("get_course_students", { _course_id: productId });
         if (error) throw error;
-        return (data || []).map((r: any) => ({
-          id: r.user_id,
-          user_id: r.user_id,
-          status: r.status,
-          purchased_at: r.purchased_at,
-          profiles: { name: r.name },
-          email: r.email,
-          phone: r.phone,
-          lessons_total: r.lessons_total,
-          lessons_completed: r.lessons_completed,
-          progress_pct: r.progress_pct,
-        }));
+          return (data || []).map((r: any) => ({
+           id: r.user_id,
+           user_id: r.user_id,
+           status: r.status,
+           purchased_at: r.purchased_at,
+           profiles: { name: r.name },
+           email: r.email,
+           phone: r.phone,
+           lessons_total: r.lessons_total,
+           lessons_completed: r.lessons_completed,
+           progress_pct: r.progress_pct,
+           course_group_name: r.course_group_name,
+         }));
       }
     },
     enabled: !!productId,
@@ -255,19 +256,19 @@ export default function StudentManagement({ productId, productType }: StudentMan
       return;
     }
 
-    const header = ["Nombre", "Correo", "Teléfono", "Fecha de inscripción", "Estado"];
-    if (productType === "course") header.push("Avance (%)", "Lecciones completadas");
-    const rows = activeItems.map((item: any) => {
-      const row = [
-        item.profiles?.name || "Usuario",
+     const header = ["Nombre", "Correo", "Teléfono", "Fecha de inscripción", "Estado"];
+     if (productType === "course") header.push("Grupo", "Avance (%)", "Lecciones completadas");
+     const rows = activeItems.map((item: any) => {
+       const row = [
+         item.profiles?.name || "Usuario",
         item.email || "",
         item.phone || "",
         formatDate(item.purchased_at || item.registered_at),
         item.status === "active" || item.status === "registered" ? "Activo" : item.status,
       ];
-      if (productType === "course") {
-        row.push(String(item.progress_pct ?? 0), `${item.lessons_completed ?? 0}/${item.lessons_total ?? 0}`);
-      }
+       if (productType === "course") {
+         row.push(item.course_group_name || "Acceso general", String(item.progress_pct ?? 0), `${item.lessons_completed ?? 0}/${item.lessons_total ?? 0}`);
+       }
       return row;
     });
 
@@ -411,9 +412,10 @@ export default function StudentManagement({ productId, productType }: StudentMan
                   <TableHead>Alumno</TableHead>
                   <TableHead>Correo</TableHead>
                   <TableHead>Teléfono</TableHead>
-                  <TableHead>Fecha de inscripción</TableHead>
-                  {productType === "course" && <TableHead className="min-w-[160px]">Avance</TableHead>}
-                  <TableHead>Estado</TableHead>
+                   <TableHead>Fecha de inscripción</TableHead>
+                   {productType === "course" && <TableHead>Grupo</TableHead>}
+                   {productType === "course" && <TableHead className="min-w-[160px]">Avance</TableHead>}
+                   <TableHead>Estado</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -428,12 +430,17 @@ export default function StudentManagement({ productId, productType }: StudentMan
                     <TableCell className="text-sm text-muted-foreground">
                       {item.phone || "—"}
                     </TableCell>
-                    <TableCell>
-                      {formatDate(item.purchased_at || item.registered_at)}
-                    </TableCell>
-                    {productType === "course" && (
-                      <TableCell>
-                        <div className="flex items-center gap-2">
+                     <TableCell>
+                       {formatDate(item.purchased_at || item.registered_at)}
+                     </TableCell>
+                     {productType === "course" && (
+                       <TableCell className="text-sm">
+                         {item.course_group_name || "Acceso general"}
+                       </TableCell>
+                     )}
+                     {productType === "course" && (
+                       <TableCell>
+                         <div className="flex items-center gap-2"
                           <div className="progress-bar flex-1 min-w-[80px]">
                             <div className="progress-fill" style={{ width: `${item.progress_pct ?? 0}%` }} />
                           </div>

@@ -41,6 +41,7 @@ export default function CoursePlayerPage() {
   
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [view, setView] = useState<'lesson' | 'community'>('lesson');
+  const selectedGroupId = searchParams.get('group');
 
   // Check enrollment (skip if preview mode)
   const { data: enrollment, isLoading: enrollmentLoading } = useQuery({
@@ -107,9 +108,8 @@ export default function CoursePlayerPage() {
             lesson_resources ( id, lesson_id, file_name, created_at )
           )
         `)
-        .eq('course_id', id!)
+        .eq('course_id', id || '')
         .order('order_index', { ascending: true });
-      
       if (error) throw error;
       return data?.map(m => ({
         ...m,
@@ -118,6 +118,24 @@ export default function CoursePlayerPage() {
     },
     enabled: !!id && (!!enrollment || isPreviewMode),
   });
+
+  const { data: allowedModuleIds } = useQuery({
+    queryKey: ['course-group-modules', enrollment?.course_group_id],
+    queryFn: async () => {
+      if (!enrollment?.course_group_id) return null;
+      const { data, error } = await supabase
+        .from('course_group_modules')
+        .select('module_id')
+        .eq('group_id', enrollment.course_group_id);
+      if (error) throw error;
+      return new Set((data || []).map((row) => row.module_id));
+    },
+    enabled: !!enrollment?.course_group_id && !isPreviewMode,
+  });
+
+  const visibleModules = allowedModuleIds
+    ? (modules || []).filter((module) => allowedModuleIds.has(module.id))
+    : (modules || []);
 
   // Get progress (skip if preview mode)
   const { data: progress } = useQuery({
@@ -138,7 +156,7 @@ export default function CoursePlayerPage() {
   // Compute current lesson early so we can sign protected URLs as a hook (must be top-level).
   // Video URLs (YouTube absolute or storage path) are resolved server-side via the
   // `get-protected-url` edge function — the client never reads `lessons.video_url` directly.
-  const allLessonsPre = modules?.flatMap((m: any) => (m.lessons as any[]) || []) || [];
+  const allLessonsPre = visibleModules.flatMap((m: any) => (m.lessons as any[]) || []);
   const currentLessonForUrl = allLessonsPre.find((l: any) => l.id === selectedLessonId);
   const isVideoLesson = currentLessonForUrl?.type === 'video';
   const isBunnyVideo =
@@ -216,15 +234,15 @@ export default function CoursePlayerPage() {
 
   // Select first available lesson by default (skips empty modules)
   useEffect(() => {
-    if (modules && modules.length > 0 && !selectedLessonId) {
-      const firstLesson = modules
+    if (visibleModules.length > 0 && !selectedLessonId) {
+      const firstLesson = visibleModules
         .flatMap((m: any) => ((m.lessons as any[]) || []))
         .find(Boolean);
       if (firstLesson) {
         setSelectedLessonId(firstLesson.id);
       }
     }
-  }, [modules, selectedLessonId]);
+  }, [visibleModules, selectedLessonId]);
 
 
   // Mark lesson complete mutation
@@ -284,7 +302,7 @@ export default function CoursePlayerPage() {
   }
 
   // Find current lesson
-  const allLessons = modules?.flatMap(m => (m.lessons as any[]) || []) || [];
+  const allLessons = visibleModules.flatMap(m => (m.lessons as any[]) || []);
   const currentLesson = allLessons.find(l => l.id === selectedLessonId);
   const currentLessonIndex = allLessons.findIndex(l => l.id === selectedLessonId);
   const prevLesson = currentLessonIndex > 0 ? allLessons[currentLessonIndex - 1] : null;
@@ -324,7 +342,7 @@ export default function CoursePlayerPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {modules?.map((module, moduleIndex) => (
+        {visibleModules.map((module, moduleIndex) => (
           <div key={module.id} className="border-b border-sidebar-border">
             <div className="px-4 py-3 bg-muted/50 font-medium text-sm">
               {moduleIndex + 1}. {module.title}

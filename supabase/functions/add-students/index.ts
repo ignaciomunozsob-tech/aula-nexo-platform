@@ -178,15 +178,22 @@ const handler = async (req: Request): Promise<Response> => {
             console.error(`[add-students] event reg error ${email}`, regError);
             results.push({ email, success: false, message: "No se pudo inscribir al estudiante" }); continue;
           }
-        } else {
-          const { error: enrollError } = await supabaseAdmin.from("enrollments").insert({
-            course_id: productId, user_id: userId, status: "active", source: "manual",
-          });
-          if (enrollError && !enrollError.message?.toLowerCase().includes("duplicate")) {
-            console.error(`[add-students] enroll error ${email}`, enrollError);
-            results.push({ email, success: false, message: "No se pudo inscribir al estudiante" }); continue;
-          }
-        }
+         } else {
+           const { data: defaultGroup } = await supabaseAdmin
+             .from("course_groups")
+             .select("id")
+             .eq("course_id", productId)
+             .eq("is_default", true)
+             .maybeSingle();
+           const { error: enrollError } = await supabaseAdmin.from("enrollments").insert({
+             course_id: productId, user_id: userId, status: "active", source: "manual",
+             course_group_id: defaultGroup?.id ?? null,
+           });
+           if (enrollError && !enrollError.message?.toLowerCase().includes("duplicate")) {
+             console.error(`[add-students] enroll error ${email}`, enrollError);
+             results.push({ email, success: false, message: "No se pudo inscribir al estudiante" }); continue;
+           }
+         }
 
         results.push({ email, success: true, message: "Added successfully" });
       } catch (studentError: any) {

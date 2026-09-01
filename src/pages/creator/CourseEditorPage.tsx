@@ -47,6 +47,7 @@ import {
   Star,
   CreditCard,
   MessagesSquare,
+  Layers,
 } from "lucide-react";
 import {
   Table,
@@ -66,6 +67,7 @@ import CertificateTemplateUploader from "@/components/creator/CertificateTemplat
 import CourseCommunityManager from "@/components/creator/CourseCommunityManager";
 import CreatorReviewsPage from "@/pages/creator/CreatorReviewsPage";
 import CheckoutPagesPage from "@/pages/creator/CheckoutPagesPage";
+import CourseGroupsManager from "@/components/creator/CourseGroupsManager";
 
 
 type LessonResourceForm = {
@@ -752,6 +754,10 @@ export default function CourseEditorPage() {
             <MessagesSquare className="h-4 w-4" />
             Comunidad
           </TabsTrigger>
+          <TabsTrigger value="groups" className="flex items-center gap-2">
+            <Layers className="h-4 w-4" />
+            Grupos
+          </TabsTrigger>
           <TabsTrigger value="reviews" className="flex items-center gap-2">
             <Star className="h-4 w-4" />
             Evaluaciones
@@ -1280,6 +1286,17 @@ export default function CourseEditorPage() {
         </TabsContent>
 
         {/* Tab: Evaluaciones */}
+        <TabsContent value="groups">
+          {id && (
+            <CourseGroupsManager
+              courseId={id}
+              courseSlug={course?.slug}
+              creatorSlug={(profile as any)?.creator_slug}
+              coursePrice={Number(form.price_clp || 0)}
+            />
+          )}
+        </TabsContent>
+
         <TabsContent value="reviews">
           <CreatorReviewsPage />
         </TabsContent>

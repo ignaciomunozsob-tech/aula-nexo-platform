@@ -1286,6 +1286,17 @@ export default function CourseEditorPage() {
         </TabsContent>
 
         {/* Tab: Evaluaciones */}
+        <TabsContent value="groups">
+          {id && (
+            <CourseGroupsManager
+              courseId={id}
+              courseSlug={course?.slug}
+              creatorSlug={(profile as any)?.creator_slug}
+              coursePrice={Number(form.price_clp || 0)}
+            />
+          )}
+        </TabsContent>
+
         <TabsContent value="reviews">
           <CreatorReviewsPage />
         </TabsContent>

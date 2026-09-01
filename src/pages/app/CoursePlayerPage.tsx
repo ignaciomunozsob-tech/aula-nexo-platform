@@ -41,6 +41,7 @@ export default function CoursePlayerPage() {
   
   const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
   const [view, setView] = useState<'lesson' | 'community'>('lesson');
+  const selectedGroupId = searchParams.get('group');
 
   // Check enrollment (skip if preview mode)
   const { data: enrollment, isLoading: enrollmentLoading } = useQuery({

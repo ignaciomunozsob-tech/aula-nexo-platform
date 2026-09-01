@@ -440,16 +440,16 @@ export default function StudentManagement({ productId, productType }: StudentMan
                      )}
                      {productType === "course" && (
                        <TableCell>
-                         <div className="flex items-center gap-2"
-                          <div className="progress-bar flex-1 min-w-[80px]">
-                            <div className="progress-fill" style={{ width: `${item.progress_pct ?? 0}%` }} />
-                          </div>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">
-                            {item.progress_pct ?? 0}% · {item.lessons_completed ?? 0}/{item.lessons_total ?? 0}
-                          </span>
-                        </div>
-                      </TableCell>
-                    )}
+                         <div className="flex items-center gap-2">
+                           <div className="progress-bar flex-1 min-w-[80px]">
+                             <div className="progress-fill" style={{ width: `${item.progress_pct ?? 0}%` }} />
+                           </div>
+                           <span className="text-xs text-muted-foreground whitespace-nowrap">
+                             {item.progress_pct ?? 0}% · {item.lessons_completed ?? 0}/{item.lessons_total ?? 0}
+                           </span>
+                         </div>
+                       </TableCell>
+                     )}
                     <TableCell>
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         {item.status === "active" || item.status === "registered" ? "Activo" : item.status}

@@ -2063,9 +2063,20 @@ export type Database = {
           video_url: string
         }[]
       }
+      get_course_groups_public: {
+        Args: { _course_id: string }
+        Returns: {
+          id: string
+          is_default: boolean
+          name: string
+          price_clp: number
+        }[]
+      }
       get_course_students: {
         Args: { _course_id: string }
         Returns: {
+          course_group_id: string
+          course_group_name: string
           email: string
           lessons_completed: number
           lessons_total: number
@@ -2322,6 +2333,10 @@ export type Database = {
         Args: { _course_id: string; _user_id: string }
         Returns: boolean
       }
+      has_module_access: {
+        Args: { _module_id: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2372,6 +2387,10 @@ export type Database = {
           product_slug: string
           product_type: string
         }[]
+      }
+      set_enrollment_group: {
+        Args: { _course_id: string; _group_id: string; _user_id: string }
+        Returns: undefined
       }
       slugify: { Args: { _text: string }; Returns: string }
       unban_user_from_course: {

@@ -64,21 +64,29 @@ export default function CheckoutPage({ embed = false }: Props) {
     queryKey: ['checkout-products', page?.id],
     enabled: !!page,
     queryFn: async () => {
-      const fetchOne = async (type: string, id: string) => {
-        if (type === 'course') return (await supabase.from('courses').select('id, title, description, price_clp, cover_image_url').eq('id', id).maybeSingle()).data;
-        if (type === 'ebook') return (await supabase.from('ebooks').select('id, title, description, price_clp, cover_image_url').eq('id', id).maybeSingle()).data;
-        if (type === 'event') return (await supabase.from('events').select('id, title, description, price_clp, cover_image_url').eq('id', id).maybeSingle()).data;
-        if (type === 'community') {
-          const { data } = await supabase.from('communities').select('id, name, description, price_clp, cover_url').eq('id', id).maybeSingle();
-          return data ? { id: data.id, title: data.name, description: data.description, price_clp: data.price_clp, cover_image_url: data.cover_url } : null;
-        }
-        return null;
-      };
+       const fetchOne = async (type: string, id: string) => {
+         if (type === 'course') return (await supabase.from('courses').select('id, title, description, price_clp, cover_image_url').eq('id', id).maybeSingle()).data;
+         if (type === 'ebook') return (await supabase.from('ebooks').select('id, title, description, price_clp, cover_image_url').eq('id', id).maybeSingle()).data;
+         if (type === 'event') return (await supabase.from('events').select('id, title, description, price_clp, cover_image_url').eq('id', id).maybeSingle()).data;
+         if (type === 'community') {
+           const { data } = await supabase.from('communities').select('id, name, description, price_clp, cover_url').eq('id', id).maybeSingle();
+           return data ? { id: data.id, title: data.name, description: data.description, price_clp: data.price_clp, cover_image_url: data.cover_url } : null;
+         }
+         return null;
+       };
 
-      const main = await fetchOne(page.product_type, page.product_id);
-      const bump = page.bump_enabled && page.bump_product_id
-        ? await fetchOne(page.bump_product_type, page.bump_product_id) : null;
-      return { main, bump };
+       const main = await fetchOne(page.product_type, page.product_id);
+       if (main && page.product_type === 'course') {
+         const groupId = searchParams.get('group');
+         if (groupId) {
+           const { data: group } = await supabase.rpc('get_course_groups_public', { _course_id: page.product_id });
+           const selected = (group || []).find((item: any) => item.id === groupId);
+           if (selected) (main as any).price_clp = selected.price_clp ?? (main as any).price_clp;
+         }
+       }
+       const bump = page.bump_enabled && page.bump_product_id
+         ? await fetchOne(page.bump_product_type, page.bump_product_id) : null;
+       return { main, bump };
     },
   });
 

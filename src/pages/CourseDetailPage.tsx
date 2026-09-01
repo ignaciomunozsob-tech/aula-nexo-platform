@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { SEO } from "@/components/SEO";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -68,6 +68,8 @@ export default function CourseDetailPage() {
   const params = useParams();
   const slug = params.courseSlug || params.slug;
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const groupId = searchParams.get("group");
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -293,7 +295,7 @@ export default function CourseDetailPage() {
       startCheckout('course', course!.id, {
         value: course!.price_clp ?? 0,
         creatorPixelId,
-        contentName: course!.title,
+        contentName: course!.title, groupId,
       });
     }
   };

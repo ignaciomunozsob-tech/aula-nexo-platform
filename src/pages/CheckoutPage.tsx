@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,6 +25,7 @@ const contactSchema = z.object({
 
 export default function CheckoutPage({ embed = false }: Props) {
   const { creatorSlug, pageSlug } = useParams();
+  const [searchParams] = useSearchParams();
   const { user, profile } = useAuth();
   const [includeBump, setIncludeBump] = useState(false);
   const [contact, setContact] = useState<ContactState>({ name: '', email: '', phone: '' });
@@ -168,7 +169,7 @@ export default function CheckoutPage({ embed = false }: Props) {
       value: products.main!.price_clp + (includeBump ? bumpFinal : 0),
       creatorPixelId: creator?.meta_pixel_id,
       contentName: products.main!.title,
-      checkoutPageId: page.id,
+      checkoutPageId: page.id, groupId: searchParams.get("group"),
       includeBump,
     };
     // Same path for guests and logged-in users: send name/email/phone so the creator's

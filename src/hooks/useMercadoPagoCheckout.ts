@@ -10,7 +10,7 @@ interface CheckoutMeta {
   value?: number;
   creatorPixelId?: string | null;
   contentName?: string;
-  checkoutPageId?: string;
+  checkoutPageId?: string; groupId?: string | null;
   includeBump?: boolean;
 }
 
@@ -52,7 +52,7 @@ export function useMercadoPagoCheckout() {
         body: {
           product_type: productType,
           product_id: productId,
-          checkout_page_id: meta.checkoutPageId,
+          checkout_page_id: meta.checkoutPageId, group_id: meta.groupId, group_id: meta.groupId,
           include_bump: !!meta.includeBump,
           guest_email: guest?.email,
           guest_name: guest?.name,
@@ -113,7 +113,7 @@ export function useMercadoPagoCheckout() {
         const row = Array.isArray(rows) && rows.length > 0 ? (rows[0] as any) : null;
         if (row?.creator_slug && row?.page_slug) {
           setLoading(true);
-          const target = `/p/${row.creator_slug}/${row.page_slug}`;
+          const target = `/p/${row.creator_slug}/${row.page_slug}${window.location.search}`;
           if (window.top && window.top !== window.self) {
             window.top.location.href = target;
           } else {
@@ -163,7 +163,7 @@ export function useMercadoPagoCheckout() {
             }),
           );
           setPending(null);
-          const target = `/p/${row.creator_slug}/${row.page_slug}`;
+          const target = `/p/${row.creator_slug}/${row.page_slug}${window.location.search}`;
           if (window.top && window.top !== window.self) {
             window.top.location.href = target;
           } else {

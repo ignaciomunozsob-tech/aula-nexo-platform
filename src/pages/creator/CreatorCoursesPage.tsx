@@ -68,15 +68,11 @@ export default function CreatorCoursesPage() {
   const { data: students, isLoading: loadingStudents } = useQuery({
     queryKey: ['course-students', selectedCourse?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('enrollments')
-        .select('id, purchased_at, status, profiles:user_id(id, name, avatar_url)')
-        .eq('course_id', selectedCourse!.id)
-        .eq('status', 'active')
-        .order('purchased_at', { ascending: false });
-
+      const { data, error } = await (supabase as any).rpc('get_course_students', {
+        _course_id: selectedCourse!.id,
+      });
       if (error) throw error;
-      return data;
+      return (data || []).filter((s: any) => s.status === 'active');
     },
     enabled: !!selectedCourse,
   });
@@ -160,17 +156,28 @@ export default function CreatorCoursesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Alumno</TableHead>
+                  <TableHead>Avance</TableHead>
                   <TableHead>Fecha de inscripción</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {students.map((student: any) => (
-                  <TableRow key={student.id}>
+                  <TableRow key={student.user_id}>
                     <TableCell className="font-medium">
-                      {student.profiles?.name || 'Usuario'}
+                      {student.name || 'Usuario'}
                     </TableCell>
                     <TableCell>
-                      {new Date(student.purchased_at).toLocaleDateString('es-CL')}
+                      <div className="flex items-center gap-2">
+                        <div className="progress-bar flex-1 min-w-[70px]">
+                          <div className="progress-fill" style={{ width: `${student.progress_pct ?? 0}%` }} />
+                        </div>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {student.progress_pct ?? 0}% · {student.lessons_completed ?? 0}/{student.lessons_total ?? 0}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {student.purchased_at ? new Date(student.purchased_at).toLocaleDateString('es-CL') : '—'}
                     </TableCell>
                   </TableRow>
                 ))}

@@ -155,9 +155,10 @@ export default function CreatorCoursesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Alumno</TableHead>
-                  <TableHead>Avance</TableHead>
-                  <TableHead>Fecha de inscripción</TableHead>
+                   <TableHead>Alumno</TableHead>
+                   <TableHead>Grupo</TableHead>
+                   <TableHead>Avance</TableHead>
+                   <TableHead>Fecha de inscripción</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -165,9 +166,12 @@ export default function CreatorCoursesPage() {
                   <TableRow key={student.user_id}>
                     <TableCell className="font-medium">
                       {student.name || 'Usuario'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
+                     </TableCell>
+                     <TableCell className="text-sm text-muted-foreground">
+                       {student.course_group_name || 'Acceso general'}
+                     </TableCell>
+                     <TableCell>
+                       <div className="flex items-center gap-2">
                         <div className="progress-bar flex-1 min-w-[70px]">
                           <div className="progress-fill" style={{ width: `${student.progress_pct ?? 0}%` }} />
                         </div>

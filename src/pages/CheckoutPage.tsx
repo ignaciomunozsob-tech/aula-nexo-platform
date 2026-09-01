@@ -61,8 +61,8 @@ export default function CheckoutPage({ embed = false }: Props) {
 
   // Load main + bump products
   const { data: products } = useQuery({
-    queryKey: ['checkout-products', page?.id],
-    enabled: !!page,
+   queryKey: ['checkout-products', page?.id, searchParams.get('group')],
+   enabled: !!page,
     queryFn: async () => {
        const fetchOne = async (type: string, id: string) => {
          if (type === 'course') return (await supabase.from('courses').select('id, title, description, price_clp, cover_image_url').eq('id', id).maybeSingle()).data;

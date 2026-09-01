@@ -168,9 +168,9 @@ export default function CourseDetailPage() {
       // If user is logged in, use their ID
       if (user) {
         const { error } = await supabase.from("enrollments").insert({
-          course_id: course.id,
-          user_id: user.id,
-          status: "active", course_group_id: groupId,
+           course_id: course.id,
+           user_id: user.id,
+           status: "active", course_group_id: selectedGroup?.id ?? null,
         });
         if (error) throw error;
         return { userId: user.id, isNewUser: false };
@@ -198,9 +198,9 @@ export default function CourseDetailPage() {
       
       // Create enrollment
       const { error } = await supabase.from("enrollments").insert({
-        course_id: course.id,
-        user_id: authData.user.id,
-        status: "active", course_group_id: groupId,
+         course_id: course.id,
+         user_id: authData.user.id,
+         status: "active", course_group_id: selectedGroup?.id ?? null,
       });
       if (error) throw error;
       

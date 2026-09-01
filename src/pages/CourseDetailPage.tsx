@@ -166,7 +166,7 @@ export default function CourseDetailPage() {
         const { error } = await supabase.from("enrollments").insert({
           course_id: course.id,
           user_id: user.id,
-          status: "active",
+          status: "active", course_group_id: groupId,
         });
         if (error) throw error;
         return { userId: user.id, isNewUser: false };
@@ -196,7 +196,7 @@ export default function CourseDetailPage() {
       const { error } = await supabase.from("enrollments").insert({
         course_id: course.id,
         user_id: authData.user.id,
-        status: "active",
+        status: "active", course_group_id: groupId,
       });
       if (error) throw error;
       

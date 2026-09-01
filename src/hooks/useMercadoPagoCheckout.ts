@@ -52,7 +52,8 @@ export function useMercadoPagoCheckout() {
         body: {
           product_type: productType,
           product_id: productId,
-          checkout_page_id: meta.checkoutPageId, group_id: meta.groupId, group_id: meta.groupId,
+          checkout_page_id: meta.checkoutPageId,
+          group_id: meta.groupId,
           include_bump: !!meta.includeBump,
           guest_email: guest?.email,
           guest_name: guest?.name,

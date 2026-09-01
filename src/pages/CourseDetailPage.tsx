@@ -124,14 +124,18 @@ export default function CourseDetailPage() {
         ),
       }));
 
-      return { course, modules: normalized };
+      const { data: groups } = await supabase.rpc('get_course_groups_public', { _course_id: course.id });
+      return { course, modules: normalized, groups: (groups || []) as any[] };
     },
     enabled: !!slug,
   });
 
   const course: any = data?.course;
   const modules = data?.modules || [];
-  const isFree = (course?.price_clp || 0) === 0;
+  const groups = data?.groups || [];
+  const selectedGroup = groups.find((group: any) => group.id === groupId) || groups.find((group: any) => group.is_default) || null;
+  const selectedPrice = selectedGroup?.price_clp ?? course?.price_clp ?? 0;
+  const isFree = selectedPrice === 0;
 
   const totalLessons = useMemo(() => {
     return modules.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0);
@@ -293,9 +297,9 @@ export default function CourseDetailPage() {
     } else {
       // Paid course: works for both logged-in and guest (the hook opens a dialog if no session)
       startCheckout('course', course!.id, {
-        value: course!.price_clp ?? 0,
+        value: selectedPrice,
         creatorPixelId,
-        contentName: course!.title, groupId,
+        contentName: course!.title, groupId: selectedGroup?.id ?? null,
       });
     }
   };
@@ -468,12 +472,31 @@ export default function CourseDetailPage() {
                   </div>
                 )}
 
+                {groups.length > 1 && (
+                  <div className="mb-4 space-y-2">
+                    <p className="text-sm font-medium">Elige tu grupo</p>
+                    <div className="grid gap-2">
+                      {groups.map((group: any) => (
+                        <Button
+                          key={group.id}
+                          type="button"
+                          variant={selectedGroup?.id === group.id ? "default" : "outline"}
+                          className="justify-between h-auto py-2"
+                          onClick={() => {
+                            const next = new URLSearchParams(searchParams);
+                            next.set("group", group.id);
+                            navigate(`${window.location.pathname}?${next.toString()}`, { replace: true });
+                          }}
+                        >
+                          <span>{group.name}</span>
+                          <span>{group.price_clp == null ? formatCLP(course.price_clp) : formatCLP(group.price_clp)}</span>
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="text-3xl font-bold text-foreground mb-1">
-                    {isFree ? (
-                      <span className="text-green-600">Gratis</span>
-                    ) : (
-                      formatCLP(course.price_clp)
-                    )}
+                    {isFree ? <span className="text-green-600">Gratis</span> : formatCLP(selectedPrice)}
                 </div>
                 <p className="text-xs text-muted-foreground mb-4">
                   {isFree ? "Acceso gratuito" : "Pago único · acceso de por vida"}

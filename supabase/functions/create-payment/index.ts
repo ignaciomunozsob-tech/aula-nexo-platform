@@ -27,8 +27,8 @@ function isAllowedOrigin(value: string): boolean {
 async function fetchProduct(admin: any, type: ProductType, id: string) {
   if (type === 'course') {
     const { data } = await admin.from('courses')
-      .select('id, title, slug, price_clp, creator_id, cover_image_url, community_enabled, community_fee_clp, redirect_url').eq('id', id).maybeSingle();
-    return data ? { title: data.title, slug: data.slug, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_image_url, community_enabled: !!data.community_enabled, community_fee_clp: data.community_fee_clp ?? 0, redirect_url: data.redirect_url ?? null } : null;
+      .select('id, title, slug, price_clp, creator_id, cover_image_url, community_enabled, community_fee_clp, redirect_url, status').eq('id', id).maybeSingle();
+    return data ? { title: data.title, slug: data.slug, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_image_url, community_enabled: !!data.community_enabled, community_fee_clp: data.community_fee_clp ?? 0, redirect_url: data.redirect_url ?? null, status: data.status } : null;
   }
   if (type === 'ebook') {
     const { data } = await admin.from('ebooks')
@@ -123,6 +123,18 @@ Deno.serve(async (req) => {
             .eq('id', body.checkout_page_id).maybeSingle()
         : Promise.resolve({ data: null } as any),
     ]);
+    if (mainRes && body.product_type === 'course' && body.group_id) {
+      if ((mainRes as any).status !== 'published') return json({ error: 'Curso no publicado' }, 400);
+      const { data: group, error: groupError } = await admin
+        .from('course_groups')
+        .select('id, name, price_clp, course_id')
+        .eq('id', body.group_id)
+        .eq('course_id', body.product_id)
+        .maybeSingle();
+      if (groupError || !group) return json({ error: 'Grupo de curso inválido' }, 400);
+      (mainRes as any).amount = group.price_clp ?? (mainRes as any).amount;
+      (mainRes as any).group_name = group.name;
+    }
     const main = mainRes;
     if (!main) return json({ error: 'Product not found' }, 404);
     if (main.amount <= 0) return json({ error: 'Producto sin precio configurado' }, 400);
@@ -187,8 +199,9 @@ Deno.serve(async (req) => {
       platform_amount_clp: platformAmount,
       community_fee_clp: communityFee,
       status: 'pending',
-      metadata: { title: main.title, has_bump: !!bumpInfo, is_new_user: isNewUser, marketplace: true, redirect_url: (main as any).redirect_url ?? null, product_url: productUrl },
-      checkout_page_id: body.checkout_page_id ?? null, course_group_id: body.group_id ?? null,
+      metadata: { title: main.title, group_name: (main as any).group_name ?? null, has_bump: !!bumpInfo, is_new_user: isNewUser, marketplace: true, redirect_url: (main as any).redirect_url ?? null, product_url: productUrl },
+      checkout_page_id: body.checkout_page_id ?? null,
+      course_group_id: body.product_type === 'course' ? body.group_id ?? null : null,
       bump_product_type: bumpInfo?.type ?? null,
       bump_product_id: bumpInfo?.id ?? null,
       bump_amount_clp: bumpInfo?.amount ?? 0,

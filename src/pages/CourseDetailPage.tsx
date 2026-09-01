@@ -274,13 +274,13 @@ export default function CourseDetailPage() {
     initPixel(creatorPixelId);
     trackEventFor(creatorPixelId, 'ViewContent', {
       content_type: 'product',
-      content_category: 'course',
-      content_ids: [course.id],
-      content_name: course.title,
-      value: course.price_clp ?? 0,
-      currency: 'CLP',
-    });
-  }, [course?.id, creatorPixelId]);
+       content_category: 'course',
+       content_ids: [course.id],
+       content_name: course.title,
+       value: selectedPrice,
+       currency: 'CLP',
+     });
+   }, [course?.id, creatorPixelId, selectedPrice]);
 
   const handleEnrollClick = () => {
     if (existingEnrollment?.status === "active") {

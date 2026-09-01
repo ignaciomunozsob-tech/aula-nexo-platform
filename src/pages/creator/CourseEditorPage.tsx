@@ -752,6 +752,10 @@ export default function CourseEditorPage() {
             <MessagesSquare className="h-4 w-4" />
             Comunidad
           </TabsTrigger>
+          <TabsTrigger value="groups" className="flex items-center gap-2">
+            <Layers className="h-4 w-4" />
+            Grupos
+          </TabsTrigger>
           <TabsTrigger value="reviews" className="flex items-center gap-2">
             <Star className="h-4 w-4" />
             Evaluaciones

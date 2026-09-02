@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     // MP access token now comes from the creator's connected MercadoPago account (marketplace).
 
     const body = await req.json().catch(() => null) as
-      | { product_type: ProductType; product_id: string; checkout_page_id?: string; include_bump?: boolean; return_url?: string; guest_email?: string; guest_name?: string; guest_phone?: string; group_id?: string | null }
+       | { product_type: ProductType; product_id: string; checkout_page_id?: string; include_bump?: boolean; return_url?: string; guest_email?: string; guest_name?: string; guest_phone?: string; group_id?: string | null; group_code?: string | null }
       | null;
     if (!body?.product_type || !body?.product_id) return json({ error: 'product_type and product_id required' }, 400);
 
@@ -123,17 +123,22 @@ Deno.serve(async (req) => {
             .eq('id', body.checkout_page_id).maybeSingle()
         : Promise.resolve({ data: null } as any),
     ]);
-    if (mainRes && body.product_type === 'course' && body.group_id) {
+    let selectedGroup: { id: string; name: string; price_clp: number | null; redirect_url: string | null } | null = null;
+    if (mainRes && body.product_type === 'course' && (body.group_id || body.group_code)) {
       if ((mainRes as any).status !== 'published') return json({ error: 'Curso no publicado' }, 400);
-      const { data: group, error: groupError } = await admin
+      let groupQuery = admin
         .from('course_groups')
-        .select('id, name, price_clp, course_id')
-        .eq('id', body.group_id)
-        .eq('course_id', body.product_id)
-        .maybeSingle();
+        .select('id, name, price_clp, redirect_url')
+        .eq('course_id', body.product_id);
+      groupQuery = body.group_id
+        ? groupQuery.eq('id', body.group_id)
+        : groupQuery.eq('sales_code', body.group_code as string);
+      const { data: group, error: groupError } = await groupQuery.maybeSingle();
       if (groupError || !group) return json({ error: 'Grupo de curso inválido' }, 400);
+      selectedGroup = group;
       (mainRes as any).amount = group.price_clp ?? (mainRes as any).amount;
       (mainRes as any).group_name = group.name;
+      (mainRes as any).group_redirect_url = group.redirect_url ?? null;
     }
     const main = mainRes;
     if (!main) return json({ error: 'Product not found' }, 404);
@@ -199,9 +204,9 @@ Deno.serve(async (req) => {
       platform_amount_clp: platformAmount,
       community_fee_clp: communityFee,
       status: 'pending',
-      metadata: { title: main.title, group_name: (main as any).group_name ?? null, has_bump: !!bumpInfo, is_new_user: isNewUser, marketplace: true, redirect_url: (main as any).redirect_url ?? null, product_url: productUrl },
-      checkout_page_id: body.checkout_page_id ?? null,
-      course_group_id: body.product_type === 'course' ? body.group_id ?? null : null,
+       metadata: { title: main.title, group_name: (main as any).group_name ?? null, has_bump: !!bumpInfo, is_new_user: isNewUser, marketplace: true, redirect_url: (main as any).group_redirect_url ?? (main as any).redirect_url ?? null, product_url: productUrl },
+       checkout_page_id: body.checkout_page_id ?? null,
+       course_group_id: body.product_type === 'course' ? selectedGroup?.id ?? body.group_id ?? null : null,
       bump_product_type: bumpInfo?.type ?? null,
       bump_product_id: bumpInfo?.id ?? null,
       bump_amount_clp: bumpInfo?.amount ?? 0,

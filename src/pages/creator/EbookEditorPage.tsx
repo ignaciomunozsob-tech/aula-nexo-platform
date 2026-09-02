@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import StudentManagement from '@/components/creator/StudentManagement';
+import CreatorReviewsPage from '@/pages/creator/CreatorReviewsPage';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Loader2, Upload, FileText, Trash2 } from 'lucide-react';
 import { generateSlug, formatPrice } from '@/lib/utils';
@@ -496,8 +497,12 @@ export default function EbookEditorPage() {
       </form>
 
       {isEditing && id && (
-        <div className="mt-8">
+        <div className="mt-8 space-y-10">
           <StudentManagement productId={id} productType="ebook" />
+          <section>
+            <h2 className="text-xl font-bold mb-4">Evaluaciones</h2>
+            <CreatorReviewsPage embedded defaultProduct={{ type: 'ebook', id }} />
+          </section>
         </div>
       )}
 

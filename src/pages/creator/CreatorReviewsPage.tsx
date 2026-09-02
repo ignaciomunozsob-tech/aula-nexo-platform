@@ -76,8 +76,8 @@ export default function CreatorReviewsPage({ defaultProduct, embedded }: { defau
 
   if (isLoading) return <DashboardSkeleton />;
 
-  return <div className="p-4 sm:p-6 lg:p-8 space-y-8">
-    <div><h1 className="text-2xl font-bold">Evaluaciones</h1><p className="text-muted-foreground mt-1">Solicita opiniones a quienes compraron tus productos y servicios.</p></div>
+  return <div className={embedded ? 'space-y-8' : 'p-4 sm:p-6 lg:p-8 space-y-8'}>
+    {!embedded && <div><h1 className="text-2xl font-bold">Evaluaciones</h1><p className="text-muted-foreground mt-1">Solicita opiniones a quienes compraron tus productos y servicios.</p></div>}
 
     <Card>
       <CardHeader><CardTitle className="flex items-center gap-2"><Mail className="h-5 w-5 text-primary" />Solicitar evaluaciones</CardTitle></CardHeader>

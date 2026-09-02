@@ -74,6 +74,10 @@ export default function CreatorProfileEdit() {
     setCreatorSlug(profileData?.creator_slug || '');
     setIntroVideoUrl(profileData?.intro_video_url || '');
     setAvatarUrl(profileData?.avatar_url || '');
+    const savedOrder = Array.isArray(profileData?.public_product_order)
+      ? profileData.public_product_order.filter((item: any) => ['course', 'event', 'ebook', 'session'].includes(item))
+      : [];
+    setProductOrder([...savedOrder, ...['course', 'event', 'ebook', 'session'].filter((item) => !savedOrder.includes(item))]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileData?.id, profileData?.updated_at]);
 

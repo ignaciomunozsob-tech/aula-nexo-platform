@@ -158,6 +158,9 @@ Deno.serve(async (req) => {
 
     if (newStatus === 'paid' && !wasPaidBefore) {
       await fulfillOrder(admin, order);
+      if (order.product_type === 'session') {
+        await confirmPaidSessionBooking(admin, order);
+      }
       if (order.bump_product_type && order.bump_product_id && (order.bump_amount_clp ?? 0) > 0) {
         await fulfillOrder(admin, {
           ...order,
@@ -192,6 +195,9 @@ Deno.serve(async (req) => {
       } else if (order.product_type === 'event') {
         const { data } = await admin.from('events').select('title').eq('id', order.product_id).maybeSingle();
         productTitle = data?.title ?? productTitle;
+      } else if (order.product_type === 'session') {
+        const { data: session } = await admin.from('one_on_one_sessions').select('title').eq('id', order.product_id).maybeSingle();
+        productTitle = session?.title ?? productTitle;
       } else if (order.product_type === 'community') {
         const { data } = await admin.from('communities').select('name').eq('id', order.product_id).maybeSingle();
         productTitle = data?.name ?? productTitle;
@@ -272,6 +278,27 @@ Deno.serve(async (req) => {
     return new Response('ok', { status: 200, headers: corsHeaders });
   }
 });
+
+
+async function confirmPaidSessionBooking(admin: ReturnType<typeof createClient>, order: any) {
+  const { data: booking } = await admin.from('session_bookings')
+    .select('id, start_at').eq('order_id', order.id).eq('status', 'pending').maybeSingle();
+  if (!booking) return;
+  try {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/booking-create`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'apikey': SUPABASE_SERVICE_ROLE_KEY,
+      },
+      body: JSON.stringify({ session_id: order.product_id, start_at: booking.start_at, booking_id: booking.id }),
+    });
+    if (!response.ok) console.error('paid session booking confirmation failed', response.status, await response.text());
+  } catch (error) {
+    console.error('paid session booking confirmation error', error);
+  }
+}
 
 async function fulfillOrder(admin: ReturnType<typeof createClient>, order: any) {
   const { product_type, product_id, user_id } = order;

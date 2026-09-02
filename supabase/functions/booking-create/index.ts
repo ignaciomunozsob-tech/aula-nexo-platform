@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
     // Paid sessions already have a pending reservation. Free sessions create it here.
     let booking: any;
     if (body.booking_id) {
+      if (req.headers.get('Authorization') !== `Bearer ${SERVICE}`) return j({ error: 'forbidden' }, 403);
       const { data: existing, error: existingError } = await admin
         .from('session_bookings').select('*').eq('id', body.booking_id).eq('session_id', sess.id).maybeSingle();
       if (existingError || !existing || existing.status === 'cancelled') return j({ error: 'booking_not_found' }, 404);

@@ -158,6 +158,9 @@ Deno.serve(async (req) => {
         return json({ error: 'invalid_session_slot', message: 'Selecciona un horario válido.' }, 400);
       }
       const end = new Date(start.getTime() + duration * 60000);
+      await admin.from('session_bookings').update({ status: 'cancelled' })
+        .eq('creator_id', main.creator_id).eq('start_at', start.toISOString()).eq('status', 'pending')
+        .lt('created_at', new Date(Date.now() - 30 * 60 * 1000).toISOString());
       const { data: booking, error: bookingError } = await admin.from('session_bookings').insert({
         session_id: body.product_id, creator_id: main.creator_id, user_id: userId,
         guest_email: userEmail, guest_name: guestName, guest_phone: guestPhone,

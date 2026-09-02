@@ -75,6 +75,19 @@ export default function StudentManagement({ productId, productType }: StudentMan
           email: r.email,
           phone: r.phone,
         }));
+      } else if (productType === "ebook") {
+        const { data, error } = await (supabase as any).rpc("get_ebook_students", { _ebook_id: productId });
+        if (error) throw error;
+        return (data || []).map((r: any) => ({
+          id: r.order_id,
+          user_id: r.user_id,
+          status: "active",
+          purchased_at: r.purchased_at,
+          profiles: { name: r.name },
+          email: r.email,
+          phone: r.phone,
+          amount_clp: r.amount_clp,
+        }));
       } else {
         const { data, error } = await (supabase as any).rpc("get_course_students", { _course_id: productId });
         if (error) throw error;
@@ -256,18 +269,22 @@ export default function StudentManagement({ productId, productType }: StudentMan
       return;
     }
 
-     const header = ["Nombre", "Correo", "Teléfono", "Fecha de inscripción", "Estado"];
+     const header = ["Nombre", "Correo", "Teléfono", productType === "ebook" ? "Fecha de compra" : "Fecha de inscripción", "Estado"];
      if (productType === "course") header.push("Grupo", "Avance (%)", "Lecciones completadas");
+     if (productType === "ebook") header.push("Monto (CLP)");
      const rows = activeItems.map((item: any) => {
        const row = [
          item.profiles?.name || "Usuario",
-        item.email || "",
-        item.phone || "",
-        formatDate(item.purchased_at || item.registered_at),
-        item.status === "active" || item.status === "registered" ? "Activo" : item.status,
+         item.email || "",
+         item.phone || "",
+         formatDate(item.purchased_at || item.registered_at),
+         item.status === "active" || item.status === "registered" ? "Activo" : item.status,
       ];
        if (productType === "course") {
          row.push(item.course_group_name || "Acceso general", String(item.progress_pct ?? 0), `${item.lessons_completed ?? 0}/${item.lessons_total ?? 0}`);
+       }
+       if (productType === "ebook") {
+         row.push(String(item.amount_clp ?? 0));
        }
       return row;
     });
@@ -295,9 +312,9 @@ export default function StudentManagement({ productId, productType }: StudentMan
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Users className="h-5 w-5" />
-          <h2 className="font-semibold">Gestión de Alumnos</h2>
+          <h2 className="font-semibold">{productType === "ebook" ? "Compradores" : "Gestión de Alumnos"}</h2>
           <span className="text-sm text-muted-foreground">
-            ({activeItems.length} inscrito{activeItems.length !== 1 ? "s" : ""})
+            ({activeItems.length} {productType === "ebook" ? `compra${activeItems.length !== 1 ? "s" : ""}` : `inscrito${activeItems.length !== 1 ? "s" : ""}`})
           </span>
         </div>
 
@@ -393,7 +410,7 @@ export default function StudentManagement({ productId, productType }: StudentMan
 
       <Tabs defaultValue="enrolled" className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="enrolled">Alumnos Inscritos</TabsTrigger>
+          <TabsTrigger value="enrolled">{productType === "ebook" ? "Compradores" : "Alumnos Inscritos"}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="enrolled">
@@ -403,7 +420,7 @@ export default function StudentManagement({ productId, productType }: StudentMan
             </div>
           ) : activeItems.length === 0 ? (
             <p className="text-muted-foreground text-center py-8 text-sm">
-              Aún no hay alumnos inscritos en este {productLabel}.
+              {productType === "ebook" ? "Aún no hay compras de este e-book." : `Aún no hay alumnos inscritos en este ${productLabel}.`}
             </p>
           ) : (
             <Table>
@@ -412,7 +429,8 @@ export default function StudentManagement({ productId, productType }: StudentMan
                   <TableHead>Alumno</TableHead>
                   <TableHead>Correo</TableHead>
                   <TableHead>Teléfono</TableHead>
-                   <TableHead>Fecha de inscripción</TableHead>
+                   <TableHead>{productType === "ebook" ? "Fecha de compra" : "Fecha de inscripción"}</TableHead>
+                   {productType === "ebook" && <TableHead>Monto</TableHead>}
                    {productType === "course" && <TableHead>Grupo</TableHead>}
                    {productType === "course" && <TableHead className="min-w-[160px]">Avance</TableHead>}
                    <TableHead>Estado</TableHead>
@@ -430,10 +448,15 @@ export default function StudentManagement({ productId, productType }: StudentMan
                     <TableCell className="text-sm text-muted-foreground">
                       {item.phone || "—"}
                     </TableCell>
-                     <TableCell>
-                       {formatDate(item.purchased_at || item.registered_at)}
-                     </TableCell>
-                     {productType === "course" && (
+                      <TableCell>
+                        {formatDate(item.purchased_at || item.registered_at)}
+                      </TableCell>
+                      {productType === "ebook" && (
+                        <TableCell className="text-sm">
+                          ${(item.amount_clp ?? 0).toLocaleString("es-CL")}
+                        </TableCell>
+                      )}
+                      {productType === "course" && (
                        <TableCell className="text-sm">
                          {item.course_group_name || "Acceso general"}
                        </TableCell>

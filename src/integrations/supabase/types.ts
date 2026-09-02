@@ -2130,6 +2130,19 @@ export type Database = {
         }[]
       }
       get_ebook_file_url: { Args: { _ebook_id: string }; Returns: string }
+      get_ebook_students: {
+        Args: { _ebook_id: string }
+        Returns: {
+          amount_clp: number
+          email: string
+          is_bump: boolean
+          name: string
+          order_id: string
+          phone: string
+          purchased_at: string
+          user_id: string
+        }[]
+      }
       get_event_meeting_url: { Args: { _event_id: string }; Returns: string }
       get_event_students: {
         Args: { _event_id: string }

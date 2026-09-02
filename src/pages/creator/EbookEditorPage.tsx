@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import StudentManagement from '@/components/creator/StudentManagement';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Loader2, Upload, FileText, Trash2 } from 'lucide-react';
 import { generateSlug, formatPrice } from '@/lib/utils';
@@ -493,6 +494,13 @@ export default function EbookEditorPage() {
           </Button>
         </div>
       </form>
+
+      {isEditing && id && (
+        <div className="mt-8">
+          <StudentManagement productId={id} productType="ebook" />
+        </div>
+      )}
+
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur sm:hidden">
         <Button type="button" onClick={handleSave} disabled={!canSaveEbook} className="w-full" size="lg">
           {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}

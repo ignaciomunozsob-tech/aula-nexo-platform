@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation } from '@tanstack/react-query';
-import { Loader2, ExternalLink, Upload, User, Instagram, Linkedin, Globe, Youtube, Twitter, Mail, KeyRound } from 'lucide-react';
+import { Loader2, ExternalLink, Upload, User, Instagram, Linkedin, Globe, Youtube, Twitter, Mail, KeyRound, ArrowUp, ArrowDown } from 'lucide-react';
 import { generateSlug } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,6 +34,7 @@ export default function CreatorProfileEdit() {
   const [introVideoUrl, setIntroVideoUrl] = useState(profileData?.intro_video_url || '');
   const [uploading, setUploading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(profileData?.avatar_url || '');
+  const [productOrder, setProductOrder] = useState<string[]>(['course', 'event', 'ebook', 'session']);
 
   // Password change
   const [newPassword, setNewPassword] = useState('');
@@ -73,6 +74,10 @@ export default function CreatorProfileEdit() {
     setCreatorSlug(profileData?.creator_slug || '');
     setIntroVideoUrl(profileData?.intro_video_url || '');
     setAvatarUrl(profileData?.avatar_url || '');
+    const savedOrder = Array.isArray(profileData?.public_product_order)
+      ? profileData.public_product_order.filter((item: any) => ['course', 'event', 'ebook', 'session'].includes(item))
+      : [];
+    setProductOrder([...savedOrder, ...['course', 'event', 'ebook', 'session'].filter((item) => !savedOrder.includes(item))]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileData?.id, profileData?.updated_at]);
 
@@ -149,6 +154,7 @@ export default function CreatorProfileEdit() {
         bio,
         creator_slug: slug,
         links: linksArray,
+        public_product_order: productOrder,
       };
 
       const trimmedIntro = introVideoUrl?.trim();
@@ -383,6 +389,20 @@ export default function CreatorProfileEdit() {
                 placeholder="https://tu-sitio.com"
                 className="mt-1"
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Product order */}
+        <Card>
+          <CardHeader><CardTitle className="text-lg">Orden de tu página pública</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">Define qué tipo de productos aparece primero. Las evaluaciones siempre se muestran al final.</p>
+            <div className="space-y-2">
+              {productOrder.map((type, index) => {
+                const names: Record<string, string> = { course: 'Cursos', event: 'Eventos', ebook: 'E-books', session: 'Servicios 1:1' };
+                return <div key={type} className="flex items-center justify-between rounded-lg border px-3 py-2"><span className="font-medium">{names[type]}</span><div className="flex gap-1"><Button type="button" size="icon" variant="ghost" aria-label={`Subir ${names[type]}`} disabled={index === 0} onClick={() => setProductOrder((items) => items.map((item, itemIndex) => itemIndex === index - 1 ? items[index] : itemIndex === index ? items[index - 1] : item))}><ArrowUp className="h-4 w-4" /></Button><Button type="button" size="icon" variant="ghost" aria-label={`Bajar ${names[type]}`} disabled={index === productOrder.length - 1} onClick={() => setProductOrder((items) => items.map((item, itemIndex) => itemIndex === index ? items[index + 1] : itemIndex === index + 1 ? items[index] : item))}><ArrowDown className="h-4 w-4" /></Button></div></div>;
+              })}
             </div>
           </CardContent>
         </Card>

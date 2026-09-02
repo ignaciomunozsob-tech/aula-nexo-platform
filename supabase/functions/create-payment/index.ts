@@ -3,7 +3,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
-type ProductType = 'course' | 'ebook' | 'event' | 'community';
+type ProductType = 'course' | 'ebook' | 'event' | 'community' | 'session';
 
 const MP_ACCESS_TOKEN = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -40,6 +40,11 @@ async function fetchProduct(admin: any, type: ProductType, id: string) {
       .select('id, title, slug, price_clp, creator_id, cover_image_url, redirect_url').eq('id', id).maybeSingle();
     return data ? { title: data.title, slug: data.slug, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_image_url, redirect_url: data.redirect_url ?? null } : null;
   }
+  if (type === 'session') {
+    const { data } = await admin.from('one_on_one_sessions')
+      .select('id, title, slug, price_clp, creator_id, cover_url, redirect_url, status, duration_min').eq('id', id).maybeSingle();
+    return data ? { title: data.title, slug: data.slug, amount: data.price_clp, creator_id: data.creator_id, cover: data.cover_url, redirect_url: data.redirect_url ?? null, status: data.status, duration_min: data.duration_min } : null;
+  }
   if (type === 'community') {
     const { data } = await admin.from('communities')
       .select('id, name, slug, price_clp, creator_id, cover_url').eq('id', id).maybeSingle();
@@ -55,7 +60,7 @@ Deno.serve(async (req) => {
     // MP access token now comes from the creator's connected MercadoPago account (marketplace).
 
     const body = await req.json().catch(() => null) as
-       | { product_type: ProductType; product_id: string; checkout_page_id?: string; include_bump?: boolean; return_url?: string; guest_email?: string; guest_name?: string; guest_phone?: string; group_id?: string | null; group_code?: string | null }
+       | { product_type: ProductType; product_id: string; checkout_page_id?: string; include_bump?: boolean; return_url?: string; guest_email?: string; guest_name?: string; guest_phone?: string; group_id?: string | null; group_code?: string | null; selected_start_at?: string }
       | null;
     if (!body?.product_type || !body?.product_id) return json({ error: 'product_type and product_id required' }, 400);
 
@@ -144,6 +149,29 @@ Deno.serve(async (req) => {
     if (!main) return json({ error: 'Product not found' }, 404);
     if (main.amount <= 0) return json({ error: 'Producto sin precio configurado' }, 400);
 
+    // Reserve the selected slot before creating the payment preference.
+    let pendingBookingId: string | null = null;
+    if (body.product_type === 'session') {
+      const start = new Date(body.selected_start_at ?? '');
+      const duration = Number((main as any).duration_min ?? 0);
+      if (!body.selected_start_at || Number.isNaN(start.getTime()) || start.getTime() <= Date.now() || duration <= 0) {
+        return json({ error: 'invalid_session_slot', message: 'Selecciona un horario válido.' }, 400);
+      }
+      const end = new Date(start.getTime() + duration * 60000);
+      await admin.from('session_bookings').update({ status: 'cancelled' })
+        .eq('creator_id', main.creator_id).eq('start_at', start.toISOString()).eq('status', 'pending')
+        .lt('created_at', new Date(Date.now() - 30 * 60 * 1000).toISOString());
+      const { data: booking, error: bookingError } = await admin.from('session_bookings').insert({
+        session_id: body.product_id, creator_id: main.creator_id, user_id: userId,
+        guest_email: userEmail, guest_name: guestName, guest_phone: guestPhone,
+        start_at: start.toISOString(), end_at: end.toISOString(), status: 'pending',
+      }).select('id').single();
+      if (bookingError || !booking) {
+        return json({ error: 'slot_unavailable', message: 'Ese horario ya fue tomado. Elige otro.' }, 409);
+      }
+      pendingBookingId = booking.id;
+    }
+
     // Optional order bump via checkout_page
     let bumpInfo: { type: ProductType; id: string; amount: number; title: string; cover: string | null } | null = null;
     const page = pageRes?.data;
@@ -204,7 +232,7 @@ Deno.serve(async (req) => {
       platform_amount_clp: platformAmount,
       community_fee_clp: communityFee,
       status: 'pending',
-       metadata: { title: main.title, group_name: (main as any).group_name ?? null, has_bump: !!bumpInfo, is_new_user: isNewUser, marketplace: true, redirect_url: (main as any).group_redirect_url ?? (main as any).redirect_url ?? null, product_url: productUrl },
+       metadata: { title: main.title, group_name: (main as any).group_name ?? null, has_bump: !!bumpInfo, is_new_user: isNewUser, marketplace: true, redirect_url: (main as any).group_redirect_url ?? (main as any).redirect_url ?? null, product_url: productUrl, booking_id: pendingBookingId, session_start_at: body.selected_start_at ?? null },
        checkout_page_id: body.checkout_page_id ?? null,
        course_group_id: body.product_type === 'course' ? selectedGroup?.id ?? body.group_id ?? null : null,
       bump_product_type: bumpInfo?.type ?? null,
@@ -214,7 +242,19 @@ Deno.serve(async (req) => {
       guest_name: guestName,
       guest_phone: guestPhone,
     } as any).select('id, reference, metadata').single();
-    if (orderErr || !order) { console.error('create-payment order error', orderErr); return json({ error: 'No se pudo crear la orden' }, 500); }
+    if (orderErr || !order) {
+      if (pendingBookingId) await admin.from('session_bookings').update({ status: 'cancelled' }).eq('id', pendingBookingId);
+      console.error('create-payment order error', orderErr);
+      return json({ error: 'No se pudo crear la orden' }, 500);
+    }
+    if (pendingBookingId) {
+      const { error: bookingOrderError } = await admin.from('session_bookings').update({ order_id: order.id }).eq('id', pendingBookingId);
+      if (bookingOrderError) {
+        await admin.from('orders').update({ status: 'failed' }).eq('id', order.id);
+        await admin.from('session_bookings').update({ status: 'cancelled' }).eq('id', pendingBookingId);
+        return json({ error: 'No se pudo reservar el horario' }, 500);
+      }
+    }
 
 
     const items: any[] = [{
@@ -258,6 +298,7 @@ Deno.serve(async (req) => {
     if (!mpRes.ok) {
       console.error('MP error', mpRes.status, mpJson);
       await admin.from('orders').update({ status: 'failed', metadata: { ...order.metadata, mp_error: mpJson } }).eq('id', order.id);
+      if (pendingBookingId) await admin.from('session_bookings').update({ status: 'cancelled' }).eq('id', pendingBookingId);
       return json({ error: 'MercadoPago error' }, 502);
     }
 

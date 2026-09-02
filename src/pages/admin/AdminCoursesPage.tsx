@@ -111,14 +111,14 @@ export default function AdminCoursesPage() {
                     </TableCell>
                     <TableCell>
                       <Badge variant={c.status === 'published' ? 'default' : 'secondary'}>
-                        {c.status === 'published' ? 'Publicado' : 'Borrador'}
+                        {c.status === 'published' ? 'Publicado' : c.status === 'hidden' ? 'Oculto' : 'Borrador'}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       {c.price_clp === 0 ? 'Gratis' : formatPrice(c.price_clp)}
                     </TableCell>
                     <TableCell className="text-right space-x-1">
-                      {c.status === 'published' && (
+                      {['published', 'hidden'].includes(c.status) && (
                         <Button variant="ghost" size="icon" asChild>
                           <Link to={`/course/${c.slug}`} target="_blank">
                             <ExternalLink className="h-4 w-4" />

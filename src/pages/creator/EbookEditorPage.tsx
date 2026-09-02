@@ -480,7 +480,7 @@ export default function EbookEditorPage() {
               <SelectContent>
                 <SelectItem value="draft">Borrador</SelectItem>
                 <SelectItem value="published">Publicado</SelectItem>
-                    <SelectItem value="hidden">Oculto (solo con enlace)</SelectItem>
+                <SelectItem value="hidden">Oculto (solo con enlace)</SelectItem>
               </SelectContent>
             </Select>
           </CardContent>

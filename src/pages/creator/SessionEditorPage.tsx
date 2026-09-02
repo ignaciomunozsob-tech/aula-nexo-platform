@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { useGoogleConnection } from "@/hooks/useGoogleConnection";
 import { RichTextEditor } from "@/components/editor/RichTextEditor";
 import { Link } from "react-router-dom";
+import CreatorReviewsPage from "./CreatorReviewsPage";
 
 const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 interface Rule { id?: string; day_of_week: number; start_time: string; end_time: string; }
@@ -180,8 +181,15 @@ export default function SessionEditorPage() {
           <TabsList className="w-max sm:w-auto">
             <TabsTrigger value="info">Información</TabsTrigger>
             <TabsTrigger value="availability">Disponibilidad</TabsTrigger>
+            {isEditing && <TabsTrigger value="reviews">Evaluaciones</TabsTrigger>}
           </TabsList>
           </div>
+
+          {isEditing && id && (
+            <TabsContent value="reviews" className="space-y-4 mt-4">
+              <CreatorReviewsPage embedded defaultProduct={{ type: 'session', id }} />
+            </TabsContent>
+          )}
 
           <TabsContent value="info" className="space-y-4 mt-4">
             <Card>

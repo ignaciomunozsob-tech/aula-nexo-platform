@@ -1,0 +1,5 @@
+- [x] Diseñar y aplicar esquema de evaluaciones por producto e invitación
+- [x] Conectar solicitud de evaluaciones y envío de correo desde el panel del creador
+- [x] Crear formulario público de evaluación por enlace único
+- [x] Mostrar evaluaciones verificadas con producto en perfil público y paginación
+- [x] Validar flujo y compilación

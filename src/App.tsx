@@ -73,6 +73,7 @@ const CreatorPlanPage = lazy(() => import("@/pages/creator/CreatorPlanPage"));
 const CommunityPage = lazy(() => import("@/pages/community/CommunityPage"));
 const CommunityPostPage = lazy(() => import("@/pages/community/CommunityPostPage"));
 const SessionBookingSuccessPage = lazy(() => import("@/pages/SessionBookingSuccessPage"));
+const ReviewPage = lazy(() => import("@/pages/ReviewPage"));
 
 const AdminLayout = lazy(() => import("@/components/layout/AdminLayout").then(m => ({ default: m.AdminLayout })));
 const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
@@ -177,6 +178,9 @@ const App = () => (
                     <Route path="sessions/new" element={<SessionEditorPage />} />
                     <Route path="sessions/:id/edit" element={<SessionEditorPage />} />
                   </Route>
+
+                  {/* Public review links */}
+                  <Route path="/evaluar/:token" element={<ReviewPage />} />
 
                   {/* 1:1 Booking */}
                   <Route path="/c/:creatorSlug/sesion/:sessionId" element={<SessionBookingPage />} />

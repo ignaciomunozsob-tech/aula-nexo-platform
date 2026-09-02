@@ -974,27 +974,48 @@ export type Database = {
           created_at: string
           creator_id: string
           id: string
+          is_anonymous: boolean
+          product_id: string | null
+          product_title: string | null
+          product_type: string | null
           rating: number
-          reviewer_id: string
+          reviewer_email: string | null
+          reviewer_id: string | null
+          reviewer_name: string | null
           updated_at: string
+          verified_purchase: boolean
         }
         Insert: {
           comment?: string | null
           created_at?: string
           creator_id: string
           id?: string
+          is_anonymous?: boolean
+          product_id?: string | null
+          product_title?: string | null
+          product_type?: string | null
           rating: number
-          reviewer_id: string
+          reviewer_email?: string | null
+          reviewer_id?: string | null
+          reviewer_name?: string | null
           updated_at?: string
+          verified_purchase?: boolean
         }
         Update: {
           comment?: string | null
           created_at?: string
           creator_id?: string
           id?: string
+          is_anonymous?: boolean
+          product_id?: string | null
+          product_title?: string | null
+          product_type?: string | null
           rating?: number
-          reviewer_id?: string
+          reviewer_email?: string | null
+          reviewer_id?: string | null
+          reviewer_name?: string | null
           updated_at?: string
+          verified_purchase?: boolean
         }
         Relationships: [
           {
@@ -1773,6 +1794,69 @@ export type Database = {
         }
         Relationships: []
       }
+      review_requests: {
+        Row: {
+          created_at: string
+          creator_id: string
+          id: string
+          product_id: string
+          product_title: string | null
+          product_type: string
+          recipient_email: string
+          recipient_name: string | null
+          review_id: string | null
+          sent_at: string | null
+          submitted_at: string | null
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          id?: string
+          product_id: string
+          product_title?: string | null
+          product_type: string
+          recipient_email: string
+          recipient_name?: string | null
+          review_id?: string | null
+          sent_at?: string | null
+          submitted_at?: string | null
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          id?: string
+          product_id?: string
+          product_title?: string | null
+          product_type?: string
+          recipient_email?: string
+          recipient_name?: string | null
+          review_id?: string | null
+          sent_at?: string | null
+          submitted_at?: string | null
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_requests_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_requests_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "creator_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       session_availability_rules: {
         Row: {
           created_at: string
@@ -2114,9 +2198,13 @@ export type Database = {
           comment: string
           created_at: string
           id: string
+          is_anonymous: boolean
+          product_title: string
+          product_type: string
           rating: number
           reviewer_avatar_url: string
           reviewer_name: string
+          verified_purchase: boolean
         }[]
       }
       get_creator_session_bookings: {
@@ -2329,6 +2417,19 @@ export type Database = {
           title: string
         }[]
       }
+      get_review_request: {
+        Args: { _token: string }
+        Returns: {
+          creator_avatar_url: string
+          creator_id: string
+          creator_name: string
+          creator_slug: string
+          product_title: string
+          product_type: string
+          recipient_name: string
+          submitted: boolean
+        }[]
+      }
       get_session_availability: {
         Args: { _session_id: string }
         Returns: {
@@ -2413,6 +2514,16 @@ export type Database = {
         Returns: undefined
       }
       slugify: { Args: { _text: string }; Returns: string }
+      submit_review_by_token: {
+        Args: {
+          _comment: string
+          _is_anonymous: boolean
+          _name?: string
+          _rating: number
+          _token: string
+        }
+        Returns: string
+      }
       unban_user_from_course: {
         Args: { _course_id: string; _user_id: string }
         Returns: undefined

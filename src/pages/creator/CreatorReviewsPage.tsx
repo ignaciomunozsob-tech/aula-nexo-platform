@@ -74,6 +74,19 @@ export default function CreatorReviewsPage({ defaultProduct, embedded }: { defau
 
   const selectedProductLabel = useMemo(() => products.find((item) => `${item.product_type}:${item.id}` === selectedProduct)?.title, [products, selectedProduct]);
 
+  const visibleReviews = useMemo(() => {
+    const all = data?.reviews ?? [];
+    return defaultProduct ? all.filter((r) => r.product_type === defaultProduct.type && r.product_id === defaultProduct.id) : all;
+  }, [data, defaultProduct]);
+
+  const stats = useMemo(() => {
+    const total = visibleReviews.length;
+    const avgRating = total ? visibleReviews.reduce((sum, r) => sum + r.rating, 0) / total : 0;
+    const distribution = [0, 0, 0, 0, 0];
+    visibleReviews.forEach((r) => { if (r.rating >= 1 && r.rating <= 5) distribution[r.rating - 1]++; });
+    return { total, avgRating, distribution };
+  }, [visibleReviews]);
+
   if (isLoading) return <DashboardSkeleton />;
 
   return <div className={embedded ? 'space-y-8' : 'p-4 sm:p-6 lg:p-8 space-y-8'}>

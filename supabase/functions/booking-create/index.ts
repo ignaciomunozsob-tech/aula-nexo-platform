@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
       .select('id, creator_id, title, description, duration_min, status')
       .eq('id', body.session_id)
       .maybeSingle();
-    if (!sess || sess.status !== 'published') return j({ error: 'session_not_found' }, 404);
+    if (!sess || !['published','hidden'].includes(sess.status)) return j({ error: 'session_not_found' }, 404);
 
     const start = new Date(body.start_at);
     if (isNaN(start.getTime())) return j({ error: 'invalid_start' }, 400);

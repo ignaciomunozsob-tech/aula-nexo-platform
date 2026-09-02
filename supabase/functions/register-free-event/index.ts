@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
       .select('id, title, price_clp, status, max_attendees, event_date, duration_minutes, event_type, location, meeting_url, redirect_url, creator_id')
       .eq('id', body.event_id).maybeSingle();
     if (evErr || !ev) return json({ error: 'Evento no encontrado' }, 404);
-    if (ev.status !== 'published') return json({ error: 'Evento no disponible' }, 400);
+    if (!['published','hidden'].includes(ev.status)) return json({ error: 'Evento no disponible' }, 400);
     if ((ev.price_clp ?? 0) > 0) return json({ error: 'Este evento requiere pago' }, 400);
 
     if (ev.max_attendees && ev.max_attendees > 0) {

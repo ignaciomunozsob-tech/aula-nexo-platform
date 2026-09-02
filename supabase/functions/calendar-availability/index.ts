@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
       .select('id, creator_id, duration_min, status, timezone, buffer_before_min, buffer_after_min, min_notice_hours, max_days_ahead')
       .eq('id', body.session_id)
       .maybeSingle();
-    if (sessErr || !sess || sess.status !== 'published') return j({ error: 'session_not_found' }, 404);
+    if (sessErr || !sess || !['published','hidden'].includes(sess.status)) return j({ error: 'session_not_found' }, 404);
 
     const tz = sess.timezone || 'America/Santiago';
     const duration = sess.duration_min;

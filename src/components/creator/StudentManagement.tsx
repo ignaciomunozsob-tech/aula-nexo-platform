@@ -269,18 +269,22 @@ export default function StudentManagement({ productId, productType }: StudentMan
       return;
     }
 
-     const header = ["Nombre", "Correo", "Teléfono", "Fecha de inscripción", "Estado"];
+     const header = ["Nombre", "Correo", "Teléfono", productType === "ebook" ? "Fecha de compra" : "Fecha de inscripción", "Estado"];
      if (productType === "course") header.push("Grupo", "Avance (%)", "Lecciones completadas");
+     if (productType === "ebook") header.push("Monto (CLP)");
      const rows = activeItems.map((item: any) => {
        const row = [
          item.profiles?.name || "Usuario",
-        item.email || "",
-        item.phone || "",
-        formatDate(item.purchased_at || item.registered_at),
-        item.status === "active" || item.status === "registered" ? "Activo" : item.status,
+         item.email || "",
+         item.phone || "",
+         formatDate(item.purchased_at || item.registered_at),
+         item.status === "active" || item.status === "registered" ? "Activo" : item.status,
       ];
        if (productType === "course") {
          row.push(item.course_group_name || "Acceso general", String(item.progress_pct ?? 0), `${item.lessons_completed ?? 0}/${item.lessons_total ?? 0}`);
+       }
+       if (productType === "ebook") {
+         row.push(String(item.amount_clp ?? 0));
        }
       return row;
     });
@@ -308,9 +312,9 @@ export default function StudentManagement({ productId, productType }: StudentMan
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Users className="h-5 w-5" />
-          <h2 className="font-semibold">Gestión de Alumnos</h2>
+          <h2 className="font-semibold">{productType === "ebook" ? "Compradores" : "Gestión de Alumnos"}</h2>
           <span className="text-sm text-muted-foreground">
-            ({activeItems.length} inscrito{activeItems.length !== 1 ? "s" : ""})
+            ({activeItems.length} {productType === "ebook" ? `compra${activeItems.length !== 1 ? "s" : ""}` : `inscrito${activeItems.length !== 1 ? "s" : ""}`})
           </span>
         </div>
 

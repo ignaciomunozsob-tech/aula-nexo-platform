@@ -75,6 +75,12 @@ Deno.serve(async (req) => {
       booking = existing;
       attendeeEmail = attendeeEmail || existing.guest_email;
       attendeeName = attendeeName || existing.guest_name;
+      if (existing.user_id) {
+        const { data: paidUser } = await admin.auth.admin.getUserById(existing.user_id);
+        attendeeEmail = attendeeEmail || paidUser?.user?.email || null;
+        const { data: paidProfile } = await admin.from('profiles').select('name').eq('id', existing.user_id).maybeSingle();
+        attendeeName = attendeeName || paidProfile?.name || attendeeEmail;
+      }
       if (!attendeePhone && existing.guest_phone) attendeePhone = existing.guest_phone;
       const { error: confirmError } = await admin.from('session_bookings').update({ status: 'confirmed' }).eq('id', booking.id).eq('status', 'pending');
       if (confirmError) return j({ error: 'slot_unavailable' }, 409);

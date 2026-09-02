@@ -1909,6 +1909,7 @@ export type Database = {
           ics_token: string
           id: string
           meet_url: string | null
+          order_id: string | null
           session_id: string
           start_at: string
           status: string
@@ -1927,6 +1928,7 @@ export type Database = {
           ics_token?: string
           id?: string
           meet_url?: string | null
+          order_id?: string | null
           session_id: string
           start_at: string
           status?: string
@@ -1945,12 +1947,20 @@ export type Database = {
           ics_token?: string
           id?: string
           meet_url?: string | null
+          order_id?: string | null
           session_id?: string
           start_at?: string
           status?: string
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "session_bookings_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "session_bookings_session_id_fkey"
             columns: ["session_id"]
@@ -2388,6 +2398,7 @@ export type Database = {
           creator_slug: string
           id: string
           name: string
+          public_product_order: Json
         }[]
       }
       get_public_creators_by_ids: {

@@ -65,17 +65,8 @@ const features: Array<{ icon: any; label: string; badge?: string }> = [
   { icon: MessagesSquare, label: "Comunidad por curso", badge: "+$990 por venta" },
 ];
 
-const MP_FEES: Record<number, number> = {
-  1: 0.0289,
-  2: 0.035,
-  3: 0.045,
-  6: 0.065,
-  12: 0.09,
-};
-
 function CommissionCalculator() {
   const [price, setPrice] = useState(50000);
-  const [cuotas, setCuotas] = useState(1);
 
   const novuFee = price * 0.1;
   const creatorNet = price - novuFee;
@@ -84,66 +75,35 @@ function CommissionCalculator() {
     n.toLocaleString("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 });
 
   return (
-    <div
-      className="rounded-3xl p-8 max-w-[620px] mx-auto border border-border"
-      style={{ background: "var(--color-bg-secondary, #f8f9fb)" }}
-    >
+    <div className="rounded-3xl p-8 max-w-[620px] mx-auto border border-border" style={{ background: "#f8f9fb" }}>
       <h3 className="text-lg font-bold text-foreground mb-6 text-center">Calcula tu ganancia</h3>
 
-      <div className="space-y-5">
-        <div>
-          <label className="text-sm font-semibold text-foreground mb-2 block">Precio de tu producto</label>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">$</span>
-            <input
-              type="number"
-              min={1000}
-              max={10000000}
-              step={1000}
-              value={price}
-              onChange={(e) => setPrice(Number(e.target.value))}
-              className="w-full pl-8 pr-4 py-3 rounded-xl border border-border bg-background text-foreground font-bold text-lg focus:outline-none"
-            />
-          </div>
+      <div>
+        <label className="text-sm font-semibold text-foreground mb-2 block">Precio de tu producto</label>
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">$</span>
           <input
-            type="range"
-            min={5000}
-            max={500000}
-            step={5000}
+            type="number"
+            min={1000}
+            max={10000000}
+            step={1000}
             value={price}
             onChange={(e) => setPrice(Number(e.target.value))}
-            className="w-full mt-3"
+            className="w-full pl-8 pr-4 py-3 rounded-xl border border-border bg-background text-foreground font-bold text-lg focus:outline-none"
           />
-          <div className="flex justify-between text-xs text-muted-foreground mt-1">
-            <span>$5.000</span>
-            <span>$500.000</span>
-          </div>
         </div>
-
-        <div>
-          <label className="text-sm font-semibold text-foreground mb-2 block">Cuotas sin interés que ofrecerás</label>
-          <div className="grid grid-cols-5 gap-2">
-            {[1, 2, 3, 6, 12].map((c) => (
-              <button
-                key={c}
-                onClick={() => setCuotas(c)}
-                className="py-2.5 rounded-xl text-sm font-bold transition-all border"
-                style={{
-                  background: cuotas === c ? "hsl(var(--novu-accent))" : "transparent",
-                  color: cuotas === c ? "hsl(var(--novu-text-on-accent))" : "hsl(var(--foreground))",
-                  borderColor: cuotas === c ? "hsl(var(--novu-accent))" : "hsl(var(--border))",
-                }}
-              >
-                {c === 1 ? "1" : `${c}x`}
-              </button>
-            ))}
-          </div>
-          {cuotas > 3 && (
-            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-              ⚠️ En cuotas altas, MercadoPago cobra más al procesador. Te recomendamos máximo 3 cuotas para mantener tu
-              margen.
-            </p>
-          )}
+        <input
+          type="range"
+          min={5000}
+          max={500000}
+          step={5000}
+          value={price}
+          onChange={(e) => setPrice(Number(e.target.value))}
+          className="w-full mt-3"
+        />
+        <div className="flex justify-between text-xs text-muted-foreground mt-1">
+          <span>$5.000</span>
+          <span>$500.000</span>
         </div>
       </div>
 
@@ -158,14 +118,7 @@ function CommissionCalculator() {
             <span className="font-bold text-red-500">-{fmt(novuFee)}</span>
           </div>
           <div className="flex justify-between items-center px-5 py-4 bg-background">
-            <div>
-              <span className="text-base font-bold text-foreground">Tú recibes</span>
-              {cuotas > 1 && (
-                <span className="text-xs text-muted-foreground block">
-                  en {cuotas} pagos de {fmt(creatorNet / cuotas)}
-                </span>
-              )}
-            </div>
+            <span className="text-base font-bold text-foreground">Tú recibes</span>
             <span className="text-xl font-black" style={{ color: "hsl(var(--novu-accent))" }}>
               {fmt(creatorNet)}
             </span>
@@ -231,7 +184,7 @@ export default function PreciosPage() {
         </p>
       </section>
 
-      {/* COMISIÓN — fondo claro */}
+      {/* COMISIÓN */}
       <section className="max-w-[600px] mx-auto px-4 pb-8">
         <div className="rounded-3xl p-10 text-center border border-border" style={{ background: "#f8f9fb" }}>
           <div className="text-7xl md:text-8xl font-black text-foreground">10%</div>
@@ -275,7 +228,7 @@ export default function PreciosPage() {
       <section className="max-w-5xl mx-auto px-4 pb-20">
         <div className="text-center mb-8">
           <h2 className="text-2xl md:text-3xl font-black text-foreground">¿Cuánto recibirás?</h2>
-          <p className="mt-2 text-muted-foreground">Calcula tu ganancia según el precio y las cuotas</p>
+          <p className="mt-2 text-muted-foreground">Calcula tu ganancia según el precio de tu producto</p>
         </div>
         <CommissionCalculator />
       </section>

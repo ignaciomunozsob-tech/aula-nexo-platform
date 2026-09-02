@@ -60,6 +60,8 @@ Deno.serve(async (req) => {
   ownerId = product.creator_id
   if (ownerId !== callerId) return json({ error: 'No puedes solicitar evaluaciones de este producto' }, 403)
   productTitle = product[titleColumn] ?? 'Producto'
+  const { data: creatorProfile } = await admin.from('profiles').select('name').eq('id', callerId).maybeSingle()
+  const creatorName = creatorProfile?.name ?? ''
 
   const recipientMap = new Map<string, Recipient>()
   if (productType === 'session') {
@@ -74,7 +76,7 @@ Deno.serve(async (req) => {
       }
     }
   } else {
-    const { data: orders } = await admin.from('orders').select('user_id, guest_email, guest_name, bump_product_type, bump_product_id').eq('creator_id', callerId).eq('status', 'paid')
+    const { data: orders } = await admin.from('orders').select('user_id, guest_email, guest_name, product_type, product_id, bump_product_type, bump_product_id').eq('creator_id', callerId).eq('status', 'paid')
     for (const order of orders ?? []) {
       const isMain = order.product_type === productType && order.product_id === productId
       const isBump = order.bump_product_type === productType && order.bump_product_id === productId
@@ -112,7 +114,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           templateName: 'review-request', recipientEmail: recipient.email,
           idempotencyKey: `review-${request.id}-${new Date().toISOString().slice(0, 10)}`,
-          templateData: { recipientName: recipient.name ?? '', productLabel: label, creatorName: productTitle ? (await admin.from('profiles').select('name').eq('id', callerId).maybeSingle()).data?.name ?? '' : '', reviewUrl },
+          templateData: { recipientName: recipient.name ?? '', productLabel: label, creatorName, reviewUrl },
         }),
       })
       if (!response.ok) { skipped++; continue }

@@ -410,7 +410,7 @@ export default function StudentManagement({ productId, productType }: StudentMan
 
       <Tabs defaultValue="enrolled" className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="enrolled">Alumnos Inscritos</TabsTrigger>
+          <TabsTrigger value="enrolled">{productType === "ebook" ? "Compradores" : "Alumnos Inscritos"}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="enrolled">
@@ -420,7 +420,7 @@ export default function StudentManagement({ productId, productType }: StudentMan
             </div>
           ) : activeItems.length === 0 ? (
             <p className="text-muted-foreground text-center py-8 text-sm">
-              Aún no hay alumnos inscritos en este {productLabel}.
+              {productType === "ebook" ? "Aún no hay compras de este e-book." : `Aún no hay alumnos inscritos en este ${productLabel}.`}
             </p>
           ) : (
             <Table>
@@ -429,7 +429,8 @@ export default function StudentManagement({ productId, productType }: StudentMan
                   <TableHead>Alumno</TableHead>
                   <TableHead>Correo</TableHead>
                   <TableHead>Teléfono</TableHead>
-                   <TableHead>Fecha de inscripción</TableHead>
+                   <TableHead>{productType === "ebook" ? "Fecha de compra" : "Fecha de inscripción"}</TableHead>
+                   {productType === "ebook" && <TableHead>Monto</TableHead>}
                    {productType === "course" && <TableHead>Grupo</TableHead>}
                    {productType === "course" && <TableHead className="min-w-[160px]">Avance</TableHead>}
                    <TableHead>Estado</TableHead>
@@ -447,10 +448,15 @@ export default function StudentManagement({ productId, productType }: StudentMan
                     <TableCell className="text-sm text-muted-foreground">
                       {item.phone || "—"}
                     </TableCell>
-                     <TableCell>
-                       {formatDate(item.purchased_at || item.registered_at)}
-                     </TableCell>
-                     {productType === "course" && (
+                      <TableCell>
+                        {formatDate(item.purchased_at || item.registered_at)}
+                      </TableCell>
+                      {productType === "ebook" && (
+                        <TableCell className="text-sm">
+                          ${(item.amount_clp ?? 0).toLocaleString("es-CL")}
+                        </TableCell>
+                      )}
+                      {productType === "course" && (
                        <TableCell className="text-sm">
                          {item.course_group_name || "Acceso general"}
                        </TableCell>

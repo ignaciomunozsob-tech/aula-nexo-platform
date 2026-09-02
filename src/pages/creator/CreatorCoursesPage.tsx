@@ -106,7 +106,7 @@ export default function CreatorCoursesPage() {
                   <td className="p-4"><p className="font-medium">{course.title}</p></td>
                   <td className="p-4">
                     <span className={course.status === 'published' ? 'badge-published' : 'badge-draft'}>
-                      {course.status === 'published' ? 'Publicado' : 'Borrador'}
+                      {course.status === 'published' ? 'Publicado' : course.status === 'hidden' ? 'Oculto' : 'Borrador'}
                     </span>
                   </td>
                   <td className="p-4">{formatPrice(course.price_clp)}</td>
@@ -125,7 +125,7 @@ export default function CreatorCoursesPage() {
                     <Button variant="ghost" size="sm" asChild>
                       <Link to={`/creator-app/courses/${course.id}/edit`}><Edit className="h-4 w-4" /></Link>
                     </Button>
-                    {course.status === 'published' && (
+                    {['published','hidden'].includes(course.status) && (
                       <Button variant="ghost" size="sm" asChild>
                         <Link to={getCourseUrl(profile?.creator_slug, course.slug, course.id)} target="_blank"><Eye className="h-4 w-4" /></Link>
                       </Button>

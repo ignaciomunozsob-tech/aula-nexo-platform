@@ -33,7 +33,7 @@ export default function SessionEditorPage() {
   const [description, setDescription] = useState("");
   const [durationMin, setDurationMin] = useState(30);
   const [coverUrl, setCoverUrl] = useState("");
-  const [status, setStatus] = useState<"draft" | "published">("draft");
+  const [status, setStatus] = useState<"draft" | "published" | "hidden">("draft");
   const [redirectUrl, setRedirectUrl] = useState("");
   // Availability fields
   const [tz, setTz] = useState("America/Santiago");
@@ -228,6 +228,7 @@ export default function SessionEditorPage() {
                       <SelectContent>
                         <SelectItem value="draft">Borrador</SelectItem>
                         <SelectItem value="published">Publicado</SelectItem>
+                        <SelectItem value="hidden">Oculto (solo con enlace)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

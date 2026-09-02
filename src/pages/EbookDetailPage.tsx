@@ -28,7 +28,7 @@ export default function EbookDetailPage({ ebookId: ebookIdProp }: Props) {
       let q = supabase
         .from("ebooks")
         .select("id, title, description, cover_image_url, price_clp, slug, creator_id, status, profiles:creator_id(name, avatar_url, creator_slug)")
-        .eq("status", "published");
+        .in("status", ["published", "hidden"]);
       if (ebookIdProp) q = q.eq("id", ebookIdProp);
       else if (params.slug) q = q.eq("slug", params.slug);
       const { data, error } = await q.maybeSingle();

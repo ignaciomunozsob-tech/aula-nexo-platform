@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
     ]);
     let selectedGroup: { id: string; name: string; price_clp: number | null; redirect_url: string | null } | null = null;
     if (mainRes && body.product_type === 'course' && (body.group_id || body.group_code)) {
-      if ((mainRes as any).status !== 'published') return json({ error: 'Curso no publicado' }, 400);
+      if (!['published','hidden'].includes((mainRes as any).status)) return json({ error: 'Curso no publicado' }, 400);
       let groupQuery = admin
         .from('course_groups')
         .select('id, name, price_clp, redirect_url')

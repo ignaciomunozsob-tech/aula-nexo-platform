@@ -865,6 +865,7 @@ export default function CourseEditorPage() {
                   <SelectContent>
                     <SelectItem value="draft">Borrador</SelectItem>
                     <SelectItem value="published">Publicado</SelectItem>
+                    <SelectItem value="hidden">Oculto (solo con enlace)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

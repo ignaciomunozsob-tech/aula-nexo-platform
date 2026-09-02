@@ -67,6 +67,7 @@ function formatLabel(format?: string | null) {
 export default function CourseDetailPage() {
   const params = useParams();
   const slug = params.courseSlug || params.slug;
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const groupId = searchParams.get("group");
   const groupCode = searchParams.get("group_code");

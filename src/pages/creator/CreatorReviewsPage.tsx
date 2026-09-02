@@ -16,11 +16,11 @@ function StarRating({ value }: { value: number }) {
   return <div className="flex gap-0.5">{[1, 2, 3, 4, 5].map((star) => <Star key={star} className={`h-4 w-4 ${star <= value ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />)}</div>;
 }
 
-export default function CreatorReviewsPage() {
+export default function CreatorReviewsPage({ defaultProduct, embedded }: { defaultProduct?: { type: string; id: string }; embedded?: boolean } = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedProduct, setSelectedProduct] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState(defaultProduct ? `${defaultProduct.type}:${defaultProduct.id}` : '');
 
   const { data, isLoading } = useQuery({
     queryKey: ['creator-all-reviews', user?.id],

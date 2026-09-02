@@ -156,8 +156,8 @@ export default function CreatorProductsPage() {
   });
 
   const StatusBadge = ({ status }: { status: string }) => (
-    <span className={status === 'published' ? 'badge-published' : 'badge-draft'}>
-      {status === 'published' ? 'Publicado' : 'Borrador'}
+    <span className={status === 'published' ? 'badge-published' : status === 'hidden' ? 'badge-draft' : 'badge-draft'}>
+      {status === 'published' ? 'Publicado' : status === 'hidden' ? 'Oculto' : 'Borrador'}
     </span>
   );
 
@@ -226,7 +226,7 @@ export default function CreatorProductsPage() {
                         <Button variant="ghost" size="sm" asChild>
                           <Link to={`/creator-app/sessions/${s.id}/edit`}><Edit className="h-4 w-4" /></Link>
                         </Button>
-                        {s.status === 'published' && profile?.creator_slug && (
+                        {['published','hidden'].includes(s.status) && profile?.creator_slug && (
                           <Button variant="ghost" size="sm" asChild>
                             <Link to={s.slug ? `/${profile.creator_slug}/${s.slug}` : `/c/${profile.creator_slug}/sesion/${s.id}`} target="_blank"><Eye className="h-4 w-4" /></Link>
                           </Button>
@@ -281,7 +281,7 @@ export default function CreatorProductsPage() {
                         <Button variant="ghost" size="sm" asChild>
                           <Link to={`/creator-app/courses/${course.id}/edit`}><Edit className="h-4 w-4" /></Link>
                         </Button>
-                        {course.status === 'published' && (
+                        {['published','hidden'].includes(course.status) && (
                           <Button variant="ghost" size="sm" asChild>
                             <Link to={getCourseUrl(profile?.creator_slug, course.slug, course.id)} target="_blank"><Eye className="h-4 w-4" /></Link>
                           </Button>
@@ -324,7 +324,7 @@ export default function CreatorProductsPage() {
                         <Button variant="ghost" size="sm" asChild>
                           <Link to={`/creator-app/ebooks/${ebook.id}/edit`}><Edit className="h-4 w-4" /></Link>
                         </Button>
-                        {ebook.status === 'published' && (
+                        {['published','hidden'].includes(ebook.status) && (
                           <Button variant="ghost" size="sm" asChild>
                             <Link to={`/ebook/${ebook.slug}`} target="_blank"><Eye className="h-4 w-4" /></Link>
                           </Button>
@@ -384,7 +384,7 @@ export default function CreatorProductsPage() {
                         <Button variant="ghost" size="sm" asChild>
                           <Link to={`/creator-app/events/${event.id}/edit`}><Edit className="h-4 w-4" /></Link>
                         </Button>
-                        {event.status === 'published' && (
+                        {['published','hidden'].includes(event.status) && (
                           <Button variant="ghost" size="sm" asChild>
                             <Link to={`/event/${event.slug}`} target="_blank"><Eye className="h-4 w-4" /></Link>
                           </Button>

@@ -61,7 +61,7 @@ export default function CheckoutPage({ embed = false }: Props) {
 
   // Load main + bump products
   const { data: products } = useQuery({
-   queryKey: ['checkout-products', page?.id, searchParams.get('group')],
+   queryKey: ['checkout-products', page?.id, searchParams.get('group'), searchParams.get('group_code')],
    enabled: !!page,
     queryFn: async () => {
        const fetchOne = async (type: string, id: string) => {
@@ -78,11 +78,10 @@ export default function CheckoutPage({ embed = false }: Props) {
        const main = await fetchOne(page.product_type, page.product_id);
        if (main && page.product_type === 'course') {
          const groupId = searchParams.get('group');
-         if (groupId) {
-           const { data: group } = await supabase.rpc('get_course_groups_public', { _course_id: page.product_id });
-           const selected = (group || []).find((item: any) => item.id === groupId);
-           if (selected) (main as any).price_clp = selected.price_clp ?? (main as any).price_clp;
-         }
+         const groupCode = searchParams.get('group_code');
+         const { data: group } = await supabase.rpc('get_course_groups_public', { _course_id: page.product_id });
+         const selected = (group || []).find((item: any) => item.id === groupId || item.sales_code === groupCode);
+         if (selected) (main as any).price_clp = selected.price_clp ?? (main as any).price_clp;
        }
        const bump = page.bump_enabled && page.bump_product_id
          ? await fetchOne(page.bump_product_type, page.bump_product_id) : null;
@@ -177,8 +176,8 @@ export default function CheckoutPage({ embed = false }: Props) {
       value: products.main!.price_clp + (includeBump ? bumpFinal : 0),
       creatorPixelId: creator?.meta_pixel_id,
       contentName: products.main!.title,
-      checkoutPageId: page.id, groupId: searchParams.get("group"),
-      includeBump,
+       checkoutPageId: page.id, groupId: searchParams.get("group"), groupCode: searchParams.get("group_code"),
+       includeBump,
     };
     // Same path for guests and logged-in users: send name/email/phone so the creator's
     // panel de inscritos siempre tiene los datos de contacto reales del comprador.

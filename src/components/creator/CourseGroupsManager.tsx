@@ -290,13 +290,13 @@ export default function CourseGroupsManager({ courseId, courseSlug, creatorSlug,
               <Button
                 size="sm"
                 variant="outline"
-                 onClick={() => {
-                   navigator.clipboard.writeText(groupUrl(g.id, g.sales_code));
-                   toast({ title: "Enlace de venta copiado" });
-                 }}
-               >
-                 <Copy className="h-4 w-4 mr-1" />
-                 Copiar link de venta
+                onClick={() => {
+                  navigator.clipboard.writeText(groupUrl(g.id, g.sales_code));
+                  toast({ title: "Enlace de venta copiado" });
+                }}
+              >
+                <Copy className="h-4 w-4 mr-1" />
+                Copiar link de venta
               </Button>
             </div>
 

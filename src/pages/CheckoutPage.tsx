@@ -99,8 +99,8 @@ export default function CheckoutPage({ embed = false }: Props) {
       const raw = sessionStorage.getItem(GUEST_PREFILL_KEY);
       if (raw) {
          const parsed = JSON.parse(raw) as {
-           productType: string; productId: string; groupId?: string | null;
-           name: string; email: string; phone: string; ts: number;
+            productType: string; productId: string; groupId?: string | null; groupCode?: string | null;
+            name: string; email: string; phone: string; ts: number;
          };
         if (parsed.productType === page.product_type
           && parsed.productId === page.product_id
@@ -176,8 +176,8 @@ export default function CheckoutPage({ embed = false }: Props) {
       value: products.main!.price_clp + (includeBump ? bumpFinal : 0),
       creatorPixelId: creator?.meta_pixel_id,
       contentName: products.main!.title,
-       checkoutPageId: page.id, groupId: searchParams.get("group"), groupCode: searchParams.get("group_code"),
-       includeBump,
+      checkoutPageId: page.id, groupId: searchParams.get("group"), groupCode: searchParams.get("group_code"),
+      includeBump,
     };
     // Same path for guests and logged-in users: send name/email/phone so the creator's
     // panel de inscritos siempre tiene los datos de contacto reales del comprador.

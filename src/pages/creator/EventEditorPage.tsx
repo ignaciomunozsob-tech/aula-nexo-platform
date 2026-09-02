@@ -16,6 +16,7 @@ import StudentManagement from '@/components/creator/StudentManagement';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import CheckoutPagesPage from './CheckoutPagesPage';
+import CreatorReviewsPage from './CreatorReviewsPage';
 import EventRecordingUploader from '@/components/creator/EventRecordingUploader';
 
 type EventFormSnapshot = {
@@ -341,10 +342,14 @@ export default function EventEditorPage() {
           <TabsList>
             <TabsTrigger value="info">Información</TabsTrigger>
             <TabsTrigger value="students">Inscritos</TabsTrigger>
+            <TabsTrigger value="reviews">Evaluaciones</TabsTrigger>
             <TabsTrigger value="checkout">Página de pago</TabsTrigger>
           </TabsList>
           <TabsContent value="students" className="mt-6">
             {id && <StudentManagement productId={id} productType="event" />}
+          </TabsContent>
+          <TabsContent value="reviews" className="mt-6">
+            {id && <CreatorReviewsPage embedded defaultProduct={{ type: 'event', id }} />}
           </TabsContent>
           <TabsContent value="checkout" className="mt-6 -mx-4 sm:-mx-6 lg:-mx-8">
             {id && <CheckoutPagesPage productFilter={{ type: 'event', id }} />}

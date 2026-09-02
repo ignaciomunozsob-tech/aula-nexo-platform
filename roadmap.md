@@ -3,3 +3,7 @@
 - [x] Crear formulario público de evaluación por enlace único
 - [x] Mostrar evaluaciones verificadas con producto en perfil público y paginación
 - [x] Validar flujo y compilación
+- [ ] Habilitar precios para servicios 1:1 y limitar a un servicio gratuito activo por creador
+- [ ] Integrar selección de horario en popup y pago con reserva pendiente
+- [ ] Mostrar todos los productos publicados en el perfil público
+- [ ] Permitir ordenar productos en el perfil, manteniendo evaluaciones al final

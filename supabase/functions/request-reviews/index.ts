@@ -29,19 +29,13 @@ Deno.serve(async (req) => {
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
   if (!token) return json({ error: 'Debes iniciar sesión como creador' }, 401)
 
-  let callerId = ''
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1] ?? ''))
-    if (payload?.role !== 'authenticated' || typeof payload?.sub !== 'string') return json({ error: 'No autorizado' }, 403)
-    callerId = payload.sub
-  } catch {
-    return json({ error: 'No autorizado' }, 403)
-  }
-
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   if (!supabaseUrl || !serviceKey) return json({ error: 'Configuración del servidor incompleta' }, 500)
   const admin = createClient(supabaseUrl, serviceKey)
+  const { data: authData, error: authError } = await admin.auth.getUser(token)
+  const callerId = authData.user?.id ?? ''
+  if (authError || !callerId) return json({ error: 'Sesión inválida' }, 401)
 
   let body: { product_type?: unknown; product_id?: unknown }
   try { body = await req.json() } catch { return json({ error: 'Solicitud inválida' }, 400) }

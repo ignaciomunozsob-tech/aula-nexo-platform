@@ -28,6 +28,7 @@ export default function ReviewPage() {
   const [comment, setComment] = useState('');
   const [name, setName] = useState('');
   const [anonymous, setAnonymous] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const { data: request, isLoading } = useQuery({
     queryKey: ['review-request', token],
@@ -51,13 +52,16 @@ export default function ReviewPage() {
       });
       if (error) throw error;
     },
-    onSuccess: () => toast({ title: 'Evaluación enviada', description: 'Gracias por compartir tu experiencia.' }),
+    onSuccess: () => {
+      setSubmitted(true);
+      toast({ title: 'Evaluación enviada', description: 'Gracias por compartir tu experiencia.' });
+    },
     onError: (error: Error) => toast({ title: 'No pudimos enviar tu evaluación', description: error.message, variant: 'destructive' }),
   });
 
   if (isLoading) return <main className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></main>;
   if (!request) return <main className="min-h-screen flex items-center justify-center p-6"><Card className="w-full max-w-lg"><CardContent className="py-12 text-center"><h1 className="text-2xl font-bold">Enlace no disponible</h1><p className="text-muted-foreground mt-2">Este enlace de evaluación no existe o ya no está disponible.</p></CardContent></Card></main>;
-  if (request.submitted) return <main className="min-h-screen flex items-center justify-center p-6"><Card className="w-full max-w-lg"><CardContent className="py-12 text-center"><CheckCircle2 className="h-12 w-12 text-primary mx-auto" /><h1 className="text-2xl font-bold mt-4">Evaluación ya enviada</h1><p className="text-muted-foreground mt-2">Gracias por compartir tu experiencia.</p></CardContent></Card></main>;
+  if (request.submitted || submitted) return <main className="min-h-screen flex items-center justify-center p-6"><Card className="w-full max-w-lg"><CardContent className="py-12 text-center"><CheckCircle2 className="h-12 w-12 text-primary mx-auto" /><h1 className="text-2xl font-bold mt-4">Evaluación enviada</h1><p className="text-muted-foreground mt-2">Gracias por compartir tu experiencia.</p></CardContent></Card></main>;
 
   return <main className="min-h-screen bg-muted/30 flex items-center justify-center p-4 sm:p-6">
     <Card className="w-full max-w-xl">

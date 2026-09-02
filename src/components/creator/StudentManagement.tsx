@@ -75,6 +75,19 @@ export default function StudentManagement({ productId, productType }: StudentMan
           email: r.email,
           phone: r.phone,
         }));
+      } else if (productType === "ebook") {
+        const { data, error } = await (supabase as any).rpc("get_ebook_students", { _ebook_id: productId });
+        if (error) throw error;
+        return (data || []).map((r: any) => ({
+          id: r.order_id,
+          user_id: r.user_id,
+          status: "active",
+          purchased_at: r.purchased_at,
+          profiles: { name: r.name },
+          email: r.email,
+          phone: r.phone,
+          amount_clp: r.amount_clp,
+        }));
       } else {
         const { data, error } = await (supabase as any).rpc("get_course_students", { _course_id: productId });
         if (error) throw error;

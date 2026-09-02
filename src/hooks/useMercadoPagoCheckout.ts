@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { trackEvent, trackEventFor } from '@/lib/metaPixel';
 
-type ProductType = 'course' | 'ebook' | 'event' | 'community';
+type ProductType = 'course' | 'ebook' | 'event' | 'community' | 'session';
 
 interface CheckoutMeta {
   value?: number;
@@ -14,6 +14,8 @@ interface CheckoutMeta {
   groupId?: string | null;
   groupCode?: string | null;
   includeBump?: boolean;
+  selectedStartAt?: string;
+  customerPhone?: string;
 }
 
 interface PendingCheckout {
@@ -58,9 +60,10 @@ export function useMercadoPagoCheckout() {
           group_id: meta.groupId,
           group_code: meta.groupCode,
           include_bump: !!meta.includeBump,
+          selected_start_at: meta.selectedStartAt,
           guest_email: guest?.email,
           guest_name: guest?.name,
-          guest_phone: guest?.phone,
+          guest_phone: guest?.phone ?? meta.customerPhone,
         },
       });
       // supabase-js surfaces non-2xx as `error`, but the JSON body is still parseable via error.context.
@@ -109,7 +112,7 @@ export function useMercadoPagoCheckout() {
     // redirect there — the page collects name/email/phone and shows the order bump.
     try {
       const onCheckoutPage = /^\/p\/[^/]+\/[^/]+/.test(window.location.pathname);
-      if (!onCheckoutPage) {
+      if (productType !== 'session' && !onCheckoutPage) {
         const { data: rows } = await supabase.rpc('get_product_checkout_page', {
           _product_type: productType,
           _product_id: productId,
@@ -148,7 +151,7 @@ export function useMercadoPagoCheckout() {
     // before continuing to MercadoPago.
     try {
       const onCheckoutPage = /^\/p\/[^/]+\/[^/]+/.test(window.location.pathname);
-      if (!onCheckoutPage) {
+      if (pending.productType !== 'session' && !onCheckoutPage) {
         const { data: rows } = await supabase.rpc('get_product_checkout_page', {
           _product_type: pending.productType,
           _product_id: pending.productId,

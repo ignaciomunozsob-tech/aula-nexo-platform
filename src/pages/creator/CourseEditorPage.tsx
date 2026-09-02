@@ -754,10 +754,6 @@ export default function CourseEditorPage() {
             <MessagesSquare className="h-4 w-4" />
             Comunidad
           </TabsTrigger>
-          <TabsTrigger value="groups" className="flex items-center gap-2">
-            <Layers className="h-4 w-4" />
-            Grupos
-          </TabsTrigger>
           <TabsTrigger value="reviews" className="flex items-center gap-2">
             <Star className="h-4 w-4" />
             Evaluaciones
@@ -1267,8 +1263,16 @@ export default function CourseEditorPage() {
         </TabsContent>
 
         {/* Tab: Gestión de Alumnos */}
-        <TabsContent value="students">
+        <TabsContent value="students" className="space-y-8">
           {id && <StudentManagement productId={id} productType="course" />}
+          {id && (
+            <CourseGroupsManager
+              courseId={id}
+              courseSlug={course?.slug}
+              creatorSlug={(profile as any)?.creator_slug}
+              coursePrice={Number(form.price_clp || 0)}
+            />
+          )}
         </TabsContent>
 
         {/* Tab: Comunidad */}
@@ -1286,16 +1290,7 @@ export default function CourseEditorPage() {
         </TabsContent>
 
         {/* Tab: Evaluaciones */}
-        <TabsContent value="groups">
-          {id && (
-            <CourseGroupsManager
-              courseId={id}
-              courseSlug={course?.slug}
-              creatorSlug={(profile as any)?.creator_slug}
-              coursePrice={Number(form.price_clp || 0)}
-            />
-          )}
-        </TabsContent>
+
 
         <TabsContent value="reviews">
           <CreatorReviewsPage />
@@ -1303,7 +1298,7 @@ export default function CourseEditorPage() {
 
         {/* Tab: Páginas de pago */}
         <TabsContent value="checkout">
-          <CheckoutPagesPage />
+          {id && <CheckoutPagesPage productFilter={{ type: "course", id }} />}
         </TabsContent>
       </Tabs>
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 p-3 backdrop-blur sm:hidden">

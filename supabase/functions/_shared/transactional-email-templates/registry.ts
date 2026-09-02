@@ -10,6 +10,7 @@ import { template as buyerEbookPurchase } from './buyer-ebook-purchase.tsx'
 import { template as buyerCommunityPurchase } from './buyer-community-purchase.tsx'
 import { template as buyerSessionBooking } from './buyer-session-booking.tsx'
 import { template as creatorNewBooking } from './creator-new-booking.tsx'
+import { template as reviewRequest } from './review-request.tsx'
 
 export interface TemplateEntry {
   // deno-lint-ignore no-explicit-any
@@ -32,4 +33,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'buyer-community-purchase': buyerCommunityPurchase,
   'buyer-session-booking': buyerSessionBooking,
   'creator-new-booking': creatorNewBooking,
+  'review-request': reviewRequest,
 }

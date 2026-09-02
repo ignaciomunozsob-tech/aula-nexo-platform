@@ -32,7 +32,7 @@ const Email = ({ recipientName = '', productLabel = 'producto', creatorName = ''
 
 export const template = {
   component: Email,
-  subject: (d) => `¿Qué te pareció el ${String(d.productLabel ?? 'producto').toUpperCase()} de ${String(d.creatorName ?? '').toUpperCase()}?`,
+  subject: (d) => `¿Qué te pareció el ${String(d.productLabel ?? 'producto')} de ${String(d.creatorName ?? '')}?`,
   displayName: 'Solicitud de evaluación',
   previewData: {
     recipientName: 'Camila',

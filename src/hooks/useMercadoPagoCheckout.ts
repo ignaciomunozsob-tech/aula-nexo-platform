@@ -12,6 +12,7 @@ interface CheckoutMeta {
   contentName?: string;
   checkoutPageId?: string;
   groupId?: string | null;
+  groupCode?: string | null;
   includeBump?: boolean;
 }
 
@@ -55,6 +56,7 @@ export function useMercadoPagoCheckout() {
           product_id: productId,
           checkout_page_id: meta.checkoutPageId,
           group_id: meta.groupId,
+          group_code: meta.groupCode,
           include_bump: !!meta.includeBump,
           guest_email: guest?.email,
           guest_name: guest?.name,
@@ -158,8 +160,9 @@ export function useMercadoPagoCheckout() {
              JSON.stringify({
                productType: pending.productType,
                productId: pending.productId,
-               groupId: pending.meta.groupId ?? null,
-               name: data.name,
+                groupId: pending.meta.groupId ?? null,
+                groupCode: pending.meta.groupCode ?? null,
+                name: data.name,
                email: data.email,
                phone: data.phone,
                ts: Date.now(),

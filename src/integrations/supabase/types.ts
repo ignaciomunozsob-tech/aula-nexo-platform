@@ -556,6 +556,8 @@ export type Database = {
           is_default: boolean
           name: string
           price_clp: number | null
+          redirect_url: string | null
+          sales_code: string | null
           updated_at: string
         }
         Insert: {
@@ -565,6 +567,8 @@ export type Database = {
           is_default?: boolean
           name: string
           price_clp?: number | null
+          redirect_url?: string | null
+          sales_code?: string | null
           updated_at?: string
         }
         Update: {
@@ -574,6 +578,8 @@ export type Database = {
           is_default?: boolean
           name?: string
           price_clp?: number | null
+          redirect_url?: string | null
+          sales_code?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2070,6 +2076,7 @@ export type Database = {
           is_default: boolean
           name: string
           price_clp: number
+          sales_code: string
         }[]
       }
       get_course_students: {

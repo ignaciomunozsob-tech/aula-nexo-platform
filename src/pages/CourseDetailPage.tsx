@@ -70,6 +70,7 @@ export default function CourseDetailPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const groupId = searchParams.get("group");
+  const groupCode = searchParams.get("group_code");
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -124,8 +125,8 @@ export default function CourseDetailPage() {
         ),
       }));
 
-      const { data: groups } = await supabase.rpc('get_course_groups_public', { _course_id: course.id });
-      return { course, modules: normalized, groups: (groups || []) as any[] };
+       const { data: groups } = await supabase.rpc('get_course_groups_public', { _course_id: course.id });
+       return { course, modules: normalized, groups: (groups || []) as any[] };
     },
     enabled: !!slug,
   });
@@ -133,7 +134,7 @@ export default function CourseDetailPage() {
   const course: any = data?.course;
   const modules = data?.modules || [];
   const groups = data?.groups || [];
-  const selectedGroup = groups.find((group: any) => group.id === groupId) || groups.find((group: any) => group.is_default) || null;
+  const selectedGroup = groups.find((group: any) => group.id === groupId || group.sales_code === groupCode) || groups.find((group: any) => group.is_default) || null;
   const selectedPrice = selectedGroup?.price_clp ?? course?.price_clp ?? 0;
   const isFree = selectedPrice === 0;
 
@@ -472,29 +473,6 @@ export default function CourseDetailPage() {
                   </div>
                 )}
 
-                {groups.length > 1 && (
-                  <div className="mb-4 space-y-2">
-                    <p className="text-sm font-medium">Elige tu grupo</p>
-                    <div className="grid gap-2">
-                      {groups.map((group: any) => (
-                        <Button
-                          key={group.id}
-                          type="button"
-                          variant={selectedGroup?.id === group.id ? "default" : "outline"}
-                          className="justify-between h-auto py-2"
-                          onClick={() => {
-                            const next = new URLSearchParams(searchParams);
-                            next.set("group", group.id);
-                            navigate(`${window.location.pathname}?${next.toString()}`, { replace: true });
-                          }}
-                        >
-                          <span>{group.name}</span>
-                          <span>{group.price_clp == null ? formatCLP(course.price_clp) : formatCLP(group.price_clp)}</span>
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                )}
                 <div className="text-3xl font-bold text-foreground mb-1">
                     {isFree ? <span className="text-green-600">Gratis</span> : formatCLP(selectedPrice)}
                 </div>

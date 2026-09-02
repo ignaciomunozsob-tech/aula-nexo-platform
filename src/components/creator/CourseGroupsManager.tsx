@@ -21,6 +21,8 @@ type GroupRow = {
   name: string;
   price_clp: number | null;
   is_default: boolean;
+  sales_code: string | null;
+  redirect_url: string | null;
 };
 
 function formatCLP(value: number) {
@@ -35,14 +37,14 @@ export default function CourseGroupsManager({ courseId, courseSlug, creatorSlug,
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [newName, setNewName] = useState("");
-  const [drafts, setDrafts] = useState<Record<string, { name: string; price: string }>>({});
+  const [drafts, setDrafts] = useState<Record<string, { name: string; price: string; salesCode: string; redirectUrl: string }>>({});
 
   const { data: groups, isLoading } = useQuery({
     queryKey: ["course-groups", courseId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("course_groups")
-        .select("id, name, price_clp, is_default")
+        .select("id, name, price_clp, is_default, sales_code, redirect_url")
         .eq("course_id", courseId)
         .order("is_default", { ascending: false })
         .order("created_at", { ascending: true });
@@ -89,9 +91,10 @@ export default function CourseGroupsManager({ courseId, courseSlug, creatorSlug,
 
   const createGroup = useMutation({
     mutationFn: async (name: string) => {
+      const salesCode = `${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 24) || "grupo"}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
       const { data, error } = await supabase
         .from("course_groups")
-        .insert({ course_id: courseId, name, is_default: false })
+        .insert({ course_id: courseId, name, sales_code: salesCode, is_default: false })
         .select("id")
         .single();
       if (error) throw error;
@@ -113,8 +116,8 @@ export default function CourseGroupsManager({ courseId, courseSlug, creatorSlug,
   });
 
   const updateGroup = useMutation({
-    mutationFn: async ({ id, name, price_clp }: { id: string; name: string; price_clp: number | null }) => {
-      const { error } = await supabase.from("course_groups").update({ name, price_clp }).eq("id", id);
+    mutationFn: async ({ id, name, price_clp, sales_code, redirect_url }: { id: string; name: string; price_clp: number | null; sales_code: string | null; redirect_url: string | null }) => {
+      const { error } = await supabase.from("course_groups").update({ name, price_clp, sales_code, redirect_url }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -159,10 +162,11 @@ export default function CourseGroupsManager({ courseId, courseSlug, creatorSlug,
   const hasModule = (groupId: string, moduleId: string) =>
     (groupModules || []).some((gm: any) => gm.group_id === groupId && gm.module_id === moduleId);
 
-  const groupUrl = (groupId: string) => {
+  const groupUrl = (groupId: string, salesCode?: string | null) => {
     const base = window.location.origin;
     const path = creatorSlug && courseSlug ? `/${creatorSlug}/${courseSlug}` : `/course/${courseSlug || courseId}`;
-    return `${base}${path}?group=${groupId}`;
+    const parameter = salesCode ? `group_code=${encodeURIComponent(salesCode)}` : `group=${groupId}`;
+    return `${base}${path}?${parameter}`;
   };
 
   if (isLoading) {
@@ -201,7 +205,7 @@ export default function CourseGroupsManager({ courseId, courseSlug, creatorSlug,
       </div>
 
       {(groups || []).map((g) => {
-        const draft = drafts[g.id] ?? { name: g.name, price: g.price_clp == null ? "" : String(g.price_clp) };
+        const draft = drafts[g.id] ?? { name: g.name, price: g.price_clp == null ? "" : String(g.price_clp), salesCode: g.sales_code ?? "", redirectUrl: g.redirect_url ?? "" };
         return (
           <div key={g.id} className="bg-card border rounded-lg p-6 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -243,17 +247,40 @@ export default function CourseGroupsManager({ courseId, courseSlug, creatorSlug,
                 />
                 <p className="text-xs text-muted-foreground mt-1">Déjalo vacío para usar el precio general del curso.</p>
               </div>
+              <div>
+                <Label>Código de venta</Label>
+                <Input
+                  className="mt-1"
+                  value={draft.salesCode}
+                  onChange={(e) => setDrafts((d) => ({ ...d, [g.id]: { ...draft, salesCode: e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, "") } }))}
+                  placeholder="COHORTE-MARZO"
+                />
+                <p className="text-xs text-muted-foreground mt-1">También identifica el grupo en el enlace de venta.</p>
+              </div>
+              <div>
+                <Label>Redirección después de comprar</Label>
+                <Input
+                  className="mt-1"
+                  type="url"
+                  value={draft.redirectUrl}
+                  onChange={(e) => setDrafts((d) => ({ ...d, [g.id]: { ...draft, redirectUrl: e.target.value } }))}
+                  placeholder="https://tusitio.cl/bienvenida"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Opcional. Se aplica solo a quienes compren con este grupo.</p>
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-2">
               <Button
                 size="sm"
                 onClick={() =>
-                  updateGroup.mutate({
-                    id: g.id,
-                    name: draft.name.trim() || g.name,
-                    price_clp: draft.price.trim() === "" ? null : Math.max(0, Math.round(Number(draft.price))),
-                  })
+                   updateGroup.mutate({
+                     id: g.id,
+                     name: draft.name.trim() || g.name,
+                     price_clp: draft.price.trim() === "" ? null : Math.max(0, Math.round(Number(draft.price))),
+                     sales_code: draft.salesCode.trim() || null,
+                     redirect_url: draft.redirectUrl.trim() || null,
+                   })
                 }
                 disabled={updateGroup.isPending}
               >
@@ -264,12 +291,12 @@ export default function CourseGroupsManager({ courseId, courseSlug, creatorSlug,
                 size="sm"
                 variant="outline"
                 onClick={() => {
-                  navigator.clipboard.writeText(groupUrl(g.id));
-                  toast({ title: "Enlace copiado" });
+                  navigator.clipboard.writeText(groupUrl(g.id, g.sales_code));
+                  toast({ title: "Enlace de venta copiado" });
                 }}
               >
                 <Copy className="h-4 w-4 mr-1" />
-                Copiar enlace del grupo
+                Copiar link de venta
               </Button>
             </div>
 

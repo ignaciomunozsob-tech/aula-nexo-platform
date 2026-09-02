@@ -156,7 +156,7 @@ export default function CreatorProductsPage() {
   });
 
   const StatusBadge = ({ status }: { status: string }) => (
-    <span className={status === 'published' ? 'badge-published' : status === 'hidden' ? 'badge-draft' : 'badge-draft'}>
+    <span className={status === 'published' ? 'badge-published' : 'badge-draft'}>
       {status === 'published' ? 'Publicado' : status === 'hidden' ? 'Oculto' : 'Borrador'}
     </span>
   );

@@ -105,8 +105,8 @@ export default function CreatorCoursesPage() {
                 <tr key={course.id}>
                   <td className="p-4"><p className="font-medium">{course.title}</p></td>
                   <td className="p-4">
-                    <span className={course.status === 'published' ? 'badge-published' : status === 'hidden' ? 'badge-draft' : 'badge-draft'}>
-                      {course.status === 'published' ? 'Publicado' : status === 'hidden' ? 'Oculto' : 'Borrador'}
+                    <span className={course.status === 'published' ? 'badge-published' : 'badge-draft'}>
+                      {course.status === 'published' ? 'Publicado' : course.status === 'hidden' ? 'Oculto' : 'Borrador'}
                     </span>
                   </td>
                   <td className="p-4">{formatPrice(course.price_clp)}</td>

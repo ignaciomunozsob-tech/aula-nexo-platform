@@ -32,6 +32,7 @@ export default function SessionEditorPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [durationMin, setDurationMin] = useState(30);
+  const [priceClp, setPriceClp] = useState(0);
   const [coverUrl, setCoverUrl] = useState("");
   const [status, setStatus] = useState<"draft" | "published" | "hidden">("draft");
   const [redirectUrl, setRedirectUrl] = useState("");
@@ -62,6 +63,7 @@ export default function SessionEditorPage() {
       setTitle(s.title);
       setDescription(s.description || "");
       setDurationMin(s.duration_min);
+      setPriceClp(s.price_clp ?? 0);
       setCoverUrl(s.cover_url || "");
       setStatus(s.status);
       setRedirectUrl(s.redirect_url || "");
@@ -92,7 +94,7 @@ export default function SessionEditorPage() {
         duration_min: durationMin,
         cover_url: coverUrl.trim() || null,
         status,
-        price_clp: 0,
+        price_clp: Math.max(0, Math.round(priceClp)),
         timezone: tz,
         buffer_before_min: bufferBefore,
         buffer_after_min: bufferAfter,

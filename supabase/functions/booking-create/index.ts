@@ -15,6 +15,7 @@ interface Body {
   guest_email?: string;
   guest_name?: string;
   guest_phone?: string;
+  booking_id?: string;
 }
 
 Deno.serve(async (req) => {
@@ -36,7 +37,7 @@ Deno.serve(async (req) => {
       } catch { /* guest */ }
     }
 
-    if (!userId && (!body.guest_email || !body.guest_name)) {
+    if (!userId && !body.booking_id && (!body.guest_email || !body.guest_name)) {
       return j({ error: 'guest_info_required' }, 400);
     }
 
@@ -64,25 +65,28 @@ Deno.serve(async (req) => {
 
     const attendeePhone = (body.guest_phone || '').trim() || null;
 
-    // Insert booking (unique index will reject double bookings)
-    const { data: booking, error: insErr } = await admin
-      .from('session_bookings')
-      .insert({
-        session_id: sess.id,
-        creator_id: sess.creator_id,
-        user_id: userId,
-        guest_email: userId ? null : attendeeEmail,
-        guest_name: userId ? null : attendeeName,
-        guest_phone: attendeePhone,
-        start_at: start.toISOString(),
-        end_at: end.toISOString(),
-        status: 'confirmed',
-      })
-      .select('*')
-      .single();
-    if (insErr || !booking) {
-      console.error('booking insert error', insErr);
-      return j({ error: 'slot_unavailable' }, 409);
+    // Paid sessions already have a pending reservation. Free sessions create it here.
+    let booking: any;
+    if (body.booking_id) {
+      const { data: existing, error: existingError } = await admin
+        .from('session_bookings').select('*').eq('id', body.booking_id).eq('session_id', sess.id).maybeSingle();
+      if (existingError || !existing || existing.status === 'cancelled') return j({ error: 'booking_not_found' }, 404);
+      booking = existing;
+      attendeeEmail = attendeeEmail || existing.guest_email;
+      attendeeName = attendeeName || existing.guest_name;
+      if (!attendeePhone && existing.guest_phone) attendeePhone = existing.guest_phone;
+      const { error: confirmError } = await admin.from('session_bookings').update({ status: 'confirmed' }).eq('id', booking.id).eq('status', 'pending');
+      if (confirmError) return j({ error: 'slot_unavailable' }, 409);
+    } else {
+      const { data: createdBooking, error: insErr } = await admin
+        .from('session_bookings')
+        .insert({ session_id: sess.id, creator_id: sess.creator_id, user_id: userId, guest_email: userId ? null : attendeeEmail, guest_name: userId ? null : attendeeName, guest_phone: attendeePhone, start_at: start.toISOString(), end_at: end.toISOString(), status: 'confirmed' })
+        .select('*').single();
+      if (insErr || !createdBooking) {
+        console.error('booking insert error', insErr);
+        return j({ error: 'slot_unavailable' }, 409);
+      }
+      booking = createdBooking;
     }
 
     // Create Google event with Meet

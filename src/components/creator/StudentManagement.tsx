@@ -574,6 +574,7 @@ export default function StudentManagement({ productId, productType }: StudentMan
                    {productType === "course" && <TableHead>Grupo</TableHead>}
                    {productType === "course" && <TableHead className="min-w-[160px]">Avance</TableHead>}
                    <TableHead>Estado</TableHead>
+                   {productType === "course" && <TableHead className="w-[60px] text-right">Acciones</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -639,6 +640,27 @@ export default function StudentManagement({ productId, productType }: StudentMan
                         {item.status === "active" || item.status === "registered" ? "Activo" : item.status}
                       </span>
                     </TableCell>
+                    {productType === "course" && (
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Eliminar alumno del curso"
+                          disabled={removeStudentMutation.isPending}
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `¿Eliminar a ${item.profiles?.name || item.email || "este alumno"} del curso? Perderá el acceso y su progreso.`,
+                              )
+                            ) {
+                              removeStudentMutation.mutate(item.user_id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

@@ -193,8 +193,12 @@ Deno.serve(async (req) => {
       if (row.key === 'commission_pct' && typeof row.value === 'number') comisionPct = row.value;
       if (row.key === 'community_fee_clp' && typeof row.value === 'number') communityFeeDefault = row.value;
     }
+    // Superadmin platform account: no NOVU commission nor community fee
+    const { data: isSuperadmin } = await admin.rpc('is_platform_superadmin', { _user_id: main.creator_id });
+    if (isSuperadmin === true) comisionPct = 0;
+
     const platformAmount = Math.round(totalAmount * comisionPct / 100);
-    const communityFee = (body.product_type === 'course' && (main as any).community_enabled)
+    const communityFee = (!isSuperadmin && body.product_type === 'course' && (main as any).community_enabled)
       ? Math.max(0, (main as any).community_fee_clp || communityFeeDefault)
       : 0;
     const creatorAmount = totalAmount - platformAmount - communityFee;

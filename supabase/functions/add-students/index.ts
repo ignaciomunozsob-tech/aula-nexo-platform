@@ -71,7 +71,10 @@ const handler = async (req: Request): Promise<Response> => {
     if (!students || !Array.isArray(students) || students.length === 0) {
       throw new Error("No students provided");
     }
-    if (students.length > MANUAL_STUDENTS_PER_PRODUCT) {
+    if (students.length > 50) {
+      throw new Error("Demasiados alumnos en una sola carga");
+    }
+    if (students.length > MANUAL_STUDENTS_PER_PRODUCT && !(await supabaseAdmin.rpc("is_platform_superadmin", { _user_id: user.id })).data) {
       throw new Error(`Puedes agregar máximo ${MANUAL_STUDENTS_PER_PRODUCT} alumnos manualmente por producto`);
     }
 
@@ -85,8 +88,10 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    const { data: isSuperadmin } = await supabaseAdmin.rpc("is_platform_superadmin", { _user_id: user.id });
+
     // Hard cap: max 10 manually added students per product (lifetime)
-    {
+    if (isSuperadmin !== true) {
       const manualTable = productType === "event" ? "event_registrations" : "enrollments";
       const manualColumn = productType === "event" ? "event_id" : "course_id";
       const { count: manualCount, error: manualError } = await supabaseAdmin
@@ -112,7 +117,7 @@ const handler = async (req: Request): Promise<Response> => {
       .select("students_count")
       .eq("creator_id", user.id)
       .gte("created_at", oneHourAgo);
-    if (recentLogs) {
+    if (recentLogs && isSuperadmin !== true) {
       const totalRecent = recentLogs.reduce((sum, log) => sum + (log.students_count || 0), 0);
       if (totalRecent + students.length > RATE_LIMIT_STUDENTS) {
         throw new Error(`Rate limit exceeded. You can add ${RATE_LIMIT_STUDENTS - totalRecent} more students this hour.`);

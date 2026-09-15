@@ -2496,6 +2496,7 @@ export type Database = {
         Returns: boolean
       }
       is_creator_2fa_valid: { Args: never; Returns: boolean }
+      is_platform_superadmin: { Args: { _user_id: string }; Returns: boolean }
       mark_order_pixel_fired: { Args: { _reference: string }; Returns: boolean }
       move_to_dlq: {
         Args: {
@@ -2513,6 +2514,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      remove_course_student: {
+        Args: { _course_id: string; _user_id: string }
+        Returns: boolean
       }
       resolve_creator_product: {
         Args: { _creator_slug: string; _product_slug: string }

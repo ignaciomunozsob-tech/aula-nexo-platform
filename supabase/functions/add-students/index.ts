@@ -7,9 +7,11 @@ interface AddStudentsRequest {
   students: StudentEntry[];
   productId: string;
   productType: "course" | "ebook" | "event";
+  courseGroupId?: string | null;
 }
 
 const RATE_LIMIT_STUDENTS = 20;
+const MANUAL_STUDENTS_PER_PRODUCT = 10;
 const RATE_LIMIT_WINDOW_HOURS = 1;
 
 async function findUserIdByEmail(
@@ -63,13 +65,15 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const body = (await req.json()) as AddStudentsRequest;
-    const { students, productId, productType } = body;
+    const { students, productId, productType, courseGroupId } = body;
     console.log("add-students invoked", { userId: user.id, productId, productType, count: students?.length });
 
     if (!students || !Array.isArray(students) || students.length === 0) {
       throw new Error("No students provided");
     }
-    if (students.length > 10) throw new Error("Maximum 10 students per request");
+    if (students.length > MANUAL_STUDENTS_PER_PRODUCT) {
+      throw new Error(`Puedes agregar máximo ${MANUAL_STUDENTS_PER_PRODUCT} alumnos manualmente por producto`);
+    }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     for (const student of students) {
@@ -78,6 +82,26 @@ const handler = async (req: Request): Promise<Response> => {
       }
       if (!student.email || !emailRegex.test(student.email)) {
         throw new Error(`Invalid email: ${student.email || "empty"}`);
+      }
+    }
+
+    // Hard cap: max 10 manually added students per product (lifetime)
+    {
+      const manualTable = productType === "event" ? "event_registrations" : "enrollments";
+      const manualColumn = productType === "event" ? "event_id" : "course_id";
+      const { count: manualCount, error: manualError } = await supabaseAdmin
+        .from(manualTable)
+        .select("id", { count: "exact", head: true })
+        .eq(manualColumn, productId)
+        .eq("source", "manual");
+      if (manualError) throw new Error("No se pudo validar el límite de alumnos manuales");
+      const used = manualCount ?? 0;
+      const remaining = MANUAL_STUDENTS_PER_PRODUCT - used;
+      if (remaining <= 0) {
+        throw new Error(`Ya alcanzaste el máximo de ${MANUAL_STUDENTS_PER_PRODUCT} alumnos agregados manualmente en este producto`);
+      }
+      if (students.length > remaining) {
+        throw new Error(`Solo puedes agregar ${remaining} alumno(s) más manualmente en este producto`);
       }
     }
 
@@ -117,6 +141,29 @@ const handler = async (req: Request): Promise<Response> => {
         }
       } else {
         throw new Error("Invalid product type");
+      }
+    }
+
+    // Resolve target group for courses (selected group or default)
+    let resolvedGroupId: string | null = null;
+    if (productType === "course") {
+      if (courseGroupId) {
+        const { data: group, error: groupError } = await supabaseAdmin
+          .from("course_groups")
+          .select("id")
+          .eq("id", courseGroupId)
+          .eq("course_id", productId)
+          .maybeSingle();
+        if (groupError || !group) throw new Error("El grupo seleccionado no pertenece a este curso");
+        resolvedGroupId = group.id as string;
+      } else {
+        const { data: defaultGroup } = await supabaseAdmin
+          .from("course_groups")
+          .select("id")
+          .eq("course_id", productId)
+          .eq("is_default", true)
+          .maybeSingle();
+        resolvedGroupId = (defaultGroup?.id as string) ?? null;
       }
     }
 
@@ -179,15 +226,9 @@ const handler = async (req: Request): Promise<Response> => {
             results.push({ email, success: false, message: "No se pudo inscribir al estudiante" }); continue;
           }
          } else {
-           const { data: defaultGroup } = await supabaseAdmin
-             .from("course_groups")
-             .select("id")
-             .eq("course_id", productId)
-             .eq("is_default", true)
-             .maybeSingle();
            const { error: enrollError } = await supabaseAdmin.from("enrollments").insert({
              course_id: productId, user_id: userId, status: "active", source: "manual",
-             course_group_id: defaultGroup?.id ?? null,
+             course_group_id: resolvedGroupId,
            });
            if (enrollError && !enrollError.message?.toLowerCase().includes("duplicate")) {
              console.error(`[add-students] enroll error ${email}`, enrollError);
@@ -218,8 +259,10 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error in add-students function:", error);
     const isAuth = error.message?.includes("Unauthorized");
+    const msg: string = error.message || "";
+    const isUserFacing = /máximo|alumno\(s\) más|Rate limit|grupo seleccionado/i.test(msg);
     return new Response(
-      JSON.stringify({ success: false, error: isAuth ? "Unauthorized" : "No se pudo procesar la solicitud" }),
+      JSON.stringify({ success: false, error: isAuth ? "Unauthorized" : isUserFacing ? msg : "No se pudo procesar la solicitud" }),
       {
         status: isAuth ? 401 : 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },

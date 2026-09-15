@@ -117,7 +117,7 @@ const handler = async (req: Request): Promise<Response> => {
       .select("students_count")
       .eq("creator_id", user.id)
       .gte("created_at", oneHourAgo);
-    if (recentLogs) {
+    if (recentLogs && isSuperadmin !== true) {
       const totalRecent = recentLogs.reduce((sum, log) => sum + (log.students_count || 0), 0);
       if (totalRecent + students.length > RATE_LIMIT_STUDENTS) {
         throw new Error(`Rate limit exceeded. You can add ${RATE_LIMIT_STUDENTS - totalRecent} more students this hour.`);

@@ -135,6 +135,17 @@ export default function StudentManagement({ productId, productType }: StudentMan
     enabled: !!productId && productType === "course",
   });
 
+  const { data: isSuperadmin = false } = useQuery({
+    queryKey: ["is-platform-superadmin"],
+    queryFn: async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      if (!auth.user) return false;
+      const { data, error } = await (supabase as any).rpc("is_platform_superadmin", { _user_id: auth.user.id });
+      if (error) return false;
+      return data === true;
+    },
+  });
+
   const { data: manualCount = 0 } = useQuery({
     queryKey: ["manual-students-count", productType, productId],
     queryFn: async () => {
@@ -151,7 +162,7 @@ export default function StudentManagement({ productId, productType }: StudentMan
     enabled: !!productId,
   });
 
-  const remainingManual = Math.max(0, MANUAL_LIMIT - manualCount);
+  const remainingManual = isSuperadmin ? 50 : Math.max(0, MANUAL_LIMIT - manualCount);
 
   const assignGroupMutation = useMutation({
     mutationFn: async ({ userId, groupId }: { userId: string; groupId: string | null }) => {
@@ -169,6 +180,28 @@ export default function StudentManagement({ productId, productType }: StudentMan
     onError: (error: any) => {
       toast({
         title: "No se pudo cambiar el grupo",
+        description: error.message || "Intenta nuevamente",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removeStudentMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await (supabase as any).rpc("remove_course_student", {
+        _course_id: productId,
+        _user_id: userId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Alumno eliminado del curso" });
+      queryClient.invalidateQueries({ queryKey: [tableName, productId, "with-email"] });
+      queryClient.invalidateQueries({ queryKey: ["manual-students-count", productType, productId] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "No se pudo eliminar al alumno",
         description: error.message || "Intenta nuevamente",
         variant: "destructive",
       });

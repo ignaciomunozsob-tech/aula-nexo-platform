@@ -27,6 +27,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2, Users, UserPlus, Trash2, Download } from "lucide-react";
 import { z } from "zod";
 
@@ -103,6 +110,7 @@ export default function StudentManagement({ productId, productType }: StudentMan
            lessons_completed: r.lessons_completed,
            progress_pct: r.progress_pct,
            course_group_name: r.course_group_name,
+           course_group_id: r.course_group_id,
          }));
       }
     },

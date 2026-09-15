@@ -259,8 +259,10 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error in add-students function:", error);
     const isAuth = error.message?.includes("Unauthorized");
+    const msg: string = error.message || "";
+    const isUserFacing = /máximo|alumno\(s\) más|Rate limit|grupo seleccionado/i.test(msg);
     return new Response(
-      JSON.stringify({ success: false, error: isAuth ? "Unauthorized" : "No se pudo procesar la solicitud" }),
+      JSON.stringify({ success: false, error: isAuth ? "Unauthorized" : isUserFacing ? msg : "No se pudo procesar la solicitud" }),
       {
         status: isAuth ? 401 : 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },

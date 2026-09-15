@@ -117,6 +117,42 @@ export default function StudentManagement({ productId, productType }: StudentMan
     enabled: !!productId,
   });
 
+  const { data: courseGroups } = useQuery({
+    queryKey: ["course-groups", productId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("course_groups")
+        .select("id, name, is_default")
+        .eq("course_id", productId)
+        .order("is_default", { ascending: false })
+        .order("name");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!productId && productType === "course",
+  });
+
+  const assignGroupMutation = useMutation({
+    mutationFn: async ({ userId, groupId }: { userId: string; groupId: string | null }) => {
+      const { error } = await (supabase as any).rpc("set_enrollment_group", {
+        _course_id: productId,
+        _user_id: userId,
+        _group_id: groupId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Grupo actualizado" });
+      queryClient.invalidateQueries({ queryKey: [tableName, productId, "with-email"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "No se pudo cambiar el grupo",
+        description: error.message || "Intenta nuevamente",
+        variant: "destructive",
+      });
+    },
+  });
 
   const addStudentsMutation = useMutation({
     mutationFn: async (validStudents: StudentEntry[]) => {

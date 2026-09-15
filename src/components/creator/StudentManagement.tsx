@@ -413,11 +413,41 @@ export default function StudentManagement({ productId, productType }: StudentMan
               <DialogTitle>Agregar Alumnos Manualmente</DialogTitle>
               <DialogDescription>
                 Ingresa los datos de los alumnos que deseas inscribir en este {productLabel}. 
-                Máximo 10 alumnos por vez. Se les enviará un email con instrucciones para establecer su contraseña.
+                Máximo {MANUAL_LIMIT} alumnos manuales por {productLabel} (te quedan {remainingManual}).
+                Se les enviará un email con instrucciones para establecer su contraseña.
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 mt-4">
+              {productType === "course" && (
+                <div>
+                  <Label className="text-xs">Grupo</Label>
+                  <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Selecciona un grupo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="default">Acceso general</SelectItem>
+                      {(courseGroups || [])
+                        .filter((g: any) => !g.is_default)
+                        .map((g: any) => (
+                          <SelectItem key={g.id} value={g.id}>
+                            {g.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Todos los alumnos de esta carga quedarán en este grupo. Puedes cambiarlo después en la lista.
+                  </p>
+                </div>
+              )}
+
+              {remainingManual === 0 && (
+                <p className="text-sm text-destructive">
+                  Ya alcanzaste el máximo de {MANUAL_LIMIT} alumnos agregados manualmente en este {productLabel}.
+                </p>
+              )}
               {students.map((student, index) => (
                 <div key={index} className="flex gap-3 items-start">
                   <div className="flex-1">
@@ -462,13 +492,13 @@ export default function StudentManagement({ productId, productType }: StudentMan
                   variant="outline"
                   size="sm"
                   onClick={addStudentRow}
-                  disabled={students.length >= 10}
+                  disabled={students.length >= remainingManual}
                 >
                   <UserPlus className="h-4 w-4 mr-2" />
-                  Agregar otro ({students.length}/10)
+                  Agregar otro ({students.length}/{remainingManual})
                 </Button>
 
-                <Button onClick={handleAddStudents} disabled={addStudentsMutation.isPending}>
+                <Button onClick={handleAddStudents} disabled={addStudentsMutation.isPending || remainingManual === 0}>
                   {addStudentsMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />

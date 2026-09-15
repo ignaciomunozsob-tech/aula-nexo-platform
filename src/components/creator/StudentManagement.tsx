@@ -27,6 +27,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2, Users, UserPlus, Trash2, Download } from "lucide-react";
 import { z } from "zod";
 
@@ -103,12 +110,49 @@ export default function StudentManagement({ productId, productType }: StudentMan
            lessons_completed: r.lessons_completed,
            progress_pct: r.progress_pct,
            course_group_name: r.course_group_name,
+           course_group_id: r.course_group_id,
          }));
       }
     },
     enabled: !!productId,
   });
 
+  const { data: courseGroups } = useQuery({
+    queryKey: ["course-groups", productId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("course_groups")
+        .select("id, name, is_default")
+        .eq("course_id", productId)
+        .order("is_default", { ascending: false })
+        .order("name");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!productId && productType === "course",
+  });
+
+  const assignGroupMutation = useMutation({
+    mutationFn: async ({ userId, groupId }: { userId: string; groupId: string | null }) => {
+      const { error } = await (supabase as any).rpc("set_enrollment_group", {
+        _course_id: productId,
+        _user_id: userId,
+        _group_id: groupId,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Grupo actualizado" });
+      queryClient.invalidateQueries({ queryKey: [tableName, productId, "with-email"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "No se pudo cambiar el grupo",
+        description: error.message || "Intenta nuevamente",
+        variant: "destructive",
+      });
+    },
+  });
 
   const addStudentsMutation = useMutation({
     mutationFn: async (validStudents: StudentEntry[]) => {
@@ -458,7 +502,28 @@ export default function StudentManagement({ productId, productType }: StudentMan
                       )}
                       {productType === "course" && (
                        <TableCell className="text-sm">
-                         {item.course_group_name || "Acceso general"}
+                         <Select
+                           value={item.course_group_id ?? "none"}
+                           onValueChange={(v) =>
+                             assignGroupMutation.mutate({
+                               userId: item.user_id,
+                               groupId: v === "none" ? null : v,
+                             })
+                           }
+                           disabled={assignGroupMutation.isPending}
+                         >
+                           <SelectTrigger className="h-8 min-w-[160px] text-xs">
+                             <SelectValue placeholder="Acceso general" />
+                           </SelectTrigger>
+                           <SelectContent>
+                             <SelectItem value="none">Acceso general</SelectItem>
+                             {(courseGroups || []).map((g: any) => (
+                               <SelectItem key={g.id} value={g.id}>
+                                 {g.name}
+                               </SelectItem>
+                             ))}
+                           </SelectContent>
+                         </Select>
                        </TableCell>
                      )}
                      {productType === "course" && (

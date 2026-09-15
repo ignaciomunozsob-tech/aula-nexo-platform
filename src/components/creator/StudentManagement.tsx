@@ -64,6 +64,9 @@ export default function StudentManagement({ productId, productType }: StudentMan
   const [open, setOpen] = useState(false);
   const [students, setStudents] = useState<StudentEntry[]>([{ name: "", email: "" }]);
   const [validationErrors, setValidationErrors] = useState<Record<number, { name?: string; email?: string }>>({});
+  const [selectedGroupId, setSelectedGroupId] = useState<string>("default");
+
+  const MANUAL_LIMIT = 10;
 
   const tableName = productType === "event" ? "event_registrations" : "enrollments";
 
@@ -132,6 +135,24 @@ export default function StudentManagement({ productId, productType }: StudentMan
     enabled: !!productId && productType === "course",
   });
 
+  const { data: manualCount = 0 } = useQuery({
+    queryKey: ["manual-students-count", productType, productId],
+    queryFn: async () => {
+      const table = productType === "event" ? "event_registrations" : "enrollments";
+      const column = productType === "event" ? "event_id" : "course_id";
+      const { count, error } = await (supabase as any)
+        .from(table)
+        .select("id", { count: "exact", head: true })
+        .eq(column, productId)
+        .eq("source", "manual");
+      if (error) return 0;
+      return count ?? 0;
+    },
+    enabled: !!productId,
+  });
+
+  const remainingManual = Math.max(0, MANUAL_LIMIT - manualCount);
+
   const assignGroupMutation = useMutation({
     mutationFn: async ({ userId, groupId }: { userId: string; groupId: string | null }) => {
       const { error } = await (supabase as any).rpc("set_enrollment_group", {
@@ -161,6 +182,8 @@ export default function StudentManagement({ productId, productType }: StudentMan
           students: validStudents,
           productId,
           productType,
+          courseGroupId:
+            productType === "course" && selectedGroupId !== "default" ? selectedGroupId : null,
         },
       });
 
@@ -192,6 +215,7 @@ export default function StudentManagement({ productId, productType }: StudentMan
       setValidationErrors({});
       setOpen(false);
       queryClient.invalidateQueries({ queryKey: [tableName, productId] });
+      queryClient.invalidateQueries({ queryKey: ["manual-students-count", productType, productId] });
     },
     onError: (error: any) => {
       toast({
@@ -203,10 +227,10 @@ export default function StudentManagement({ productId, productType }: StudentMan
   });
 
   const addStudentRow = () => {
-    if (students.length >= 10) {
+    if (students.length >= Math.max(1, remainingManual)) {
       toast({
         title: "Límite alcanzado",
-        description: "Puedes agregar máximo 10 alumnos a la vez",
+        description: `Puedes agregar máximo ${MANUAL_LIMIT} alumnos manualmente por ${productLabel}. Te quedan ${remainingManual}.`,
         variant: "destructive",
       });
       return;
@@ -277,6 +301,15 @@ export default function StudentManagement({ productId, productType }: StudentMan
 
   const handleAddStudents = async () => {
     const validStudents = validateStudents();
+
+    if (validStudents.length > remainingManual) {
+      toast({
+        title: "Límite alcanzado",
+        description: `Solo puedes agregar ${remainingManual} alumno(s) más manualmente en este ${productLabel}.`,
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (validStudents.length === 0) {
       toast({

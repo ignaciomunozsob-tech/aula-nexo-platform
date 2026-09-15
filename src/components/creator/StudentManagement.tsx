@@ -502,7 +502,28 @@ export default function StudentManagement({ productId, productType }: StudentMan
                       )}
                       {productType === "course" && (
                        <TableCell className="text-sm">
-                         {item.course_group_name || "Acceso general"}
+                         <Select
+                           value={item.course_group_id ?? "none"}
+                           onValueChange={(v) =>
+                             assignGroupMutation.mutate({
+                               userId: item.user_id,
+                               groupId: v === "none" ? null : v,
+                             })
+                           }
+                           disabled={assignGroupMutation.isPending}
+                         >
+                           <SelectTrigger className="h-8 min-w-[160px] text-xs">
+                             <SelectValue placeholder="Acceso general" />
+                           </SelectTrigger>
+                           <SelectContent>
+                             <SelectItem value="none">Acceso general</SelectItem>
+                             {(courseGroups || []).map((g: any) => (
+                               <SelectItem key={g.id} value={g.id}>
+                                 {g.name}
+                               </SelectItem>
+                             ))}
+                           </SelectContent>
+                         </Select>
                        </TableCell>
                      )}
                      {productType === "course" && (

@@ -7,3 +7,6 @@
 - [ ] Integrar selección de horario en popup y pago con reserva pendiente
 - [ ] Mostrar todos los productos publicados en el perfil público
 - [ ] Permitir ordenar productos en el perfil, manteniendo evaluaciones al final
+- [ ] Mostrar los productos del creador en una cuadrícula adaptable con portada, estado, precio y edición
+- [ ] Mover el ID de producto al interior de cada editor
+- [ ] Optimizar para móvil y tablet los editores de cursos, e-books y eventos

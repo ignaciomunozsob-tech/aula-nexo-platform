@@ -104,7 +104,8 @@ export default function CreatorProductsPage() {
   const { data: courses, isLoading: loadingCourses } = useQuery({
     queryKey: ['creator-courses', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('courses').select('*').eq('creator_id', user?.id).order('created_at', { ascending: false });
+      if (!user) return [];
+      const { data, error } = await supabase.from('courses').select('*').eq('creator_id', user.id).order('created_at', { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -114,7 +115,8 @@ export default function CreatorProductsPage() {
   const { data: ebooks, isLoading: loadingEbooks } = useQuery({
     queryKey: ['creator-ebooks', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('ebooks').select('id, title, price_clp, status, cover_image_url, slug, created_at').eq('creator_id', user?.id).order('created_at', { ascending: false });
+      if (!user) return [];
+      const { data, error } = await supabase.from('ebooks').select('id, title, price_clp, status, cover_image_url, slug, created_at').eq('creator_id', user.id).order('created_at', { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -124,7 +126,8 @@ export default function CreatorProductsPage() {
   const { data: events, isLoading: loadingEvents } = useQuery({
     queryKey: ['creator-events', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('events').select('id, title, price_clp, status, cover_image_url, event_date, slug').eq('creator_id', user?.id).order('event_date', { ascending: true });
+      if (!user) return [];
+      const { data, error } = await supabase.from('events').select('id, title, price_clp, status, cover_image_url, event_date, slug').eq('creator_id', user.id).order('event_date', { ascending: true });
       if (error) throw error;
       return data;
     },
@@ -134,7 +137,8 @@ export default function CreatorProductsPage() {
   const { data: sessions, isLoading: loadingSessions } = useQuery({
     queryKey: ['creator-sessions', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('one_on_one_sessions').select('*').eq('creator_id', user?.id).order('created_at', { ascending: false });
+      if (!user) return [];
+      const { data, error } = await supabase.from('one_on_one_sessions').select('*').eq('creator_id', user.id).order('created_at', { ascending: false });
       if (error) throw error;
       return data;
     },

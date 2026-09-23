@@ -3,10 +3,10 @@
 - [x] Crear formulario público de evaluación por enlace único
 - [x] Mostrar evaluaciones verificadas con producto en perfil público y paginación
 - [x] Validar flujo y compilación
-- [ ] Habilitar precios para servicios 1:1 y limitar a un servicio gratuito activo por creador
-- [ ] Integrar selección de horario en popup y pago con reserva pendiente
-- [ ] Mostrar todos los productos publicados en el perfil público
-- [ ] Permitir ordenar productos en el perfil, manteniendo evaluaciones al final
+- [x] Habilitar precios para servicios 1:1 y limitar a un servicio gratuito activo por creador
+- [x] Integrar selección de horario en popup y pago con reserva pendiente
+- [x] Mostrar todos los productos publicados en el perfil público
+- [x] Permitir ordenar productos en el perfil, manteniendo evaluaciones al final
 - [x] Mostrar los productos del creador en una cuadrícula adaptable con portada, estado, precio y edición
 - [x] Mover el ID de producto al interior de cada editor
 - [x] Optimizar para móvil y tablet los editores de cursos, e-books y eventos

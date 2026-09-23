@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NewProductDialog } from '@/components/creator/NewProductDialog';
 
 interface ProductCardProps {
-  id: string;
   title: string;
   status: string;
   price: number;
@@ -168,7 +167,7 @@ export default function CreatorProductsPage() {
         <TabsContent value="courses">
           <ProductGrid loading={loadingCourses} emptyLabel="cursos" onCreate={() => setNewProductOpen(true)}>
             {courses?.length ? courses.map((course) => (
-              <ProductCard key={course.id} id={course.id} title={course.title} status={course.status} price={course.price_clp} imageUrl={course.cover_image_url} typeLabel="Curso" icon={<BookOpen className="h-5 w-5" />} editUrl={`/creator-app/courses/${course.id}/edit`} publicUrl={hasPublicStatus(course.status) ? getCourseUrl(creatorSlug, course.slug, course.id) : undefined} />
+              <ProductCard key={course.id} title={course.title} status={course.status} price={course.price_clp} imageUrl={course.cover_image_url} typeLabel="Curso" icon={<BookOpen className="h-5 w-5" />} editUrl={`/creator-app/courses/${course.id}/edit`} publicUrl={hasPublicStatus(course.status) ? getCourseUrl(creatorSlug, course.slug, course.id) : undefined} />
             )) : null}
           </ProductGrid>
         </TabsContent>
@@ -176,7 +175,7 @@ export default function CreatorProductsPage() {
         <TabsContent value="ebooks">
           <ProductGrid loading={loadingEbooks} emptyLabel="e-books" onCreate={() => setNewProductOpen(true)}>
             {ebooks?.length ? ebooks.map((ebook) => (
-              <ProductCard key={ebook.id} id={ebook.id} title={ebook.title} status={ebook.status} price={ebook.price_clp} imageUrl={ebook.cover_image_url} typeLabel="E-book" icon={<FileText className="h-5 w-5" />} editUrl={`/creator-app/ebooks/${ebook.id}/edit`} publicUrl={hasPublicStatus(ebook.status) && creatorSlug ? `/${creatorSlug}/${ebook.slug}` : undefined} />
+              <ProductCard key={ebook.id} title={ebook.title} status={ebook.status} price={ebook.price_clp} imageUrl={ebook.cover_image_url} typeLabel="E-book" icon={<FileText className="h-5 w-5" />} editUrl={`/creator-app/ebooks/${ebook.id}/edit`} publicUrl={hasPublicStatus(ebook.status) && creatorSlug ? `/${creatorSlug}/${ebook.slug}` : undefined} />
             )) : null}
           </ProductGrid>
         </TabsContent>
@@ -184,7 +183,7 @@ export default function CreatorProductsPage() {
         <TabsContent value="events">
           <ProductGrid loading={loadingEvents} emptyLabel="eventos" onCreate={() => setNewProductOpen(true)}>
             {events?.length ? events.map((event) => (
-              <ProductCard key={event.id} id={event.id} title={event.title} status={event.status} price={event.price_clp} imageUrl={event.cover_image_url} typeLabel="Evento" icon={<Calendar className="h-5 w-5" />} editUrl={`/creator-app/events/${event.id}/edit`} publicUrl={hasPublicStatus(event.status) && creatorSlug ? `/${creatorSlug}/${event.slug}` : undefined} meta={new Date(event.event_date).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })} />
+              <ProductCard key={event.id} title={event.title} status={event.status} price={event.price_clp} imageUrl={event.cover_image_url} typeLabel="Evento" icon={<Calendar className="h-5 w-5" />} editUrl={`/creator-app/events/${event.id}/edit`} publicUrl={hasPublicStatus(event.status) && creatorSlug ? `/${creatorSlug}/${event.slug}` : undefined} meta={new Date(event.event_date).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })} />
             )) : null}
           </ProductGrid>
         </TabsContent>
@@ -192,7 +191,7 @@ export default function CreatorProductsPage() {
         <TabsContent value="sessions">
           <ProductGrid loading={loadingSessions} emptyLabel="servicios" onCreate={() => setNewProductOpen(true)}>
             {sessions?.length ? sessions.map((session) => (
-              <ProductCard key={session.id} id={session.id} title={session.title} status={session.status} price={session.price_clp} imageUrl={session.cover_url} typeLabel="Servicio 1:1" icon={<Video className="h-5 w-5" />} editUrl={`/creator-app/sessions/${session.id}/edit`} publicUrl={hasPublicStatus(session.status) && creatorSlug ? (session.slug ? `/${creatorSlug}/${session.slug}` : `/c/${creatorSlug}/sesion/${session.id}`) : undefined} meta={`${session.duration_min} min`} />
+              <ProductCard key={session.id} title={session.title} status={session.status} price={session.price_clp} imageUrl={session.cover_url} typeLabel="Servicio 1:1" icon={<Video className="h-5 w-5" />} editUrl={`/creator-app/sessions/${session.id}/edit`} publicUrl={hasPublicStatus(session.status) && creatorSlug ? (session.slug ? `/${creatorSlug}/${session.slug}` : `/c/${creatorSlug}/sesion/${session.id}`) : undefined} meta={`${session.duration_min} min`} />
             )) : null}
           </ProductGrid>
         </TabsContent>

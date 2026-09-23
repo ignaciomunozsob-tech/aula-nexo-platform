@@ -47,6 +47,7 @@ import {
   Star,
   CreditCard,
   MessagesSquare,
+  ArrowLeft,
 } from "lucide-react";
 import {
   Table,
@@ -675,6 +676,11 @@ export default function CourseEditorPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Button variant="ghost" onClick={() => navigate('/creator-app/products')} className="mb-4 sm:mb-6">
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Volver a Productos
+      </Button>
 
       <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <h1 className="text-2xl font-bold">Editar Curso</h1>

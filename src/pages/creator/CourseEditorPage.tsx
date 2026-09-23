@@ -67,6 +67,7 @@ import CourseCommunityManager from "@/components/creator/CourseCommunityManager"
 import CreatorReviewsPage from "@/pages/creator/CreatorReviewsPage";
 import CheckoutPagesPage from "@/pages/creator/CheckoutPagesPage";
 import CourseGroupsManager from "@/components/creator/CourseGroupsManager";
+import { ProductIdCell } from "@/components/creator/ProductIdCell";
 
 
 type LessonResourceForm = {
@@ -651,7 +652,7 @@ export default function CourseEditorPage() {
   }
 
   return (
-    <div className="p-4 pb-24 sm:p-6 lg:p-8 max-w-4xl">
+    <div className="mx-auto max-w-5xl p-4 pb-24 sm:p-6 lg:p-8">
       {/* Diálogo de confirmación para publicar */}
       <AlertDialog open={showPublishDialog} onOpenChange={setShowPublishDialog}>
         <AlertDialogContent>
@@ -675,9 +676,9 @@ export default function CourseEditorPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+      <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <h1 className="text-2xl font-bold">Editar Curso</h1>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+        <div className="hidden w-full flex-col gap-2 sm:flex lg:w-auto lg:flex-row lg:flex-wrap">
           {course?.id && (
             <>
               <Button variant="outline" className="w-full sm:w-auto" asChild>
@@ -736,7 +737,8 @@ export default function CourseEditorPage() {
       </div>
 
       <Tabs defaultValue="info" className="w-full">
-        <TabsList className="flex flex-wrap w-full gap-1 h-auto mb-6">
+        <div className="-mx-4 mb-6 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <TabsList className="h-auto w-max justify-start gap-1">
           <TabsTrigger value="info" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             Información
@@ -762,10 +764,11 @@ export default function CourseEditorPage() {
             Páginas de pago
           </TabsTrigger>
         </TabsList>
+        </div>
 
         {/* Tab: Información del Curso */}
         <TabsContent value="info" className="space-y-6">
-          <div className="bg-card border rounded-lg p-6 space-y-4">
+          <div className="space-y-4 rounded-lg border bg-card p-4 sm:p-6">
             <div className="space-y-2">
               <Label>Portada del curso</Label>
               {id ? (
@@ -817,7 +820,7 @@ export default function CourseEditorPage() {
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <Label>Precio CLP</Label>
                 <Input
@@ -884,10 +887,17 @@ export default function CourseEditorPage() {
                 Después del pago, redirigiremos al alumno a esta URL (por ejemplo, un grupo de WhatsApp o página de gracias).
               </p>
             </div>
+
+            {id && (
+              <div className="border-t border-border pt-4">
+                <Label>ID del producto</Label>
+                <div className="mt-2"><ProductIdCell id={id} /></div>
+              </div>
+            )}
           </div>
 
           {/* Certificado (opcional) */}
-          <div className="bg-card border rounded-lg p-6 space-y-4">
+          <div className="space-y-4 rounded-lg border bg-card p-4 sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="font-semibold">Certificado al finalizar</h2>
@@ -944,8 +954,8 @@ export default function CourseEditorPage() {
 
         {/* Tab: Módulos y Lecciones */}
         <TabsContent value="modules" className="space-y-6">
-          <div className="bg-card border rounded-lg p-6">
-            <div className="flex justify-between items-center mb-4">
+          <div className="rounded-lg border bg-card p-3 sm:p-6">
+            <div className="mb-4 flex items-center justify-between gap-3">
               <h2 className="font-semibold">Módulos y Lecciones</h2>
               <Button variant="outline" size="sm" onClick={addModule}>
                 <Plus className="h-4 w-4 mr-1" />
@@ -970,7 +980,7 @@ export default function CourseEditorPage() {
                   <Collapsible key={mod.id} defaultOpen={mod.id?.startsWith("new-")}>
                     <div className={`border rounded-lg overflow-hidden ${bgColor}`}>
                       {/* Header del módulo */}
-                      <div className="flex items-center gap-2 p-3">
+                      <div className="grid grid-cols-[auto_1fr] gap-2 p-3 sm:flex sm:items-center">
                         <CollapsibleTrigger className="flex items-center gap-2 flex-1 hover:bg-black/5 dark:hover:bg-white/5 rounded p-1 -m-1 transition-colors">
                           <ChevronRight className="h-4 w-4 transition-transform duration-200 [[data-state=open]_&]:rotate-90" />
                           <span className="text-xs text-muted-foreground font-medium">
@@ -987,11 +997,11 @@ export default function CourseEditorPage() {
                               setModules(u);
                             }
                           }}
-                          className="flex-1 font-bold bg-background"
+                          className="min-w-0 bg-background font-bold"
                           placeholder="Título del módulo"
                         />
 
-                        <div className="flex items-center gap-1">
+                        <div className="col-span-2 flex items-center justify-end gap-1 sm:col-span-1">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1035,12 +1045,12 @@ export default function CourseEditorPage() {
                       {/* Contenido colapsable - Lecciones */}
                       <CollapsibleContent>
                         <div className="px-3 pb-3 pt-1">
-                          <div className="space-y-2 pl-4 border-l-2 border-primary/30">
+                          <div className="space-y-2 border-l-2 border-primary/30 pl-2 sm:pl-4">
                             {(mod.lessons || []).map((les, li) => (
                               <Collapsible key={les.id} defaultOpen={les.id?.startsWith("new-")}>
                                 <div className="bg-background/80 rounded-lg shadow-sm overflow-hidden">
                                   {/* Header de la lección - siempre visible */}
-                                  <div className="flex items-center gap-2 p-3">
+                                   <div className="grid grid-cols-[auto_1fr] gap-2 p-3 sm:flex sm:items-center">
                                     <CollapsibleTrigger className="flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 rounded p-1 -m-1 transition-colors">
                                       <ChevronRight className="h-4 w-4 transition-transform duration-200 [[data-state=open]_&]:rotate-90" />
                                       <span className="text-xs text-muted-foreground font-medium">
@@ -1058,10 +1068,10 @@ export default function CourseEditorPage() {
                                         }
                                       }}
                                       placeholder="Título de la lección"
-                                      className="flex-1 font-medium"
+                                       className="min-w-0 font-medium"
                                     />
 
-                                    <div className="flex items-center gap-1">
+                                     <div className="col-span-2 flex items-center justify-end gap-1 sm:col-span-1">
                                       <Button
                                         variant="ghost"
                                         size="icon"

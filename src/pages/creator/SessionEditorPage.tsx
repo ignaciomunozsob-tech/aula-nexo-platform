@@ -16,6 +16,7 @@ import { useGoogleConnection } from "@/hooks/useGoogleConnection";
 import { RichTextEditor } from "@/components/editor/RichTextEditor";
 import { Link } from "react-router-dom";
 import CreatorReviewsPage from "./CreatorReviewsPage";
+import { ProductIdCell } from "@/components/creator/ProductIdCell";
 
 const DAYS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 interface Rule { id?: string; day_of_week: number; start_time: string; end_time: string; }
@@ -251,6 +252,12 @@ export default function SessionEditorPage() {
                     Después de agendar, redirigiremos al cliente a esta URL (por ejemplo, un grupo de WhatsApp o página de gracias).
                   </p>
                 </div>
+                {isEditing && id && (
+                  <div className="border-t border-border pt-4">
+                    <Label>ID del producto</Label>
+                    <div className="mt-2"><ProductIdCell id={id} /></div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

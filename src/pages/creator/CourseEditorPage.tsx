@@ -967,12 +967,12 @@ export default function CourseEditorPage() {
               {modules.map((mod, mi) => {
                 // Colores alternados suaves para cada módulo
                 const bgColors = [
-                  "bg-blue-50/50 dark:bg-blue-950/20",
-                  "bg-green-50/50 dark:bg-green-950/20",
-                  "bg-purple-50/50 dark:bg-purple-950/20",
-                  "bg-orange-50/50 dark:bg-orange-950/20",
-                  "bg-pink-50/50 dark:bg-pink-950/20",
-                  "bg-cyan-50/50 dark:bg-cyan-950/20",
+                  "bg-blue-50/50",
+                  "bg-green-50/50",
+                  "bg-purple-50/50",
+                  "bg-orange-50/50",
+                  "bg-pink-50/50",
+                  "bg-cyan-50/50",
                 ];
                 const bgColor = bgColors[mi % bgColors.length];
 
@@ -981,7 +981,7 @@ export default function CourseEditorPage() {
                     <div className={`border rounded-lg overflow-hidden ${bgColor}`}>
                       {/* Header del módulo */}
                       <div className="grid grid-cols-[auto_1fr] gap-2 p-3 sm:flex sm:items-center">
-                        <CollapsibleTrigger className="flex items-center gap-2 flex-1 hover:bg-black/5 dark:hover:bg-white/5 rounded p-1 -m-1 transition-colors">
+                        <CollapsibleTrigger className="flex flex-1 items-center gap-2 rounded p-1 transition-colors hover:bg-foreground/5">
                           <ChevronRight className="h-4 w-4 transition-transform duration-200 [[data-state=open]_&]:rotate-90" />
                           <span className="text-xs text-muted-foreground font-medium">
                             Módulo {mi + 1}
@@ -1051,7 +1051,7 @@ export default function CourseEditorPage() {
                                 <div className="bg-background/80 rounded-lg shadow-sm overflow-hidden">
                                   {/* Header de la lección - siempre visible */}
                                    <div className="grid grid-cols-[auto_1fr] gap-2 p-3 sm:flex sm:items-center">
-                                    <CollapsibleTrigger className="flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 rounded p-1 -m-1 transition-colors">
+                                    <CollapsibleTrigger className="flex items-center gap-2 rounded p-1 transition-colors hover:bg-foreground/5">
                                       <ChevronRight className="h-4 w-4 transition-transform duration-200 [[data-state=open]_&]:rotate-90" />
                                       <span className="text-xs text-muted-foreground font-medium">
                                         Lección {li + 1}

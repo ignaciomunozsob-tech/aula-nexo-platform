@@ -102,10 +102,15 @@ export default function CreatorProductsPage() {
   const [newProductOpen, setNewProductOpen] = useState(false);
 
   const { data: courses, isLoading: loadingCourses } = useQuery({
-    queryKey: ['creator-courses', user?.id],
+    // Keep this cache separate from dashboard/course lists that request fewer columns.
+    queryKey: ['creator-products-courses', user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase.from('courses').select('*').eq('creator_id', user.id).order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('courses')
+        .select('id, title, status, price_clp, cover_image_url, slug, created_at')
+        .eq('creator_id', user.id)
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
     },

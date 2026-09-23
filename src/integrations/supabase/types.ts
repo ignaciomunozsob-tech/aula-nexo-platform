@@ -2302,6 +2302,14 @@ export type Database = {
           scope: string
         }[]
       }
+      get_my_mercadopago_connection: {
+        Args: never
+        Returns: {
+          email: string
+          live_mode: boolean
+          nickname: string
+        }[]
+      }
       get_my_meta_pixel_id: { Args: never; Returns: string }
       get_my_review_for_creator: {
         Args: { _creator_id: string }

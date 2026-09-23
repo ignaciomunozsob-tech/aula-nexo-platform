@@ -470,6 +470,7 @@ export default function CourseEditorPage() {
       setDeletedLessonIds([]);
 
       queryClient.invalidateQueries({ queryKey: ["creator-courses"] });
+      queryClient.invalidateQueries({ queryKey: ["creator-products-courses"] });
       queryClient.invalidateQueries({ queryKey: ["edit-course", courseId] });
       queryClient.invalidateQueries({ queryKey: ["edit-modules", courseId] });
 
@@ -784,6 +785,7 @@ export default function CourseEditorPage() {
                   onUploaded={() => {
                     queryClient.invalidateQueries({ queryKey: ["edit-course", id] });
                     queryClient.invalidateQueries({ queryKey: ["creator-courses"] });
+                    queryClient.invalidateQueries({ queryKey: ["creator-products-courses"] });
                   }}
                 />
               ) : (

@@ -88,9 +88,7 @@ export default function CreatorBillingPage() {
     if (!user) return;
     (async () => {
       const { data } = await supabase
-        .from('creator_mercadopago_accounts')
-        .select('nickname, email, live_mode')
-        .eq('creator_id', user.id)
+        .rpc('get_my_mercadopago_connection')
         .maybeSingle();
       setMp(data ? { connected: true, ...data } : { connected: false });
     })();

@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ArrowLeft, Loader2, Upload, FileText, Trash2 } from 'lucide-react';
 import { generateSlug, formatPrice } from '@/lib/utils';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
+import { ProductIdCell } from '@/components/creator/ProductIdCell';
 
 type EbookFormSnapshot = {
   title: string;
@@ -272,8 +273,8 @@ export default function EbookEditorPage() {
   const canSaveEbook = !saveMutation.isPending && !!title.trim();
 
   return (
-    <div className="p-4 pb-24 sm:p-6 lg:p-8 max-w-3xl">
-      <Button variant="ghost" onClick={() => navigate('/creator-app/products')} className="mb-6">
+    <div className="mx-auto max-w-4xl p-4 pb-24 sm:p-6 lg:p-8">
+      <Button variant="ghost" onClick={() => navigate('/creator-app/products')} className="mb-4 sm:mb-6">
         <ArrowLeft className="h-4 w-4 mr-2" />
         Volver a Productos
       </Button>
@@ -287,7 +288,7 @@ export default function EbookEditorPage() {
             type="button"
             onClick={handleSave}
             disabled={!canSaveEbook}
-            className="w-full sm:w-auto"
+            className="hidden w-full sm:inline-flex sm:w-auto"
           >
             {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             Guardar Cambios
@@ -298,10 +299,10 @@ export default function EbookEditorPage() {
       <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-6">
         {/* Basic Info */}
         <Card>
-          <CardHeader>
-            <CardTitle>Información Básica</CardTitle>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-xl sm:text-2xl">Información Básica</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 p-4 pt-0 sm:p-6 sm:pt-0">
             <div>
               <Label>Título *</Label>
               <Input
@@ -324,7 +325,7 @@ export default function EbookEditorPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <Label>Categoría</Label>
                 <Select value={categoryId || ''} onValueChange={(v) => setCategoryId(v || null)}>
@@ -367,15 +368,22 @@ export default function EbookEditorPage() {
                 Después del pago, redirigiremos al comprador a esta URL (por ejemplo, un grupo de WhatsApp o página de gracias).
               </p>
             </div>
+
+            {isEditing && id && (
+              <div className="border-t border-border pt-4">
+                <Label>ID del producto</Label>
+                <div className="mt-2"><ProductIdCell id={id} /></div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Cover Image */}
         <Card>
-          <CardHeader>
-            <CardTitle>Portada</CardTitle>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-xl sm:text-2xl">Portada</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
             <input
               ref={coverInputRef}
               type="file"
@@ -384,8 +392,8 @@ export default function EbookEditorPage() {
               onChange={handleCoverUpload}
             />
             {coverImageUrl ? (
-              <div className="relative w-48">
-                <img src={coverImageUrl} alt={`Portada del ebook ${title || ''}`.trim()} className="w-full rounded-lg" />
+              <div className="relative w-full max-w-xs">
+                <img src={coverImageUrl} alt={`Portada del ebook ${title || ''}`.trim()} className="aspect-[3/4] w-full rounded-lg object-cover" />
                 <Button
                   type="button"
                   variant="destructive"
@@ -412,10 +420,10 @@ export default function EbookEditorPage() {
 
         {/* File Upload */}
         <Card>
-          <CardHeader>
-            <CardTitle>Archivo del E-book</CardTitle>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-xl sm:text-2xl">Archivo del E-book</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
             <input
               ref={fileInputRef}
               type="file"
@@ -424,9 +432,9 @@ export default function EbookEditorPage() {
               onChange={handleFileUpload}
             />
             {fileUrl ? (
-              <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+              <div className="flex min-w-0 items-center gap-3 rounded-lg bg-muted p-3">
                 <FileText className="h-8 w-8 text-primary" />
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                   <p className="font-medium">Archivo cargado</p>
                   <button
                     type="button"
@@ -469,10 +477,10 @@ export default function EbookEditorPage() {
 
         {/* Status & Save */}
         <Card>
-          <CardHeader>
-            <CardTitle>Estado de Publicación</CardTitle>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-xl sm:text-2xl">Estado de Publicación</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger>
                 <SelectValue />

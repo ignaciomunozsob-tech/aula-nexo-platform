@@ -100,8 +100,8 @@ export default function CourseCoverUploader({ courseId, currentUrl, onUploaded }
 
   return (
     <div className="space-y-3">
-      <div className="flex items-start gap-4">
-        <div className="w-44 h-28 rounded-lg border border-border bg-muted overflow-hidden flex items-center justify-center relative">
+      <div className="flex flex-col items-start gap-4 sm:flex-row">
+        <div className="relative aspect-video w-full max-w-xs overflow-hidden rounded-lg border border-border bg-muted sm:w-44 sm:shrink-0">
           {previewUrl ? (
             <img
               src={previewUrl}
@@ -120,7 +120,7 @@ export default function CourseCoverUploader({ courseId, currentUrl, onUploaded }
           )}
         </div>
 
-        <div className="flex-1 space-y-2">
+        <div className="w-full flex-1 space-y-2">
           <label className="block">
             <span className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium cursor-pointer hover:bg-primary/90 transition-colors">
               {uploading ? (

@@ -1,445 +1,207 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Eye, Users, BookOpen, FileText, Calendar, Video } from 'lucide-react';
+import { Plus, Edit, Eye, BookOpen, FileText, Calendar, Video } from 'lucide-react';
 import { formatPrice, getCourseUrl } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NewProductDialog } from '@/components/creator/NewProductDialog';
-import { ProductIdCell } from '@/components/creator/ProductIdCell';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { ListSkeleton } from '@/components/ui/page-skeletons';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+
+interface ProductCardProps {
+  title: string;
+  status: string;
+  price: number;
+  imageUrl?: string | null;
+  editUrl: string;
+  publicUrl?: string;
+  typeLabel: string;
+  icon: ReactNode;
+  meta?: string;
+}
+
+const statusLabels: Record<string, string> = {
+  published: 'Publicado',
+  hidden: 'Oculto',
+  draft: 'Borrador',
+};
+
+function ProductCard({ title, status, price, imageUrl, editUrl, publicUrl, typeLabel, icon, meta }: ProductCardProps) {
+  return (
+    <article className="group flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card">
+      <div className="relative aspect-video overflow-hidden bg-muted">
+        {imageUrl ? (
+          <img src={imageUrl} alt={`Portada de ${title}`} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center gap-3 px-5 text-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background text-muted-foreground">{icon}</div>
+            <span className="line-clamp-2 text-base font-semibold text-foreground">{title}</span>
+          </div>
+        )}
+        <span className="absolute left-3 top-3 rounded-md bg-background/90 px-2 py-1 text-xs font-medium text-foreground shadow-sm">
+          {typeLabel}
+        </span>
+      </div>
+
+      <div className="flex flex-1 flex-col p-4">
+        <h2 className="line-clamp-2 text-base font-semibold text-foreground">{title}</h2>
+        {meta && <p className="mt-1 text-sm text-muted-foreground">{meta}</p>}
+
+        <div className="mt-4 grid grid-cols-2 gap-3 border-y border-border py-3">
+          <div>
+            <p className="text-xs text-muted-foreground">Estado</p>
+            <span className={status === 'published' ? 'badge-published' : 'badge-draft'}>
+              {statusLabels[status] || status}
+            </span>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Precio</p>
+            <p className="mt-1 font-semibold text-foreground">{price === 0 ? 'Gratis' : formatPrice(price)}</p>
+          </div>
+        </div>
+
+        <div className="mt-auto flex gap-2 pt-4">
+          <Button asChild className="min-w-0 flex-1">
+            <Link to={editUrl}><Edit className="mr-2 h-4 w-4" />Editar</Link>
+          </Button>
+          {publicUrl && (
+            <Button variant="outline" size="icon" asChild title="Ver página pública">
+              <Link to={publicUrl} target="_blank" aria-label={`Ver página pública de ${title}`}><Eye className="h-4 w-4" /></Link>
+            </Button>
+          )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function ProductGrid({ loading, children, emptyLabel, onCreate }: { loading: boolean; children: ReactNode; emptyLabel: string; onCreate: () => void }) {
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {[1, 2, 3].map((item) => <div key={item} className="aspect-[4/3] animate-pulse rounded-lg border border-border bg-muted" />)}
+      </div>
+    );
+  }
+
+  if (!children) {
+    return (
+      <div className="rounded-lg border border-border bg-card py-12 text-center">
+        <p className="mb-4 text-muted-foreground">No tienes {emptyLabel} aún</p>
+        <Button onClick={onCreate}>Crear mi primer producto</Button>
+      </div>
+    );
+  }
+
+  return <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">{children}</div>;
+}
 
 export default function CreatorProductsPage() {
   const { user, profile } = useAuth();
   const [newProductOpen, setNewProductOpen] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState<{ id: string; title: string } | null>(null);
 
-  // Fetch courses
   const { data: courses, isLoading: loadingCourses } = useQuery({
     queryKey: ['creator-courses', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('courses')
-        .select('*')
-        .eq('creator_id', user!.id)
-        .order('created_at', { ascending: false });
+      if (!user) return [];
+      const { data, error } = await supabase.from('courses').select('*').eq('creator_id', user.id).order('created_at', { ascending: false });
       if (error) throw error;
       return data;
     },
     enabled: !!user,
   });
 
-  // Fetch ebooks
   const { data: ebooks, isLoading: loadingEbooks } = useQuery({
     queryKey: ['creator-ebooks', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('ebooks')
-        .select('id, title, description, price_clp, category_id, status, cover_image_url, creator_id, slug, is_novu_official, created_at, updated_at')
-        .eq('creator_id', user!.id)
-        .order('created_at', { ascending: false });
+      if (!user) return [];
+      const { data, error } = await supabase.from('ebooks').select('id, title, price_clp, status, cover_image_url, slug, created_at').eq('creator_id', user.id).order('created_at', { ascending: false });
       if (error) throw error;
       return data;
     },
     enabled: !!user,
   });
 
-  // Fetch events
   const { data: events, isLoading: loadingEvents } = useQuery({
     queryKey: ['creator-events', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('events')
-        .select('id, title, description, price_clp, category_id, status, cover_image_url, duration_minutes, max_attendees, event_date, event_type, creator_id, slug, is_novu_official, created_at, updated_at')
-        .eq('creator_id', user!.id)
-        .order('event_date', { ascending: true });
+      if (!user) return [];
+      const { data, error } = await supabase.from('events').select('id, title, price_clp, status, cover_image_url, event_date, slug').eq('creator_id', user.id).order('event_date', { ascending: true });
       if (error) throw error;
       return data;
     },
     enabled: !!user,
   });
 
-  // Fetch 1:1 sessions
   const { data: sessions, isLoading: loadingSessions } = useQuery({
     queryKey: ['creator-sessions', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('one_on_one_sessions')
-        .select('*')
-        .eq('creator_id', user!.id)
-        .order('created_at', { ascending: false });
+      if (!user) return [];
+      const { data, error } = await supabase.from('one_on_one_sessions').select('*').eq('creator_id', user.id).order('created_at', { ascending: false });
       if (error) throw error;
       return data;
     },
     enabled: !!user,
   });
 
-  // Get enrollment counts for courses
-  const { data: enrollmentCounts } = useQuery({
-    queryKey: ['creator-courses-enrollments', user?.id],
-    queryFn: async () => {
-      const courseIds = courses?.map((c) => c.id) || [];
-      if (courseIds.length === 0) return {};
-
-      const { data, error } = await supabase
-        .from('enrollments')
-        .select('course_id')
-        .in('course_id', courseIds)
-        .eq('status', 'active');
-
-      if (error) throw error;
-
-      const counts: Record<string, number> = {};
-      data?.forEach((e) => {
-        counts[e.course_id] = (counts[e.course_id] || 0) + 1;
-      });
-      return counts;
-    },
-    enabled: !!courses && courses.length > 0,
-  });
-
-  // Get event registration counts
-  const { data: eventRegistrationCounts } = useQuery({
-    queryKey: ['creator-event-registrations', user?.id],
-    queryFn: async () => {
-      const eventIds = events?.map((e) => e.id) || [];
-      if (eventIds.length === 0) return {};
-
-      const { data, error } = await supabase
-        .from('event_registrations')
-        .select('event_id')
-        .in('event_id', eventIds)
-        .eq('status', 'registered');
-
-      if (error) throw error;
-
-      const counts: Record<string, number> = {};
-      data?.forEach((r) => {
-        counts[r.event_id] = (counts[r.event_id] || 0) + 1;
-      });
-      return counts;
-    },
-    enabled: !!events && events.length > 0,
-  });
-
-  // Get students for selected course
-  const { data: students, isLoading: loadingStudents } = useQuery({
-    queryKey: ['course-students', selectedCourse?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('enrollments')
-        .select('id, purchased_at, status, profiles:user_id(id, name, avatar_url)')
-        .eq('course_id', selectedCourse!.id)
-        .eq('status', 'active')
-        .order('purchased_at', { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!selectedCourse,
-  });
-
-  const StatusBadge = ({ status }: { status: string }) => (
-    <span className={status === 'published' ? 'badge-published' : 'badge-draft'}>
-      {status === 'published' ? 'Publicado' : status === 'hidden' ? 'Oculto' : 'Borrador'}
-    </span>
-  );
-
-  const EmptyState = ({ type, onCreate }: { type: string; onCreate: () => void }) => (
-    <div className="text-center py-12 bg-card border border-border rounded-lg">
-      <p className="text-muted-foreground mb-4">No tienes {type} aún</p>
-      <Button onClick={onCreate}>Crear mi primer {type.slice(0, -1)}</Button>
-    </div>
-  );
+  const hasPublicStatus = (status: string) => ['published', 'hidden'].includes(status);
+  const creatorSlug = profile?.creator_slug;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6 sm:mb-8">
-        <h1 className="text-2xl font-bold">Mis Productos</h1>
-        <Button onClick={() => setNewProductOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuevo Producto
-        </Button>
+      <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Mis Productos</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Administra y edita todo lo que vendes en NOVU.</p>
+        </div>
+        <Button onClick={() => setNewProductOpen(true)} className="w-full sm:w-auto"><Plus className="mr-2 h-4 w-4" />Nuevo Producto</Button>
       </div>
 
       <Tabs defaultValue="courses" className="space-y-6">
-        <div className="-mx-4 sm:mx-0 overflow-x-auto px-4 sm:px-0">
-          <TabsList className="w-max sm:w-auto">
-            <TabsTrigger value="courses" className="gap-2">
-              <BookOpen className="h-4 w-4" />
-              Cursos ({courses?.length || 0})
-            </TabsTrigger>
-            <TabsTrigger value="ebooks" className="gap-2">
-              <FileText className="h-4 w-4" />
-              E-books ({ebooks?.length || 0})
-            </TabsTrigger>
-            <TabsTrigger value="events" className="gap-2">
-              <Calendar className="h-4 w-4" />
-              Eventos ({events?.length || 0})
-            </TabsTrigger>
-            <TabsTrigger value="sessions" className="gap-2">
-              <Video className="h-4 w-4" />
-              Servicios ({sessions?.length || 0})
-            </TabsTrigger>
+        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <TabsList className="h-auto w-max justify-start">
+            <TabsTrigger value="courses" className="gap-2"><BookOpen className="h-4 w-4" />Cursos ({courses?.length || 0})</TabsTrigger>
+            <TabsTrigger value="ebooks" className="gap-2"><FileText className="h-4 w-4" />E-books ({ebooks?.length || 0})</TabsTrigger>
+            <TabsTrigger value="events" className="gap-2"><Calendar className="h-4 w-4" />Eventos ({events?.length || 0})</TabsTrigger>
+            <TabsTrigger value="sessions" className="gap-2"><Video className="h-4 w-4" />Servicios ({sessions?.length || 0})</TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="sessions">
-          {loadingSessions ? (
-            <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />)}</div>
-          ) : sessions?.length ? (
-            <div className="bg-card border border-border rounded-lg overflow-x-auto">
-              <table className="w-full min-w-[640px]">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="text-left p-4 font-medium">Sesión</th>
-                    <th className="text-left p-4 font-medium">ID</th>
-                    <th className="text-left p-4 font-medium">Duración</th>
-                    <th className="text-left p-4 font-medium">Estado</th>
-                    <th className="text-right p-4 font-medium">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {sessions.map((s: any) => (
-                    <tr key={s.id}>
-                      <td className="p-4 font-medium">{s.title}</td>
-                      <td className="p-4"><ProductIdCell id={s.id} /></td>
-                      <td className="p-4">{s.duration_min} min</td>
-                      <td className="p-4"><StatusBadge status={s.status} /></td>
-                      <td className="p-4 text-right">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link to={`/creator-app/sessions/${s.id}/edit`}><Edit className="h-4 w-4" /></Link>
-                        </Button>
-                        {['published','hidden'].includes(s.status) && profile?.creator_slug && (
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link to={s.slug ? `/${profile.creator_slug}/${s.slug}` : `/c/${profile.creator_slug}/sesion/${s.id}`} target="_blank"><Eye className="h-4 w-4" /></Link>
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <EmptyState type="servicios" onCreate={() => setNewProductOpen(true)} />
-          )}
-        </TabsContent>
-
-        {/* Courses Tab */}
         <TabsContent value="courses">
-          {loadingCourses ? (
-            <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />)}</div>
-          ) : courses?.length ? (
-            <div className="bg-card border border-border rounded-lg overflow-x-auto">
-              <table className="w-full min-w-[640px]">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="text-left p-4 font-medium">Producto</th>
-                    <th className="text-left p-4 font-medium">ID</th>
-                    <th className="text-left p-4 font-medium">Estado</th>
-                    <th className="text-left p-4 font-medium">Precio</th>
-                    <th className="text-center p-4 font-medium">Alumnos</th>
-                    <th className="text-right p-4 font-medium">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {courses.map(course => (
-                    <tr key={course.id}>
-                      <td className="p-4"><p className="font-medium">{course.title}</p></td>
-                      <td className="p-4"><ProductIdCell id={course.id} /></td>
-                      <td className="p-4"><StatusBadge status={course.status} /></td>
-                      <td className="p-4">{formatPrice(course.price_clp)}</td>
-                      <td className="p-4 text-center">
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => setSelectedCourse({ id: course.id, title: course.title })}
-                          className="gap-1"
-                        >
-                          <Users className="h-4 w-4" />
-                          {enrollmentCounts?.[course.id] || 0}
-                        </Button>
-                      </td>
-                      <td className="p-4 text-right">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link to={`/creator-app/courses/${course.id}/edit`}><Edit className="h-4 w-4" /></Link>
-                        </Button>
-                        {['published','hidden'].includes(course.status) && (
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link to={getCourseUrl(profile?.creator_slug, course.slug, course.id)} target="_blank"><Eye className="h-4 w-4" /></Link>
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <EmptyState type="cursos" onCreate={() => setNewProductOpen(true)} />
-          )}
+          <ProductGrid loading={loadingCourses} emptyLabel="cursos" onCreate={() => setNewProductOpen(true)}>
+            {courses?.length ? courses.map((course) => (
+              <ProductCard key={course.id} title={course.title} status={course.status} price={course.price_clp} imageUrl={course.cover_image_url} typeLabel="Curso" icon={<BookOpen className="h-5 w-5" />} editUrl={`/creator-app/courses/${course.id}/edit`} publicUrl={hasPublicStatus(course.status) ? getCourseUrl(creatorSlug, course.slug, course.id) : undefined} />
+            )) : null}
+          </ProductGrid>
         </TabsContent>
 
-        {/* E-books Tab */}
         <TabsContent value="ebooks">
-          {loadingEbooks ? (
-            <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />)}</div>
-          ) : ebooks?.length ? (
-            <div className="bg-card border border-border rounded-lg overflow-x-auto">
-              <table className="w-full min-w-[640px]">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="text-left p-4 font-medium">Producto</th>
-                    <th className="text-left p-4 font-medium">ID</th>
-                    <th className="text-left p-4 font-medium">Estado</th>
-                    <th className="text-left p-4 font-medium">Precio</th>
-                    <th className="text-right p-4 font-medium">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {ebooks.map(ebook => (
-                    <tr key={ebook.id}>
-                      <td className="p-4"><p className="font-medium">{ebook.title}</p></td>
-                      <td className="p-4"><ProductIdCell id={ebook.id} /></td>
-                      <td className="p-4"><StatusBadge status={ebook.status} /></td>
-                      <td className="p-4">{formatPrice(ebook.price_clp)}</td>
-                      <td className="p-4 text-right">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link to={`/creator-app/ebooks/${ebook.id}/edit`}><Edit className="h-4 w-4" /></Link>
-                        </Button>
-                        {['published','hidden'].includes(ebook.status) && (
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link to={`/ebook/${ebook.slug}`} target="_blank"><Eye className="h-4 w-4" /></Link>
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <EmptyState type="e-books" onCreate={() => setNewProductOpen(true)} />
-          )}
+          <ProductGrid loading={loadingEbooks} emptyLabel="e-books" onCreate={() => setNewProductOpen(true)}>
+            {ebooks?.length ? ebooks.map((ebook) => (
+              <ProductCard key={ebook.id} title={ebook.title} status={ebook.status} price={ebook.price_clp} imageUrl={ebook.cover_image_url} typeLabel="E-book" icon={<FileText className="h-5 w-5" />} editUrl={`/creator-app/ebooks/${ebook.id}/edit`} publicUrl={hasPublicStatus(ebook.status) && creatorSlug ? `/${creatorSlug}/${ebook.slug}` : undefined} />
+            )) : null}
+          </ProductGrid>
         </TabsContent>
 
-        {/* Events Tab */}
         <TabsContent value="events">
-          {loadingEvents ? (
-            <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-20 bg-muted rounded-lg animate-pulse" />)}</div>
-          ) : events?.length ? (
-            <div className="bg-card border border-border rounded-lg overflow-x-auto">
-              <table className="w-full min-w-[640px]">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="text-left p-4 font-medium">Evento</th>
-                    <th className="text-left p-4 font-medium">ID</th>
-                    <th className="text-left p-4 font-medium">Fecha</th>
-                    <th className="text-left p-4 font-medium">Estado</th>
-                    <th className="text-left p-4 font-medium">Precio</th>
-                    <th className="text-center p-4 font-medium">Inscritos</th>
-                    <th className="text-right p-4 font-medium">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {events.map(event => (
-                    <tr key={event.id}>
-                      <td className="p-4"><p className="font-medium">{event.title}</p></td>
-                      <td className="p-4"><ProductIdCell id={event.id} /></td>
-                      <td className="p-4">
-                        {new Date(event.event_date).toLocaleDateString('es-CL', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </td>
-                      <td className="p-4"><StatusBadge status={event.status} /></td>
-                      <td className="p-4">{formatPrice(event.price_clp)}</td>
-                      <td className="p-4 text-center">
-                        <span className="text-sm">
-                          {eventRegistrationCounts?.[event.id] || 0}
-                          {event.max_attendees && ` / ${event.max_attendees}`}
-                        </span>
-                      </td>
-                      <td className="p-4 text-right">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link to={`/creator-app/events/${event.id}/edit`}><Edit className="h-4 w-4" /></Link>
-                        </Button>
-                        {['published','hidden'].includes(event.status) && (
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link to={`/event/${event.slug}`} target="_blank"><Eye className="h-4 w-4" /></Link>
-                          </Button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <EmptyState type="eventos" onCreate={() => setNewProductOpen(true)} />
-          )}
+          <ProductGrid loading={loadingEvents} emptyLabel="eventos" onCreate={() => setNewProductOpen(true)}>
+            {events?.length ? events.map((event) => (
+              <ProductCard key={event.id} title={event.title} status={event.status} price={event.price_clp} imageUrl={event.cover_image_url} typeLabel="Evento" icon={<Calendar className="h-5 w-5" />} editUrl={`/creator-app/events/${event.id}/edit`} publicUrl={hasPublicStatus(event.status) && creatorSlug ? `/${creatorSlug}/${event.slug}` : undefined} meta={new Date(event.event_date).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', year: 'numeric' })} />
+            )) : null}
+          </ProductGrid>
+        </TabsContent>
+
+        <TabsContent value="sessions">
+          <ProductGrid loading={loadingSessions} emptyLabel="servicios" onCreate={() => setNewProductOpen(true)}>
+            {sessions?.length ? sessions.map((session) => (
+              <ProductCard key={session.id} title={session.title} status={session.status} price={session.price_clp} imageUrl={session.cover_url} typeLabel="Servicio 1:1" icon={<Video className="h-5 w-5" />} editUrl={`/creator-app/sessions/${session.id}/edit`} publicUrl={hasPublicStatus(session.status) && creatorSlug ? (session.slug ? `/${creatorSlug}/${session.slug}` : `/c/${creatorSlug}/sesion/${session.id}`) : undefined} meta={`${session.duration_min} min`} />
+            )) : null}
+          </ProductGrid>
         </TabsContent>
       </Tabs>
 
-      {/* New Product Dialog */}
       <NewProductDialog open={newProductOpen} onOpenChange={setNewProductOpen} />
-
-      {/* Students Dialog */}
-      <Dialog open={!!selectedCourse} onOpenChange={() => setSelectedCourse(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Alumnos inscritos - {selectedCourse?.title}</DialogTitle>
-          </DialogHeader>
-          {loadingStudents ? (
-            <ListSkeleton rows={3} />
-          ) : students && students.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Alumno</TableHead>
-                  <TableHead>Fecha de inscripción</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {students.map((student: any) => (
-                  <TableRow key={student.id}>
-                    <TableCell className="font-medium">
-                      {student.profiles?.name || 'Usuario'}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(student.purchased_at).toLocaleDateString('es-CL')}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="py-8 text-center text-muted-foreground">
-              No hay alumnos inscritos en este curso
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

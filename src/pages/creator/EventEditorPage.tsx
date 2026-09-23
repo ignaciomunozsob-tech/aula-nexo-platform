@@ -18,6 +18,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import CheckoutPagesPage from './CheckoutPagesPage';
 import CreatorReviewsPage from './CreatorReviewsPage';
 import EventRecordingUploader from '@/components/creator/EventRecordingUploader';
+import { ProductIdCell } from '@/components/creator/ProductIdCell';
 
 type EventFormSnapshot = {
   title: string;
@@ -314,8 +315,8 @@ export default function EventEditorPage() {
   const canSaveEvent = !saveMutation.isPending && !!title.trim() && !!eventDate && !!eventTime;
 
   return (
-    <div className="p-4 pb-24 sm:p-6 lg:p-8 max-w-3xl">
-      <Button variant="ghost" onClick={() => navigate('/creator-app/products')} className="mb-6">
+    <div className="mx-auto max-w-4xl p-4 pb-24 sm:p-6 lg:p-8">
+      <Button variant="ghost" onClick={() => navigate('/creator-app/products')} className="mb-4 sm:mb-6">
         <ArrowLeft className="h-4 w-4 mr-2" />
         Volver a Productos
       </Button>
@@ -329,7 +330,7 @@ export default function EventEditorPage() {
             type="button"
             onClick={handleSave}
             disabled={!canSaveEvent}
-            className="w-full sm:w-auto"
+            className="hidden w-full sm:inline-flex sm:w-auto"
           >
             {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             Guardar Cambios
@@ -339,12 +340,14 @@ export default function EventEditorPage() {
 
       {isEditing && (
         <Tabs defaultValue="info" className="mb-6">
-          <TabsList>
+          <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <TabsList className="h-auto w-max justify-start">
             <TabsTrigger value="info">Información</TabsTrigger>
             <TabsTrigger value="students">Inscritos</TabsTrigger>
             <TabsTrigger value="reviews">Evaluaciones</TabsTrigger>
             <TabsTrigger value="checkout">Página de pago</TabsTrigger>
           </TabsList>
+          </div>
           <TabsContent value="students" className="mt-6">
             {id && <StudentManagement productId={id} productType="event" />}
           </TabsContent>
@@ -374,10 +377,10 @@ export default function EventEditorPage() {
       <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="space-y-6">
         {/* Basic Info */}
         <Card>
-          <CardHeader>
-            <CardTitle>Información Básica</CardTitle>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-xl sm:text-2xl">Información Básica</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 p-4 pt-0 sm:p-6 sm:pt-0">
             <div>
               <Label>Título del Evento *</Label>
               <Input
@@ -400,7 +403,7 @@ export default function EventEditorPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <Label>Categoría</Label>
                 <Select value={categoryId || ''} onValueChange={(v) => setCategoryId(v || null)}>
@@ -443,15 +446,22 @@ export default function EventEditorPage() {
                 Después de inscribirse (pago o gratis), redirigiremos al asistente a esta URL. Útil para llevarlo a un grupo de WhatsApp o página de gracias.
               </p>
             </div>
+
+            {isEditing && id && (
+              <div className="border-t border-border pt-4">
+                <Label>ID del producto</Label>
+                <div className="mt-2"><ProductIdCell id={id} /></div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Cover Image */}
         <Card>
-          <CardHeader>
-            <CardTitle>Imagen del Evento</CardTitle>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-xl sm:text-2xl">Imagen del Evento</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
             <input
               ref={coverInputRef}
               type="file"
@@ -460,7 +470,7 @@ export default function EventEditorPage() {
               onChange={handleCoverUpload}
             />
             {coverImageUrl ? (
-              <div className="relative w-64">
+              <div className="relative w-full max-w-sm">
                 <img src={coverImageUrl} alt={`Portada del evento ${title || ''}`.trim()} className="w-full rounded-lg aspect-video object-cover" />
                 <Button
                   type="button"
@@ -488,14 +498,14 @@ export default function EventEditorPage() {
 
         {/* Event Details */}
         <Card>
-          <CardHeader>
+          <CardHeader className="p-4 sm:p-6">
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
               Fecha y Hora
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <CardContent className="space-y-4 p-4 pt-0 sm:p-6 sm:pt-0">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <Label>Fecha *</Label>
                 <Input
@@ -518,7 +528,7 @@ export default function EventEditorPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <Label className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />
@@ -554,13 +564,13 @@ export default function EventEditorPage() {
 
         {/* Modalidad */}
         <Card>
-          <CardHeader>
+          <CardHeader className="p-4 sm:p-6">
             <CardTitle className="flex items-center gap-2">
               <Video className="h-5 w-5" />
               Modalidad del Evento
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 p-4 pt-0 sm:p-6 sm:pt-0">
             <div>
               <Label>Tipo de evento</Label>
               <Select value={eventType} onValueChange={(v) => setEventType(v as 'online' | 'in_person')}>
@@ -622,10 +632,10 @@ export default function EventEditorPage() {
 
         {/* Status & Save */}
         <Card>
-          <CardHeader>
-            <CardTitle>Estado de Publicación</CardTitle>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-xl sm:text-2xl">Estado de Publicación</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger>
                 <SelectValue />

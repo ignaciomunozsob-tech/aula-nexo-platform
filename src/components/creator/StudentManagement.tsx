@@ -614,7 +614,7 @@ export default function StudentManagement({ productId, productType }: StudentMan
                            </SelectTrigger>
                            <SelectContent>
                              <SelectItem value="none">Acceso general</SelectItem>
-                             {(courseGroups || []).map((g: any) => (
+                             {(courseGroups || []).filter((g: any) => !g.is_default).map((g: any) => (
                                <SelectItem key={g.id} value={g.id}>
                                  {g.name}
                                </SelectItem>

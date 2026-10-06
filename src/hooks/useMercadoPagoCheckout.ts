@@ -16,6 +16,7 @@ interface CheckoutMeta {
   includeBump?: boolean;
   selectedStartAt?: string;
   customerPhone?: string;
+  couponCode?: string | null;
 }
 
 interface PendingCheckout {
@@ -61,6 +62,7 @@ export function useMercadoPagoCheckout() {
           group_code: meta.groupCode,
           include_bump: !!meta.includeBump,
           selected_start_at: meta.selectedStartAt,
+          coupon_code: meta.couponCode || undefined,
           guest_email: guest?.email,
           guest_name: guest?.name,
           guest_phone: guest?.phone ?? meta.customerPhone,
@@ -95,6 +97,8 @@ export function useMercadoPagoCheckout() {
       let friendly = raw || 'No se pudo iniciar el pago';
       if (raw.includes('creator_not_connected') || raw.includes('mercadopago_not_connected')) {
         friendly = 'Este creador aún no ha conectado su cuenta de pagos. Inténtalo más tarde.';
+      } else if (raw.includes('invalid_coupon')) {
+        friendly = 'Cupón no válido.';
       } else if (raw.includes('product_not_found') || raw.includes('not_found')) {
         friendly = 'Este producto ya no está disponible.';
       }
@@ -140,8 +144,9 @@ export function useMercadoPagoCheckout() {
     setGuestDialogOpen(true);
   };
 
-  const submitGuestData = async (data: { name: string; email: string; phone: string }) => {
+  const submitGuestData = async (data: { name: string; email: string; phone: string; couponCode?: string }) => {
     if (!pending) return;
+    if (data.couponCode) pending.meta.couponCode = data.couponCode;
     // Mostrar loading en el diálogo y el botón del producto mientras se contacta a MP
     setLoading(true);
     setGuestDialogOpen(false);

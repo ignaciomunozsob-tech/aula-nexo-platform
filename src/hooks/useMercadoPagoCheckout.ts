@@ -173,6 +173,7 @@ export function useMercadoPagoCheckout() {
                 name: data.name,
                email: data.email,
                phone: data.phone,
+               couponCode: data.couponCode ?? null,
                ts: Date.now(),
              }),
           );

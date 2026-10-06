@@ -30,6 +30,10 @@ export default function CheckoutPage({ embed = false }: Props) {
   const [includeBump, setIncludeBump] = useState(false);
   const [contact, setContact] = useState<ContactState>({ name: '', email: '', phone: '' });
   const [contactError, setContactError] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponApplying, setCouponApplying] = useState(false);
   const { checkoutAsGuest, loading, guestDialogOpen, setGuestDialogOpen, submitGuestData } = useMercadoPagoCheckout();
 
   // Get checkout page (RPC returns only safe columns) — includes creator_id
@@ -85,7 +89,7 @@ export default function CheckoutPage({ embed = false }: Props) {
        }
        const bump = page.bump_enabled && page.bump_product_id
          ? await fetchOne(page.bump_product_type, page.bump_product_id) : null;
-       return { main, bump };
+       return { main, bump, couponsEnabled: !!couponsEnabled };
     },
   });
 
@@ -100,12 +104,13 @@ export default function CheckoutPage({ embed = false }: Props) {
       if (raw) {
          const parsed = JSON.parse(raw) as {
             productType: string; productId: string; groupId?: string | null; groupCode?: string | null;
-            name: string; email: string; phone: string; ts: number;
+            name: string; email: string; phone: string; ts: number; couponCode?: string | null;
          };
         if (parsed.productType === page.product_type
           && parsed.productId === page.product_id
           && Date.now() - parsed.ts <= GUEST_PREFILL_TTL_MS) {
           setContact({ name: parsed.name ?? '', email: parsed.email ?? '', phone: parsed.phone ?? '' });
+          if (parsed.couponCode) setCouponCode(parsed.couponCode);
           return;
         }
       }
@@ -164,6 +169,24 @@ export default function CheckoutPage({ embed = false }: Props) {
     ? Math.round(products.bump.price_clp * (100 - (page.bump_discount_pct ?? 0)) / 100)
     : 0;
 
+  const subtotal = products.main.price_clp + (includeBump ? bumpFinal : 0);
+  const { data: couponEval } = useCouponEval(appliedCoupon, page.product_type, page.product_id, subtotal);
+  const discount = appliedCoupon && couponEval && !couponEval.error ? couponEval.discount_clp : 0;
+
+  const applyCoupon = async () => {
+    const code = couponCode.trim();
+    if (!code) return;
+    setCouponApplying(true);
+    setCouponError(null);
+    const { data } = await supabase.rpc('evaluate_coupon', {
+      _code: code, _product_type: page.product_type, _product_id: page.product_id, _subtotal: subtotal,
+    });
+    setCouponApplying(false);
+    const row = Array.isArray(data) ? data[0] : null;
+    if (!row || row.error) { setCouponError(row?.error ?? 'Cupón no válido'); return; }
+    setAppliedCoupon(code.toUpperCase());
+  };
+
   const onCheckout = () => {
     const parsed = contactSchema.safeParse(contact);
     if (!parsed.success) {
@@ -173,7 +196,8 @@ export default function CheckoutPage({ embed = false }: Props) {
     setContactError(null);
     sessionStorage.removeItem(GUEST_PREFILL_KEY);
     const meta = {
-      value: products.main!.price_clp + (includeBump ? bumpFinal : 0),
+      value: subtotal - discount,
+      couponCode: appliedCoupon,
       creatorPixelId: creator?.meta_pixel_id,
       contentName: products.main!.title,
       checkoutPageId: page.id, groupId: searchParams.get("group"), groupCode: searchParams.get("group_code"),
@@ -216,6 +240,17 @@ export default function CheckoutPage({ embed = false }: Props) {
         onContactChange={(patch) => { setContact((c) => ({ ...c, ...patch })); if (contactError) setContactError(null); }}
         contactError={contactError}
         emailReadOnly={!!user}
+        coupon={{
+          enabled: !!products.couponsEnabled,
+          code: couponCode,
+          onCodeChange: (v) => { setCouponCode(v); setCouponError(null); },
+          onApply: applyCoupon,
+          applying: couponApplying,
+          appliedCode: appliedCoupon,
+          discount,
+          error: couponError,
+          onRemove: () => { setAppliedCoupon(null); setCouponCode(''); },
+        }}
       />
       <GuestCheckoutDialog
         open={guestDialogOpen}

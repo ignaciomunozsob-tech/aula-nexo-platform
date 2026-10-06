@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Eye, BookOpen, FileText, Calendar, Video } from 'lucide-react';
+import { Plus, Edit, Eye, BookOpen, FileText, Calendar, Video, Ticket } from 'lucide-react';
 import { formatPrice, getCourseUrl } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NewProductDialog } from '@/components/creator/NewProductDialog';
@@ -160,7 +160,10 @@ export default function CreatorProductsPage() {
           <h1 className="text-2xl font-bold">Mis Productos</h1>
           <p className="mt-1 text-sm text-muted-foreground">Administra y edita todo lo que vendes en NOVU.</p>
         </div>
-        <Button onClick={() => setNewProductOpen(true)} className="w-full sm:w-auto"><Plus className="mr-2 h-4 w-4" />Nuevo Producto</Button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button variant="outline" asChild className="w-full sm:w-auto"><Link to="/creator-app/coupons"><Ticket className="mr-2 h-4 w-4" />Cupones</Link></Button>
+          <Button onClick={() => setNewProductOpen(true)} className="w-full sm:w-auto"><Plus className="mr-2 h-4 w-4" />Nuevo Producto</Button>
+        </div>
       </div>
 
       <Tabs defaultValue="courses" className="space-y-6">

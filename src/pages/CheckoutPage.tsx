@@ -32,6 +32,7 @@ export default function CheckoutPage({ embed = false }: Props) {
   const [contactError, setContactError] = useState<string | null>(null);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [couponInfo, setCouponInfo] = useState<{ type: string; value: number } | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponApplying, setCouponApplying] = useState(false);
   const { checkoutAsGuest, loading, guestDialogOpen, setGuestDialogOpen, submitGuestData } = useMercadoPagoCheckout();
@@ -170,8 +171,9 @@ export default function CheckoutPage({ embed = false }: Props) {
     : 0;
 
   const subtotal = products.main.price_clp + (includeBump ? bumpFinal : 0);
-  const { data: couponEval } = useCouponEval(appliedCoupon, page.product_type, page.product_id, subtotal);
-  const discount = appliedCoupon && couponEval && !couponEval.error ? couponEval.discount_clp : 0;
+  const discount = appliedCoupon && couponInfo
+    ? Math.min(subtotal, couponInfo.type === 'percent' ? Math.round(subtotal * couponInfo.value / 100) : couponInfo.value)
+    : 0;
 
   const applyCoupon = async () => {
     const code = couponCode.trim();
@@ -185,6 +187,7 @@ export default function CheckoutPage({ embed = false }: Props) {
     const row = Array.isArray(data) ? data[0] : null;
     if (!row || row.error) { setCouponError(row?.error ?? 'Cupón no válido'); return; }
     setAppliedCoupon(code.toUpperCase());
+    setCouponInfo({ type: row.discount_type as string, value: row.discount_value as number });
   };
 
   const onCheckout = () => {

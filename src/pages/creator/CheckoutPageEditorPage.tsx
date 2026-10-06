@@ -38,6 +38,7 @@ export default function CheckoutPageEditorPage() {
   const [productId, setProductId] = useState<string>(presetProductId ?? '');
   const [isPublished, setIsPublished] = useState(false);
   const [isDefault, setIsDefault] = useState(false);
+  const [couponsEnabled, setCouponsEnabled] = useState(false);
   const [blocks, setBlocks] = useState<CheckoutBlock[]>(DEFAULT_BLOCKS);
   const [theme, setTheme] = useState<CheckoutTheme>(DEFAULT_THEME);
   const [selectedBlockId, setSelectedBlockId] = useState<string>('hero');
@@ -62,6 +63,7 @@ export default function CheckoutPageEditorPage() {
         setProductType(data.product_type); setProductId(data.product_id);
         setIsPublished(data.is_published);
         setIsDefault(!!data.is_default);
+        setCouponsEnabled(!!data.coupons_enabled);
         setBlocks(Array.isArray(data.blocks) && data.blocks.length ? data.blocks : DEFAULT_BLOCKS);
         setTheme(data.theme ?? DEFAULT_THEME);
         setBumpEnabled(data.bump_enabled);
@@ -135,6 +137,7 @@ export default function CheckoutPageEditorPage() {
       product_type: productType, product_id: productId,
       name, slug, is_published: willPublish,
       is_default: willBeDefault,
+      coupons_enabled: couponsEnabled,
       blocks, theme,
       bump_enabled: bumpEnabled,
       bump_product_type: bumpEnabled ? bumpProductType : null,
@@ -306,6 +309,15 @@ export default function CheckoutPageEditorPage() {
                 {productLocked && (
                   <p className="text-xs text-muted-foreground mt-1">Bloqueado — vienes desde el editor del producto.</p>
                 )}
+              </div>
+            </div>
+            <div className="rounded-lg border p-3 flex items-start gap-3">
+              <Switch checked={couponsEnabled} onCheckedChange={setCouponsEnabled} id="coupons-enabled" />
+              <div className="flex-1">
+                <Label htmlFor="coupons-enabled" className="cursor-pointer">Permitir cupones de descuento</Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Muestra un campo para ingresar un cupón. Crea tus cupones en Mis Productos → Cupones.
+                </p>
               </div>
             </div>
             <div className="rounded-lg border p-3 flex items-start gap-3">

@@ -64,6 +64,7 @@ const CreatorCommunitiesPage = lazy(() => import("@/pages/creator/CreatorCommuni
 const CommunityManagePage = lazy(() => import("@/pages/creator/CommunityManagePage"));
 const CheckoutPagesPage = lazy(() => import("@/pages/creator/CheckoutPagesPage"));
 const CheckoutPageEditorPage = lazy(() => import("@/pages/creator/CheckoutPageEditorPage"));
+const CreatorCouponsPage = lazy(() => import("@/pages/creator/CreatorCouponsPage"));
 const CreatorIntegrationsPage = lazy(() => import("@/pages/creator/CreatorIntegrationsPage"));
 const CreatorAvailabilityPage = lazy(() => import("@/pages/creator/CreatorAvailabilityPage"));
 const CreatorBookingsPage = lazy(() => import("@/pages/creator/CreatorBookingsPage"));
@@ -173,6 +174,7 @@ const App = () => (
                     <Route path="plan" element={<CreatorPlanPage />} />
                     <Route path="billing" element={<CreatorBillingPage />} />
                     <Route path="integrations" element={<CreatorIntegrationsPage />} />
+                    <Route path="coupons" element={<CreatorCouponsPage />} />
                     <Route path="availability" element={<CreatorAvailabilityPage />} />
                     <Route path="bookings" element={<CreatorBookingsPage />} />
                     <Route path="sessions/new" element={<SessionEditorPage />} />

@@ -62,6 +62,7 @@ export type Database = {
           bump_headline: string | null
           bump_product_id: string | null
           bump_product_type: string | null
+          coupons_enabled: boolean
           created_at: string
           creator_id: string
           id: string
@@ -82,6 +83,7 @@ export type Database = {
           bump_headline?: string | null
           bump_product_id?: string | null
           bump_product_type?: string | null
+          coupons_enabled?: boolean
           created_at?: string
           creator_id: string
           id?: string
@@ -102,6 +104,7 @@ export type Database = {
           bump_headline?: string | null
           bump_product_id?: string | null
           bump_product_type?: string | null
+          coupons_enabled?: boolean
           created_at?: string
           creator_id?: string
           id?: string
@@ -354,6 +357,56 @@ export type Database = {
             columns: ["community_id"]
             isOneToOne: false
             referencedRelation: "communities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          code: string
+          created_at: string
+          creator_id: string
+          discount_type: string
+          discount_value: number
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          products: Json
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          creator_id: string
+          discount_type?: string
+          discount_value: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          products?: Json
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          creator_id?: string
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          products?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupons_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1600,11 +1653,13 @@ export type Database = {
           capi_fired: boolean
           checkout_page_id: string | null
           community_fee_clp: number
+          coupon_id: string | null
           course_group_id: string | null
           created_at: string
           creator_amount_clp: number
           creator_email_sent: boolean
           creator_id: string | null
+          discount_clp: number
           guest_email: string | null
           guest_name: string | null
           guest_phone: string | null
@@ -1635,11 +1690,13 @@ export type Database = {
           capi_fired?: boolean
           checkout_page_id?: string | null
           community_fee_clp?: number
+          coupon_id?: string | null
           course_group_id?: string | null
           created_at?: string
           creator_amount_clp?: number
           creator_email_sent?: boolean
           creator_id?: string | null
+          discount_clp?: number
           guest_email?: string | null
           guest_name?: string | null
           guest_phone?: string | null
@@ -1670,11 +1727,13 @@ export type Database = {
           capi_fired?: boolean
           checkout_page_id?: string | null
           community_fee_clp?: number
+          coupon_id?: string | null
           course_group_id?: string | null
           created_at?: string
           creator_amount_clp?: number
           creator_email_sent?: boolean
           creator_id?: string | null
+          discount_clp?: number
           guest_email?: string | null
           guest_name?: string | null
           guest_phone?: string | null
@@ -1700,6 +1759,13 @@ export type Database = {
             columns: ["checkout_page_id"]
             isOneToOne: false
             referencedRelation: "checkout_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
             referencedColumns: ["id"]
           },
           {
@@ -2084,6 +2150,17 @@ export type Database = {
         Args: { _module_id: string }
         Returns: boolean
       }
+      checkout_page_coupons_enabled: {
+        Args: { _page_id: string }
+        Returns: boolean
+      }
+      coupon_usage_counts: {
+        Args: never
+        Returns: {
+          coupon_id: string
+          uses: number
+        }[]
+      }
       creator_has_mercadopago: {
         Args: { _creator_id: string }
         Returns: boolean
@@ -2104,6 +2181,22 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      evaluate_coupon: {
+        Args: {
+          _code: string
+          _product_id: string
+          _product_type: string
+          _subtotal: number
+        }
+        Returns: {
+          code: string
+          coupon_id: string
+          discount_clp: number
+          discount_type: string
+          discount_value: number
+          error: string
+        }[]
       }
       find_user_id_by_email: { Args: { _email: string }; Returns: string }
       get_booking_by_token: {

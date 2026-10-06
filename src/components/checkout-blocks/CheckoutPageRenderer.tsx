@@ -49,6 +49,17 @@ interface Props {
   onContactChange?: (patch: Partial<ContactState>) => void;
   contactError?: string | null;
   emailReadOnly?: boolean;
+  coupon?: {
+    enabled: boolean;
+    code: string;
+    onCodeChange: (v: string) => void;
+    onApply: () => void;
+    applying?: boolean;
+    appliedCode?: string | null;
+    discount: number;
+    error?: string | null;
+    onRemove: () => void;
+  };
 }
 
 function formatCLP(n: number) {
@@ -84,9 +95,11 @@ function Countdown({ endsAt }: { endsAt: string }) {
 
 export function CheckoutPageRenderer({
   blocks, theme, product, bump, includeBump, onToggleBump, onCheckout, loading, embed,
-  contact, onContactChange, contactError, emailReadOnly,
+  contact, onContactChange, contactError, emailReadOnly, coupon,
 }: Props) {
-  const total = product.price_clp + (bump.enabled && includeBump ? (bump.finalPrice ?? 0) : 0);
+  const subtotal = product.price_clp + (bump.enabled && includeBump ? (bump.finalPrice ?? 0) : 0);
+  const discount = coupon?.enabled && coupon.appliedCode ? Math.min(coupon.discount, subtotal) : 0;
+  const total = subtotal - discount;
 
   const renderContactForm = () => {
     if (!contact || !onContactChange) return null;
@@ -276,6 +289,34 @@ export function CheckoutPageRenderer({
                         </p>
                       </div>
                     </label>
+                  </div>
+                )}
+
+                {coupon?.enabled && (
+                  <div className="space-y-2 pt-2 border-t">
+                    {coupon.appliedCode ? (
+                      <div className="flex justify-between items-center text-sm">
+                        <span>
+                          Cupón <strong>{coupon.appliedCode}</strong>{' '}
+                          <button type="button" className="text-xs underline text-muted-foreground" onClick={coupon.onRemove}>Quitar</button>
+                        </span>
+                        <span className="font-semibold">−{formatCLP(discount)}</span>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Input
+                          value={coupon.code}
+                          onChange={(e) => coupon.onCodeChange(e.target.value.toUpperCase())}
+                          placeholder="Cupón de descuento"
+                          maxLength={50}
+                          onKeyDown={(e) => { if (e.key === 'Enter') coupon.onApply(); }}
+                        />
+                        <Button type="button" variant="outline" onClick={coupon.onApply} disabled={coupon.applying || !coupon.code.trim()}>
+                          Aplicar
+                        </Button>
+                      </div>
+                    )}
+                    {coupon.error && <p className="text-xs text-destructive">{coupon.error}</p>}
                   </div>
                 )}
 

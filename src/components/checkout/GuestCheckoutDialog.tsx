@@ -16,6 +16,7 @@ export interface GuestCheckoutData {
   name: string;
   email: string;
   phone: string;
+  couponCode?: string;
 }
 
 interface GuestCheckoutDialogProps {
@@ -29,6 +30,7 @@ export function GuestCheckoutDialog({ open, onOpenChange, onSubmit, loading }: G
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [coupon, setCoupon] = useState('');
   const [err, setErr] = useState<string | null>(null);
 
   const handleContinue = async () => {
@@ -38,7 +40,7 @@ export function GuestCheckoutDialog({ open, onOpenChange, onSubmit, loading }: G
       return;
     }
     setErr(null);
-    await onSubmit(parsed.data as GuestCheckoutData);
+    await onSubmit({ ...(parsed.data as GuestCheckoutData), couponCode: coupon.trim() || undefined });
   };
 
   return (
@@ -88,6 +90,17 @@ export function GuestCheckoutDialog({ open, onOpenChange, onSubmit, loading }: G
               placeholder="+56 9 1234 5678"
               disabled={loading}
               onKeyDown={(e) => { if (e.key === 'Enter') handleContinue(); }}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="guest-coupon">Cupón de descuento (opcional)</Label>
+            <Input
+              id="guest-coupon"
+              value={coupon}
+              onChange={(e) => setCoupon(e.target.value.toUpperCase())}
+              placeholder="CODIGO"
+              maxLength={50}
+              disabled={loading}
             />
           </div>
           {err && <p className="text-sm text-destructive">{err}</p>}

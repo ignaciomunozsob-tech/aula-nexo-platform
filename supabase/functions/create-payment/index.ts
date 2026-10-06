@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
     // MP access token now comes from the creator's connected MercadoPago account (marketplace).
 
     const body = await req.json().catch(() => null) as
-       | { product_type: ProductType; product_id: string; checkout_page_id?: string; include_bump?: boolean; return_url?: string; guest_email?: string; guest_name?: string; guest_phone?: string; group_id?: string | null; group_code?: string | null; selected_start_at?: string }
+       | { product_type: ProductType; product_id: string; checkout_page_id?: string; include_bump?: boolean; return_url?: string; guest_email?: string; guest_name?: string; guest_phone?: string; group_id?: string | null; group_code?: string | null; selected_start_at?: string; coupon_code?: string | null }
       | null;
     if (!body?.product_type || !body?.product_id) return json({ error: 'product_type and product_id required' }, 400);
 
@@ -184,7 +184,30 @@ Deno.serve(async (req) => {
       }
     }
 
-    const totalAmount = main.amount + (bumpInfo?.amount ?? 0);
+    // Optional discount coupon (applies to main + extra)
+    let couponId: string | null = null;
+    let discount = 0;
+    const subtotal = main.amount + (bumpInfo?.amount ?? 0);
+    const couponCode = (body.coupon_code ?? '').trim().slice(0, 50);
+    if (couponCode && body.product_type !== 'session') {
+      const { data: cRows } = await admin.rpc('evaluate_coupon', {
+        _code: couponCode, _product_type: body.product_type, _product_id: body.product_id, _subtotal: subtotal,
+      });
+      const c = Array.isArray(cRows) ? cRows[0] : null;
+      if (!c || c.error || !c.coupon_id) {
+        if (pendingBookingId) await admin.from('session_bookings').update({ status: 'cancelled' }).eq('id', pendingBookingId);
+        return json({ error: 'invalid_coupon', message: c?.error ?? 'Cupón no válido' }, 400);
+      }
+      couponId = c.coupon_id;
+      discount = Math.min(c.discount_clp ?? 0, subtotal - 100);
+      if (discount < 0) discount = 0;
+    }
+    // Distribute the discount across items so MercadoPago totals match
+    const mainDiscount = bumpInfo ? Math.round(discount * main.amount / subtotal) : discount;
+    const bumpDiscount = discount - mainDiscount;
+    const mainUnit = main.amount - mainDiscount;
+    const bumpUnit = bumpInfo ? bumpInfo.amount - bumpDiscount : 0;
+    const totalAmount = subtotal - discount;
 
     // NOVU ya no usa planes: comisión fija del 10% sobre cada venta.
     let comisionPct = 10;
@@ -236,12 +259,14 @@ Deno.serve(async (req) => {
       platform_amount_clp: platformAmount,
       community_fee_clp: communityFee,
       status: 'pending',
-       metadata: { title: main.title, group_name: (main as any).group_name ?? null, has_bump: !!bumpInfo, is_new_user: isNewUser, marketplace: true, redirect_url: (main as any).group_redirect_url ?? (main as any).redirect_url ?? null, product_url: productUrl, booking_id: pendingBookingId, session_start_at: body.selected_start_at ?? null },
+       metadata: { title: main.title, coupon_code: couponId ? couponCode.toUpperCase() : null, group_name: (main as any).group_name ?? null, has_bump: !!bumpInfo, is_new_user: isNewUser, marketplace: true, redirect_url: (main as any).group_redirect_url ?? (main as any).redirect_url ?? null, product_url: productUrl, booking_id: pendingBookingId, session_start_at: body.selected_start_at ?? null },
        checkout_page_id: body.checkout_page_id ?? null,
        course_group_id: body.product_type === 'course' ? selectedGroup?.id ?? body.group_id ?? null : null,
       bump_product_type: bumpInfo?.type ?? null,
       bump_product_id: bumpInfo?.id ?? null,
-      bump_amount_clp: bumpInfo?.amount ?? 0,
+      bump_amount_clp: bumpInfo ? bumpUnit : 0,
+      coupon_id: couponId,
+      discount_clp: discount,
       guest_email: userEmail,
       guest_name: guestName,
       guest_phone: guestPhone,
@@ -263,12 +288,12 @@ Deno.serve(async (req) => {
 
     const items: any[] = [{
       id: order.id, title: main.title.slice(0, 250), quantity: 1, currency_id: 'CLP',
-      unit_price: main.amount, picture_url: main.cover ?? undefined,
+      unit_price: mainUnit, picture_url: main.cover ?? undefined,
     }];
     if (bumpInfo) {
       items.push({
         id: `${order.id}-bump`, title: `+ ${bumpInfo.title}`.slice(0, 250), quantity: 1,
-        currency_id: 'CLP', unit_price: bumpInfo.amount, picture_url: bumpInfo.cover ?? undefined,
+        currency_id: 'CLP', unit_price: bumpUnit, picture_url: bumpInfo.cover ?? undefined,
       });
     }
 

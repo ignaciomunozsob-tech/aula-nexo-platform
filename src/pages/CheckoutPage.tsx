@@ -80,6 +80,7 @@ export default function CheckoutPage({ embed = false }: Props) {
          return null;
        };
 
+       const { data: couponsEnabled } = await supabase.rpc('checkout_page_coupons_enabled', { _page_id: page.id });
        const main = await fetchOne(page.product_type, page.product_id);
        if (main && page.product_type === 'course') {
          const groupId = searchParams.get('group');

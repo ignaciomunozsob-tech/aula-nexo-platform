@@ -281,7 +281,7 @@ export default function EventDetailPage({ eventId: eventIdProp }: Props) {
                 <h2 className="text-xl font-semibold mb-3">Sobre este evento</h2>
                 {event.description ? (
                   <div
-                    className="prose prose-sm md:prose-base max-w-none dark:prose-invert"
+                    className="prose prose-sm md:prose-base max-w-none text-foreground prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground prose-blockquote:text-muted-foreground prose-a:text-foreground prose-a:underline break-words"
                     dangerouslySetInnerHTML={{ __html: sanitizeHtml(event.description) }}
                   />
                 ) : (

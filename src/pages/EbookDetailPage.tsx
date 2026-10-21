@@ -27,13 +27,16 @@ export default function EbookDetailPage({ ebookId: ebookIdProp }: Props) {
     queryFn: async () => {
       let q = supabase
         .from("ebooks")
-        .select("id, title, description, cover_image_url, price_clp, slug, creator_id, status, profiles:creator_id(name, avatar_url, creator_slug)")
+        .select("id, title, description, cover_image_url, price_clp, slug, creator_id, status")
         .in("status", ["published", "hidden"]);
       if (ebookIdProp) q = q.eq("id", ebookIdProp);
       else if (params.slug) q = q.eq("slug", params.slug);
-      const { data, error } = await q.maybeSingle();
+      const { data, error } = await q.limit(1).maybeSingle();
       if (error) throw error;
-      return data;
+      if (!data) return null;
+      const { data: creators } = await supabase.rpc("get_public_creators_by_ids", { _ids: [data.creator_id] });
+      const profiles = Array.isArray(creators) ? creators[0] ?? null : null;
+      return { ...data, profiles };
     },
     enabled: !!ebookIdProp || !!params.slug,
   });

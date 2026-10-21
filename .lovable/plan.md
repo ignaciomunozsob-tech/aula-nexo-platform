@@ -1,27 +1,13 @@
-# Tracking Meta Pixel: order bump y página de pago personalizada
+# Arreglar la página pública de los e-books
 
-## Problema
-El evento `Purchase` que llega al pixel de Meta del creador solo incluye el producto principal. El extra (order bump) nunca aparece como producto en Meta, aunque su monto sí se suma al valor. Tampoco se trackea el extra en `ViewContent` ni en `InitiateCheckout` de la página de pago personalizada. Además, la página antigua `/payment/success` puede disparar un `Purchase` duplicado sin protección anti-duplicados.
+## Qué pasa (verificado)
+Los e-books sí tienen página pública (`soynovu.cl/{creador}/{ebook}`) y el enlace los reconoce, pero la página muestra "Ebook no encontrado". La consulta pide los datos del e-book junto con los del creador en una sola petición, y la base de datos la rechaza porque el e-book no tiene un vínculo directo con el perfil del creador. Por eso siempre falla, también para visitantes sin cuenta.
 
-## Cambios
+## Qué se va a hacer
+- Cargar primero el e-book (título, descripción, portada, precio) y después el nombre, foto y enlace del creador con la función pública que ya existe.
+- Se mantienen el botón Comprar, el pixel de Meta (ViewContent) y la descarga protegida tal como están.
+- Comprobar como visitante sin cuenta que la página de un e-book publicado se abre bien en computador y en móvil, y que funciona desde el perfil del creador.
 
-### 1. Purchase incluye el extra (PurchaseConfirmedPage.tsx)
-- Leer los datos del extra de la orden (bump_product_id, bump_product_type, bump_amount_clp ya guardados en la orden).
-- Si la orden incluyó extra: `content_ids` = [id principal, id extra], `num_items: 2`, y `contents` con ambos productos (id, cantidad, precio).
-- Mantener la deduplicación actual (pixel_fired + sessionStorage) para no disparar dos veces.
-
-### 2. ViewContent del extra en la página de pago (CheckoutPage.tsx)
-- Cuando la página personalizada tiene extra activo, disparar `ViewContent` también para el producto extra (una sola vez por visita, con el mismo guard de useRef).
-
-### 3. InitiateCheckout con ambos productos (useMercadoPagoCheckout.ts)
-- Cuando el comprador seleccionó el extra, incluir su ID en `content_ids` y en `contents` del evento `InitiateCheckout`.
-
-### 4. Eliminar disparo duplicado (PaymentResultPage.tsx)
-- La página antigua `/payment/success` solo redirige a `/compra-confirmada/{reference}`; quitar su propio evento `Purchase` para evitar duplicados.
-
-### 5. Verificar CAPI server-side (mercadopago-webhook)
-- Confirmar que el evento Purchase del servidor incluya el extra y mantenga la deduplicación por referencia de orden (mismo event_id que el navegador).
-
-## Verificación
-- Typecheck limpio.
-- Prueba con el pixel de prueba: compra con extra → un solo `Purchase` con ambos content_ids, sin duplicados.
+## Detalles técnicos
+- `src/pages/EbookDetailPage.tsx`: quitar el embed `profiles:creator_id(...)` del select y obtener el creador con `supabase.rpc('get_public_creators_by_ids', { _ids: [creator_id] })`.
+- Sin cambios en la base de datos.

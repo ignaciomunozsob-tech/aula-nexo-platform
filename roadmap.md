@@ -10,5 +10,5 @@
 - [x] Mostrar los productos del creador en una cuadrícula adaptable con portada, estado, precio y edición
 - [x] Mover el ID de producto al interior de cada editor
 - [x] Optimizar para móvil y tablet los editores de cursos, e-books y eventos
-- [ ] Corregir inscripción manual a e-books, biblioteca y descarga protegida
-- [ ] Validar inscripción real y acceso del alumno sin registrar ventas ficticias
+- [x] Corregir inscripción manual a e-books, biblioteca y descarga protegida
+- [x] Validar inscripción real y acceso del alumno sin registrar ventas ficticias

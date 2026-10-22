@@ -35,7 +35,7 @@ export function MyEbooksGrid({ ebooks }: { ebooks: EbookPurchase[] }) {
           <div className="p-4">
             <h3 className="font-semibold line-clamp-2">{ebook.title}</h3>
             <p className="text-xs text-muted-foreground mt-1">
-              Comprado el{' '}
+               {ebook.source === 'manual' ? 'Acceso otorgado el' : 'Comprado el'}{' '}
               {new Date(ebook.purchased_at).toLocaleDateString('es-CL', {
                 day: 'numeric',
                 month: 'long',

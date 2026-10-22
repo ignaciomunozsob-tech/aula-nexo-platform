@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { enrollmentTarget } from "./enrollment-target.ts";
 
 interface StudentEntry { name: string; email: string }
 interface AddStudentsRequest {
@@ -66,6 +67,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     const body = (await req.json()) as AddStudentsRequest;
     const { students, productId, productType, courseGroupId } = body;
+    if (!["course", "ebook", "event"].includes(productType) || !/^[0-9a-f-]{36}$/i.test(productId)) {
+      throw new Error("Invalid product");
+    }
     console.log("add-students invoked", { userId: user.id, productId, productType, count: students?.length });
 
     if (!students || !Array.isArray(students) || students.length === 0) {
@@ -92,8 +96,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Hard cap: max 10 manually added students per product (lifetime)
     if (isSuperadmin !== true) {
-      const manualTable = productType === "event" ? "event_registrations" : "enrollments";
-      const manualColumn = productType === "event" ? "event_id" : "course_id";
+      const { table: manualTable, column: manualColumn } = enrollmentTarget(productType);
       const { count: manualCount, error: manualError } = await supabaseAdmin
         .from(manualTable)
         .select("id", { count: "exact", head: true })
@@ -212,7 +215,8 @@ const handler = async (req: Request): Promise<Response> => {
             continue;
           }
         } else {
-          userId = signUpData.user!.id;
+          userId = signUpData.user?.id ?? null;
+          if (!userId) throw new Error("No se pudo crear el usuario");
           try {
             await supabaseAdmin.auth.resetPasswordForEmail(email, {
               redirectTo: `${Deno.env.get("SITE_URL") || "https://novuproject.lovable.app"}/reset-password`,
@@ -230,6 +234,15 @@ const handler = async (req: Request): Promise<Response> => {
             console.error(`[add-students] event reg error ${email}`, regError);
             results.push({ email, success: false, message: "No se pudo inscribir al estudiante" }); continue;
           }
+         } else if (productType === "ebook") {
+           const { table, column } = enrollmentTarget(productType);
+           const { error: ebookError } = await supabaseAdmin.from(table).upsert({
+             [column]: productId, user_id: userId, status: "active", source: "manual",
+           }, { onConflict: "ebook_id,user_id" });
+           if (ebookError) {
+             console.error(`[add-students] ebook access error`, ebookError);
+             results.push({ email, success: false, message: "No se pudo dar acceso al e-book" }); continue;
+           }
          } else {
            const { error: enrollError } = await supabaseAdmin.from("enrollments").insert({
              course_id: productId, user_id: userId, status: "active", source: "manual",

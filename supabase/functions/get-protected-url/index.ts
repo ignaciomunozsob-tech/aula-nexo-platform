@@ -94,6 +94,12 @@ Deno.serve(async (req) => {
           .or(`and(product_type.eq.ebook,product_id.eq.${id}),and(bump_product_type.eq.ebook,bump_product_id.eq.${id})`)
           .limit(1)
         allowed = !!(ord && ord.length > 0)
+        if (!allowed) {
+          const { data: access, error: accessError } = await admin.from('ebook_enrollments')
+            .select('id').eq('ebook_id', id).eq('user_id', userId).eq('status', 'active').maybeSingle()
+          if (accessError) throw accessError
+          allowed = !!access
+        }
       }
 
       if (!allowed) return json({ error: 'Forbidden' }, 403)

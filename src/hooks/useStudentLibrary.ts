@@ -25,6 +25,7 @@ export type EbookPurchase = {
   cover_image_url: string | null;
   purchased_at: string;
   is_bump: boolean;
+  source?: 'paid' | 'manual';
 };
 
 export type SessionBooking = {
@@ -113,7 +114,7 @@ export function useMyEbooks() {
         .order('paid_at', { ascending: false, nullsFirst: false });
       if (error) throw error;
 
-      type Entry = { order_id: string; ebook_id: string; purchased_at: string; is_bump: boolean };
+      type Entry = { order_id: string; ebook_id: string; purchased_at: string; is_bump: boolean; source?: 'paid' | 'manual' };
       const entries: Entry[] = [];
       for (const o of orders || []) {
         const when = o.paid_at || o.created_at;
@@ -123,6 +124,16 @@ export function useMyEbooks() {
         if (o.bump_product_type === 'ebook' && o.bump_product_id) {
           entries.push({ order_id: o.id, ebook_id: o.bump_product_id, purchased_at: when, is_bump: true });
         }
+      }
+
+      const { data: manualAccess, error: manualError } = await supabase
+        .from('ebook_enrollments')
+        .select('id, ebook_id, created_at')
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+      if (manualError) throw manualError;
+      for (const access of manualAccess || []) {
+        entries.push({ order_id: access.id, ebook_id: access.ebook_id, purchased_at: access.created_at, is_bump: false, source: 'manual' });
       }
 
       const ids = Array.from(new Set(entries.map((e) => e.ebook_id)));
@@ -151,6 +162,7 @@ export function useMyEbooks() {
           cover_image_url: e.cover_image_url,
           purchased_at: entry.purchased_at,
           is_bump: entry.is_bump,
+          source: entry.source ?? 'paid',
         });
       }
       return result;

@@ -68,7 +68,7 @@ export default function StudentManagement({ productId, productType }: StudentMan
 
   const MANUAL_LIMIT = 10;
 
-  const tableName = productType === "event" ? "event_registrations" : "enrollments";
+  const tableName = productType === "ebook" ? "ebook_enrollments" : productType === "event" ? "event_registrations" : "enrollments";
 
   const { data: enrollments, isLoading } = useQuery({
     queryKey: [tableName, productId, "with-email"],
@@ -149,14 +149,14 @@ export default function StudentManagement({ productId, productType }: StudentMan
   const { data: manualCount = 0 } = useQuery({
     queryKey: ["manual-students-count", productType, productId],
     queryFn: async () => {
-      const table = productType === "event" ? "event_registrations" : "enrollments";
-      const column = productType === "event" ? "event_id" : "course_id";
+      const table = tableName;
+      const column = productType === "ebook" ? "ebook_id" : productType === "event" ? "event_id" : "course_id";
       const { count, error } = await (supabase as any)
         .from(table)
         .select("id", { count: "exact", head: true })
         .eq(column, productId)
         .eq("source", "manual");
-      if (error) return 0;
+      if (error) throw error;
       return count ?? 0;
     },
     enabled: !!productId,
@@ -242,12 +242,14 @@ export default function StudentManagement({ productId, productType }: StudentMan
           description: data.results?.find((r: any) => !r.success)?.message || "Algunos alumnos no pudieron ser agregados",
           variant: "destructive",
         });
+        return;
       }
 
       setStudents([{ name: "", email: "" }]);
       setValidationErrors({});
       setOpen(false);
       queryClient.invalidateQueries({ queryKey: [tableName, productId] });
+      queryClient.invalidateQueries({ queryKey: ["my-ebooks"] });
       queryClient.invalidateQueries({ queryKey: ["manual-students-count", productType, productId] });
     },
     onError: (error: any) => {
@@ -422,9 +424,9 @@ export default function StudentManagement({ productId, productType }: StudentMan
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Users className="h-5 w-5" />
-          <h2 className="font-semibold">{productType === "ebook" ? "Compradores" : "Gestión de Alumnos"}</h2>
+          <h2 className="font-semibold">{productType === "ebook" ? "Alumnos con acceso" : "Gestión de Alumnos"}</h2>
           <span className="text-sm text-muted-foreground">
-            ({activeItems.length} {productType === "ebook" ? `compra${activeItems.length !== 1 ? "s" : ""}` : `inscrito${activeItems.length !== 1 ? "s" : ""}`})
+            ({activeItems.length} inscrito{activeItems.length !== 1 ? "s" : ""})
           </span>
         </div>
 
@@ -550,7 +552,7 @@ export default function StudentManagement({ productId, productType }: StudentMan
 
       <Tabs defaultValue="enrolled" className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="enrolled">{productType === "ebook" ? "Compradores" : "Alumnos Inscritos"}</TabsTrigger>
+          <TabsTrigger value="enrolled">Alumnos Inscritos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="enrolled">
@@ -560,7 +562,7 @@ export default function StudentManagement({ productId, productType }: StudentMan
             </div>
           ) : activeItems.length === 0 ? (
             <p className="text-muted-foreground text-center py-8 text-sm">
-              {productType === "ebook" ? "Aún no hay compras de este e-book." : `Aún no hay alumnos inscritos en este ${productLabel}.`}
+              {`Aún no hay alumnos inscritos en este ${productLabel}.`}
             </p>
           ) : (
             <Table>
